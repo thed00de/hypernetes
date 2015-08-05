@@ -52,6 +52,7 @@ import (
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/dockertools"
 	"k8s.io/kubernetes/pkg/kubelet/envvars"
+	"k8s.io/kubernetes/pkg/kubelet/hyper"
 	"k8s.io/kubernetes/pkg/kubelet/metrics"
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/kubelet/pleg"
@@ -429,6 +430,20 @@ func NewMainKubelet(
 			return nil, err
 		}
 		klet.containerRuntime = rktRuntime
+	case "hyper":
+		hyperRuntime, err := hyper.New(
+			klet,
+			recorder,
+			containerRefManager,
+			readinessManager,
+			klet.volumeManager)
+		if err != nil {
+			return nil, err
+		}
+		klet.containerRuntime = hyperRuntime
+
+		// No Docker daemon to put in a container.
+		dockerDaemonContainer = ""
 	default:
 		return nil, fmt.Errorf("unsupported container runtime %q specified", containerRuntime)
 	}

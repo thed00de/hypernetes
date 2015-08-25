@@ -126,7 +126,8 @@ __custom_func() {
    * limitranges (aka 'limits')
    * nodes (aka 'no')
    * namespaces (aka 'ns')
-   * pods (aka 'po')
+   * networks (aka 'net')
+   * pods (aka 'po')   
    * persistentvolumes (aka 'pv')
    * persistentvolumeclaims (aka 'pvc')
    * quota

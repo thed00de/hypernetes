@@ -82,6 +82,8 @@ func AddToScheme(scheme *runtime.Scheme) {
 		&ResourceQuotaList{},
 		&Namespace{},
 		&NamespaceList{},
+		&Network{},
+		&NetworkList{},
 		&ServiceAccount{},
 		&ServiceAccountList{},
 		&Secret{},
@@ -152,6 +154,9 @@ func (obj *ResourceQuotaList) GetObjectKind() unversioned.ObjectKind         { r
 func (obj *Namespace) GetObjectMeta() meta.Object                            { return &obj.ObjectMeta }
 func (obj *Namespace) GetObjectKind() unversioned.ObjectKind                 { return &obj.TypeMeta }
 func (obj *NamespaceList) GetObjectKind() unversioned.ObjectKind             { return &obj.TypeMeta }
+func (obj *Network) GetObjectMeta() meta.Object                              { return &obj.ObjectMeta }
+func (obj *Network) GetObjectKind() unversioned.ObjectKind                   { return &obj.TypeMeta }
+func (obj *NetworkList) GetObjectKind() unversioned.ObjectKind               { return &obj.TypeMeta }
 func (obj *ServiceAccount) GetObjectMeta() meta.Object                       { return &obj.ObjectMeta }
 func (obj *ServiceAccount) GetObjectKind() unversioned.ObjectKind            { return &obj.TypeMeta }
 func (obj *ServiceAccountList) GetObjectKind() unversioned.ObjectKind        { return &obj.TypeMeta }

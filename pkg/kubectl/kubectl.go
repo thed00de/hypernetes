@@ -121,6 +121,7 @@ var shortForms = map[string]string{
 	"hpa":    "horizontalpodautoscalers",
 	"ing":    "ingresses",
 	"limits": "limitranges",
+	"net":    "networks",
 	"no":     "nodes",
 	"ns":     "namespaces",
 	"po":     "pods",

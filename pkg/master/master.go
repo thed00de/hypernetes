@@ -54,6 +54,8 @@ import (
 	limitrangeetcd "k8s.io/kubernetes/pkg/registry/limitrange/etcd"
 	"k8s.io/kubernetes/pkg/registry/namespace"
 	namespaceetcd "k8s.io/kubernetes/pkg/registry/namespace/etcd"
+	"k8s.io/kubernetes/pkg/registry/network"
+	networketcd "k8s.io/kubernetes/pkg/registry/network/etcd"
 	"k8s.io/kubernetes/pkg/registry/node"
 	nodeetcd "k8s.io/kubernetes/pkg/registry/node/etcd"
 	pvetcd "k8s.io/kubernetes/pkg/registry/persistentvolume/etcd"
@@ -113,6 +115,7 @@ type Master struct {
 	// also be replaced
 	nodeRegistry              node.Registry
 	namespaceRegistry         namespace.Registry
+	networkRegistry           network.Registry
 	serviceRegistry           service.Registry
 	endpointRegistry          endpoint.Registry
 	serviceClusterIPAllocator service.RangeRegistry
@@ -359,6 +362,9 @@ func (m *Master) initV1ResourcesStorage(c *Config) {
 	endpointsStorage := endpointsetcd.NewREST(restOptions("endpoints"))
 	m.endpointRegistry = endpoint.NewRegistry(endpointsStorage)
 
+	networkStorage, networkStatusStorage := networketcd.NewREST(restOptions("networks"))
+	m.networkRegistry = network.NewRegistry(networkStorage)
+
 	nodeStorage := nodeetcd.NewStorage(restOptions("nodes"), c.KubeletClient, m.ProxyTransport)
 	m.nodeRegistry = node.NewRegistry(nodeStorage.Node)
 
@@ -433,6 +439,8 @@ func (m *Master) initV1ResourcesStorage(c *Config) {
 		"namespaces":                    namespaceStorage,
 		"namespaces/status":             namespaceStatusStorage,
 		"namespaces/finalize":           namespaceFinalizeStorage,
+		"networks":                      networkStorage,
+		"networks/status":               networkStatusStorage,
 		"secrets":                       secretStorage,
 		"serviceAccounts":               serviceAccountStorage,
 		"persistentVolumes":             persistentVolumeStorage,

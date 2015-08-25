@@ -110,6 +110,7 @@ func expandResourceShortcut(resource unversioned.GroupVersionResource) unversion
 		"hpa":    extensions.SchemeGroupVersion.WithResource("horizontalpodautoscalers"),
 		"ing":    extensions.SchemeGroupVersion.WithResource("ingresses"),
 		"limits": api.SchemeGroupVersion.WithResource("limitranges"),
+		"net":    api.SchemeGroupVersion.WithResource("networks"),
 		"no":     api.SchemeGroupVersion.WithResource("nodes"),
 		"ns":     api.SchemeGroupVersion.WithResource("namespaces"),
 		"po":     api.SchemeGroupVersion.WithResource("pods"),

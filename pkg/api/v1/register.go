@@ -64,6 +64,8 @@ func addKnownTypes(scheme *runtime.Scheme) {
 		&ResourceQuotaList{},
 		&Namespace{},
 		&NamespaceList{},
+		&Network{},
+		&NetworkList{},
 		&Secret{},
 		&SecretList{},
 		&ServiceAccount{},
@@ -112,6 +114,8 @@ func (obj *ResourceQuota) GetObjectKind() unversioned.ObjectKind             { r
 func (obj *ResourceQuotaList) GetObjectKind() unversioned.ObjectKind         { return &obj.TypeMeta }
 func (obj *Namespace) GetObjectKind() unversioned.ObjectKind                 { return &obj.TypeMeta }
 func (obj *NamespaceList) GetObjectKind() unversioned.ObjectKind             { return &obj.TypeMeta }
+func (obj *Network) GetObjectKind() unversioned.ObjectKind                   { return &obj.TypeMeta }
+func (obj *NetworkList) GetObjectKind() unversioned.ObjectKind               { return &obj.TypeMeta }
 func (obj *Secret) GetObjectKind() unversioned.ObjectKind                    { return &obj.TypeMeta }
 func (obj *SecretList) GetObjectKind() unversioned.ObjectKind                { return &obj.TypeMeta }
 func (obj *ServiceAccount) GetObjectKind() unversioned.ObjectKind            { return &obj.TypeMeta }

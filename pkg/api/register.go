@@ -102,8 +102,8 @@ func (*ResourceQuota) IsAnAPIObject()             {}
 func (*ResourceQuotaList) IsAnAPIObject()         {}
 func (*Namespace) IsAnAPIObject()                 {}
 func (*NamespaceList) IsAnAPIObject()             {}
-func (*Network) IsAnAPIObject()					  {}
-func (*NetworkList) IsAnAPIObject()				  {}
+func (*Network) IsAnAPIObject()                   {}
+func (*NetworkList) IsAnAPIObject()               {}
 func (*ServiceAccount) IsAnAPIObject()            {}
 func (*ServiceAccountList) IsAnAPIObject()        {}
 func (*Secret) IsAnAPIObject()                    {}

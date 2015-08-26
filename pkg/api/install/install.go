@@ -73,6 +73,7 @@ func init() {
 	rootScoped := sets.NewString(
 		"Node",
 		"Namespace",
+		"Network",
 		"PersistentVolume",
 		"ComponentStatus",
 	)

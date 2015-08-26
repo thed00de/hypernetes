@@ -51,7 +51,7 @@ exists, it will output details for every resource that has a name prefixed with 
 Possible resource types include (case insensitive): pods (po), services (svc),
 replicationcontrollers (rc), nodes (no), events (ev), limitranges (limits),
 persistentvolumes (pv), persistentvolumeclaims (pvc), resourcequotas (quota),
-namespaces (ns), serviceaccounts, endpoints (ep) or secrets.
+namespaces (ns), serviceaccounts, endpoints (ep), networks (net) or secrets.
 
 ```
 kubectl describe (-f FILENAME | TYPE [NAME_PREFIX | -l label] | TYPE/NAME)

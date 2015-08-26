@@ -200,6 +200,7 @@ min-resync-period
 namespace-sync-period
 network-plugin
 network-plugin-dir
+network-provider
 node-instance-group
 node-monitor-grace-period
 node-monitor-period

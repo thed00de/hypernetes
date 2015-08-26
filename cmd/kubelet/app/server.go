@@ -58,6 +58,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/kubelet/server"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
+	"k8s.io/kubernetes/pkg/networkprovider"
 	"k8s.io/kubernetes/pkg/util"
 	"k8s.io/kubernetes/pkg/util/configz"
 	"k8s.io/kubernetes/pkg/util/flock"
@@ -180,6 +181,19 @@ func UnsecuredKubeletConfig(s *options.KubeletServer) (*KubeletConfig, error) {
 		return nil, err
 	}
 
+	// network plugins
+	networkPluginName := s.NetworkPluginName
+	networkPlugins := ProbeNetworkPlugins(s.NetworkPluginDir)
+
+	ProbeNetworkProviders()
+	networkProvider, err := networkprovider.InitNetworkProvider(s.NetworkProvider)
+	if err != nil {
+		glog.Errorf("Network provider could not be initialized: %v", err)
+	} else {
+		networkPlugins = append(networkPlugins, NewRemoteNetworkPlugin(networkProvider))
+		networkPluginName = "NetworkProvider"
+	}
+
 	return &KubeletConfig{
 		Address:                   net.ParseIP(s.Address),
 		AllowPrivileged:           s.AllowPrivileged,
@@ -221,8 +235,8 @@ func UnsecuredKubeletConfig(s *options.KubeletServer) (*KubeletConfig, error) {
 		MaxPods:                   s.MaxPods,
 		MinimumGCAge:              s.MinimumGCAge.Duration,
 		Mounter:                   mounter,
-		NetworkPluginName:         s.NetworkPluginName,
-		NetworkPlugins:            ProbeNetworkPlugins(s.NetworkPluginDir),
+		NetworkPluginName:         networkPluginName,
+		NetworkPlugins:            networkPlugins,
 		NodeLabels:                s.NodeLabels,
 		NodeStatusUpdateFrequency: s.NodeStatusUpdateFrequency.Duration,
 		NonMasqueradeCIDR:         s.NonMasqueradeCIDR,

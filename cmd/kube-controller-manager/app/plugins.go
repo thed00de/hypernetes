@@ -26,6 +26,7 @@ import (
 	// Cloud providers
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
 	_ "k8s.io/kubernetes/pkg/cloudprovider/providers"
+	networkProviders "k8s.io/kubernetes/pkg/networkprovider/providers"
 
 	// Volume plugins
 	"k8s.io/kubernetes/pkg/cloudprovider"
@@ -122,4 +123,8 @@ func AttemptToLoadRecycler(path string, config *volume.VolumeConfig) error {
 		config.RecyclerPodTemplate = recyclerPod
 	}
 	return nil
+}
+
+func ProbeNetworkProviders() {
+	networkProviders.ProbeNetworkProviders()
 }

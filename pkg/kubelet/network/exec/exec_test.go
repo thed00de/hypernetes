@@ -224,7 +224,7 @@ func TestPluginSetupHook(t *testing.T) {
 
 	plug, err := network.InitNetworkPlugin(ProbeNetworkPlugins(testPluginPath), pluginName, nettest.NewFakeHost(nil))
 
-	err = plug.SetUpPod("podNamespace", "podName", "dockerid2345")
+	err = plug.SetUpPod("podNamespace", "podName", "dockerid2345", "docker")
 	if err != nil {
 		t.Errorf("Expected nil: %v", err)
 	}
@@ -233,7 +233,7 @@ func TestPluginSetupHook(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected nil")
 	}
-	expectedOutput := "setup podNamespace podName dockerid2345"
+	expectedOutput := "setup podNamespace podName dockerid2345 docker"
 	if string(output) != expectedOutput {
 		t.Errorf("Mismatch in expected output for setup hook. Expected '%s', got '%s'", expectedOutput, string(output))
 	}
@@ -252,7 +252,7 @@ func TestPluginTearDownHook(t *testing.T) {
 
 	plug, err := network.InitNetworkPlugin(ProbeNetworkPlugins(testPluginPath), pluginName, nettest.NewFakeHost(nil))
 
-	err = plug.TearDownPod("podNamespace", "podName", "dockerid2345")
+	err = plug.TearDownPod("podNamespace", "podName", "dockerid2345", "docker")
 	if err != nil {
 		t.Errorf("Expected nil")
 	}
@@ -261,7 +261,7 @@ func TestPluginTearDownHook(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected nil")
 	}
-	expectedOutput := "teardown podNamespace podName dockerid2345"
+	expectedOutput := "teardown podNamespace podName dockerid2345 docker"
 	if string(output) != expectedOutput {
 		t.Errorf("Mismatch in expected output for teardown hook. Expected '%s', got '%s'", expectedOutput, string(output))
 	}
@@ -280,7 +280,7 @@ func TestPluginStatusHook(t *testing.T) {
 
 	plug, err := network.InitNetworkPlugin(ProbeNetworkPlugins(testPluginPath), pluginName, nettest.NewFakeHost(nil))
 
-	ip, err := plug.Status("namespace", "name", "dockerid2345")
+	ip, err := plug.Status("namespace", "name", "dockerid2345", "docker")
 	if err != nil {
 		t.Errorf("Expected nil got %v", err)
 	}
@@ -289,7 +289,7 @@ func TestPluginStatusHook(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected nil")
 	}
-	expectedOutput := "status namespace name dockerid2345"
+	expectedOutput := "status namespace name dockerid2345 docker"
 	if string(output) != expectedOutput {
 		t.Errorf("Mismatch in expected output for status hook. Expected '%s', got '%s'", expectedOutput, string(output))
 	}
@@ -319,7 +319,7 @@ func TestPluginStatusHookIPv6(t *testing.T) {
 		t.Errorf("InitNetworkPlugin() failed: %v", err)
 	}
 
-	ip, err := plug.Status("namespace", "name", "dockerid2345")
+	ip, err := plug.Status("namespace", "name", "dockerid2345", "docker")
 	if err != nil {
 		t.Errorf("Status() failed: %v", err)
 	}
@@ -329,7 +329,7 @@ func TestPluginStatusHookIPv6(t *testing.T) {
 	if err != nil {
 		t.Errorf("ReadFile(%q) failed: %v", outPath, err)
 	}
-	expectedOutput := "status namespace name dockerid2345"
+	expectedOutput := "status namespace name dockerid2345 docker"
 	if string(output) != expectedOutput {
 		t.Errorf("Mismatch in expected output for status hook. Expected %q, got %q", expectedOutput, string(output))
 	}

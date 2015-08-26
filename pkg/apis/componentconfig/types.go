@@ -237,6 +237,8 @@ type KubeletConfiguration struct {
 	// networkPluginDir is the full path of the directory in which to search
 	// for network plugins
 	NetworkPluginDir string `json:"networkPluginDir"`
+	// networkProvider is the name of network provider
+	NetworkProvider string `json:"NetworkProvider"`
 	// volumePluginDir is the full path of the directory in which to search
 	// for additional third party volume plugins
 	VolumePluginDir string `json:"volumePluginDir"`
@@ -472,6 +474,8 @@ type KubeControllerManagerConfiguration struct {
 	// deletingPodsBurst is the number of nodes on which pods are bursty deleted in
 	// case of node failure. For more details look into RateLimiter.
 	DeletingPodsBurst int `json:"deletingPodsBurst"`
+	// networkProvider is the name of network provider
+	NetworkProvider string `json:"NetworkProvider"`
 	// nodeMontiorGracePeriod is the amount of time which we allow a running node to be
 	// unresponsive before marking it unhealty. Must be N times more than kubelet's
 	// nodeStatusUpdateFrequency, where N means number of retries allowed for kubelet

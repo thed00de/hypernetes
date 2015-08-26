@@ -255,6 +255,7 @@ network-plugin
 network-plugin-dir
 no-headers
 no-suggestions
+network-provider
 node-instance-group
 node-ip
 node-labels

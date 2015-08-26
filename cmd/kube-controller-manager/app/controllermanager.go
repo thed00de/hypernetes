@@ -51,6 +51,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller/gc"
 	"k8s.io/kubernetes/pkg/controller/job"
 	namespacecontroller "k8s.io/kubernetes/pkg/controller/namespace"
+	"k8s.io/kubernetes/pkg/controller/network"
 	nodecontroller "k8s.io/kubernetes/pkg/controller/node"
 	persistentvolumecontroller "k8s.io/kubernetes/pkg/controller/persistentvolume"
 	"k8s.io/kubernetes/pkg/controller/podautoscaler"
@@ -62,6 +63,7 @@ import (
 	servicecontroller "k8s.io/kubernetes/pkg/controller/service"
 	serviceaccountcontroller "k8s.io/kubernetes/pkg/controller/serviceaccount"
 	"k8s.io/kubernetes/pkg/healthz"
+	"k8s.io/kubernetes/pkg/networkprovider"
 	quotainstall "k8s.io/kubernetes/pkg/quota/install"
 	"k8s.io/kubernetes/pkg/serviceaccount"
 	"k8s.io/kubernetes/pkg/util"
@@ -210,6 +212,19 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 		util.NewTokenBucketRateLimiter(s.DeletingPodsQps, s.DeletingPodsBurst),
 		s.NodeMonitorGracePeriod.Duration, s.NodeStartupGracePeriod.Duration, s.NodeMonitorPeriod.Duration, clusterCIDR, s.AllocateNodeCIDRs)
 	nodeController.Run(s.NodeSyncPeriod.Duration)
+
+	ProbeNetworkProviders()
+	networkProvider, err := networkprovider.InitNetworkProvider(s.NetworkProvider)
+	if err != nil {
+		glog.Errorf("Network provider could not be initialized: %v", err)
+	}
+
+	if networkProvider != nil {
+		networkController := networkcontroller.NewNetworkController(kubeClient, networkProvider)
+		go networkController.Run(util.NeverStop)
+	} else {
+		glog.Errorf("NetController should not be run without a networkprovider.")
+	}
 
 	serviceController := servicecontroller.New(cloud, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "service-controller")), s.ClusterName)
 	if err := serviceController.Run(s.ServiceSyncPeriod.Duration, s.NodeSyncPeriod.Duration); err != nil {

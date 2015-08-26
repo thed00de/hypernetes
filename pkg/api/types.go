@@ -1451,6 +1451,10 @@ const (
 	// external load balancer (if the cloud provider supports it), in addition
 	// to 'NodePort' type.
 	ServiceTypeLoadBalancer ServiceType = "LoadBalancer"
+
+	// ServiceTypeNetworkProvider means a service and its clusterIP will be created
+	// by networkprovider,
+	ServiceTypeNetworkProvider ServiceType = "NetworkProvider"
 )
 
 // ServiceStatus represents the current status of a service
@@ -1831,7 +1835,7 @@ type NamespaceSpec struct {
 	Finalizers []FinalizerName
 
 	// Network descibes a network segment
-	Network Network
+	Network string `json:"network,omitempty"`
 }
 
 type FinalizerName string
@@ -1853,6 +1857,8 @@ type NamespacePhase string
 const (
 	// NamespaceActive means the namespace is available for use in the system
 	NamespaceActive NamespacePhase = "Active"
+	// NamespaceFailed means the namespace is not available since provider network is not found
+	NamespaceFailed NamespacePhase = "Failed"
 	// NamespaceTerminating means the namespace is undergoing graceful termination
 	NamespaceTerminating NamespacePhase = "Terminating"
 )
@@ -1905,7 +1911,9 @@ const (
 
 // Subnet is a description of a subnet
 type Subnet struct {
-	CIDR    string `json:"cidr"`
+	// CIDR of this subnet
+	CIDR string `json:"cidr"`
+	// Gateway of this subnet
 	Gateway string `json:"gateway"`
 }
 
@@ -1913,11 +1921,14 @@ type Subnet struct {
 type NetworkSpec struct {
 	// There must be at least one subnet in a network
 	// Subnets and ProviderNetworkID must not be provided together
-	Subnets []Subnet `json:"subnets"`
+	Subnets map[string]Subnet `json:"subnets,omitempty"`
 
 	// Network's ID of provider network
 	// ProviderNetworkID and Subnets must not be provided together
-	ProviderNetworkID string `json:"providerNetworkID"`
+	ProviderNetworkID string `json:"providerNetworkID,omitempty"`
+
+	// TenantID is the tenant ID of network provider
+	TenantID string `json:"tenantID"`
 }
 
 // Network describes a network
@@ -1937,6 +1948,7 @@ type NetworkList struct {
 	unversioned.TypeMeta `json:",inline"`
 	unversioned.ListMeta `json:"metadata,omitempty"`
 
+	// Items is the list of Network objects in the list
 	Items []Network `json:"items"`
 }
 

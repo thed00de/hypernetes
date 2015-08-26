@@ -17,8 +17,6 @@ limitations under the License.
 package etcd
 
 import (
-	"path"
-
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/labels"
@@ -40,11 +38,6 @@ type StatusREST struct {
 	store *etcdgeneric.Etcd
 }
 
-// FinalizeREST implements the REST endpoint for finalizing a network.
-type FinalizeREST struct {
-	store *etcdgeneric.Etcd
-}
-
 // NewREST returns a RESTStorage object that will work against networks.
 func NewREST(s storage.Interface, storageDecorator generic.StorageDecorator) (*REST, *StatusREST) {
 	prefix := "/networks"
@@ -60,7 +53,7 @@ func NewREST(s storage.Interface, storageDecorator generic.StorageDecorator) (*R
 			return prefix
 		},
 		KeyFunc: func(ctx api.Context, name string) (string, error) {
-			return path.Join(prefix, name), nil
+			return prefix + "/" + name, nil
 		},
 		ObjectNameFunc: func(obj runtime.Object) (string, error) {
 			return obj.(*api.Network).Name, nil
@@ -85,21 +78,6 @@ func NewREST(s storage.Interface, storageDecorator generic.StorageDecorator) (*R
 
 // Delete enforces life-cycle rules for network termination
 func (r *REST) Delete(ctx api.Context, name string, options *api.DeleteOptions) (runtime.Object, error) {
-	//nsObj, err := r.Get(ctx, name)
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	//network := nsObj.(*api.Network)
-	// upon first request to delete, we switch the phase to start network termination
-	//if network.DeletionTimestamp.IsZero() {
-	//	now := util.Now()
-	//	network.DeletionTimestamp = &now
-	//	network.Status.Phase = api.NetworkTerminating
-	//	result, _, err := r.status.Update(ctx, network)
-	//	return result, err
-	//}
-
 	return r.Etcd.Delete(ctx, name, nil)
 }
 

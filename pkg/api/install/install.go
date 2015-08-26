@@ -76,6 +76,7 @@ func init() {
 		"Node",
 		"Minion",
 		"Namespace",
+		"Network",
 		"PersistentVolume",
 	)
 

@@ -100,6 +100,7 @@ func newRESTMapper(externalVersions []unversioned.GroupVersion) meta.RESTMapper 
 	rootScoped := sets.NewString(
 		"Node",
 		"Namespace",
+		"Network",
 		"PersistentVolume",
 		"ComponentStatus",
 	)

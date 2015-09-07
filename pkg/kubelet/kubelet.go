@@ -434,6 +434,7 @@ func NewMainKubelet(
 		hyperRuntime, err := hyper.New(
 			klet,
 			recorder,
+			klet.networkPlugin,
 			containerRefManager,
 			readinessManager,
 			klet.volumeManager)

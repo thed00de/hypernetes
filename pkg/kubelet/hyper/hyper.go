@@ -22,8 +22,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -33,6 +36,7 @@ import (
 	"k8s.io/kubernetes/pkg/client/unversioned/record"
 	"k8s.io/kubernetes/pkg/credentialprovider"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
+	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/kubelet/prober"
 	"k8s.io/kubernetes/pkg/probe"
 	"k8s.io/kubernetes/pkg/types"
@@ -46,6 +50,7 @@ const (
 	hyperBaseMemory          = 64
 	hyperDefaultContainerCPU = 1
 	hyperDefaultContainerMem = 128
+	hyperPodSpecDir          = "/var/lib/kubelet/hyper"
 )
 
 // runtime implements the container runtime for hyper
@@ -56,6 +61,7 @@ type runtime struct {
 	generator           kubecontainer.RunContainerOptionsGenerator
 	recorder            record.EventRecorder
 	prober              prober.Prober
+	networkPlugin       network.NetworkPlugin
 	readinessManager    *kubecontainer.ReadinessManager
 	volumeGetter        volumeGetter
 	hyperClient         *HyperClient
@@ -71,6 +77,7 @@ type volumeGetter interface {
 // New creates the hyper container runtime which implements the container runtime interface.
 func New(generator kubecontainer.RunContainerOptionsGenerator,
 	recorder record.EventRecorder,
+	networkPlugin network.NetworkPlugin,
 	containerRefManager *kubecontainer.RefManager,
 	readinessManager *kubecontainer.ReadinessManager,
 	volumeGetter volumeGetter) (kubecontainer.Runtime, error) {
@@ -88,6 +95,7 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 		containerRefManager: containerRefManager,
 		generator:           generator,
 		recorder:            recorder,
+		networkPlugin:       networkPlugin,
 		readinessManager:    readinessManager,
 		volumeGetter:        volumeGetter,
 		hyperClient:         NewHyperClient(),
@@ -425,6 +433,41 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 	return podData, nil
 }
 
+func (r *runtime) savePodSpec(spec, podFullName string) error {
+	// ensure hyperPodSpecDir is created
+	_, err := os.Stat(hyperPodSpecDir)
+	if err != nil && os.IsNotExist(err) {
+		e := os.MkdirAll(hyperPodSpecDir, 0755)
+		if e != nil {
+			return e
+		}
+	}
+
+	// save spec to file
+	specFileName := path.Join(hyperPodSpecDir, podFullName)
+	err = ioutil.WriteFile(specFileName, []byte(spec), 0664)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *runtime) getPodSpec(podFullName string) (string, error) {
+	specFileName := path.Join(hyperPodSpecDir, podFullName)
+	_, err := os.Stat(specFileName)
+	if err != nil {
+		return "", err
+	}
+
+	spec, err := ioutil.ReadFile(specFileName)
+	if err != nil {
+		return "", err
+	}
+
+	return string(spec), nil
+}
+
 func (r *runtime) RunPod(pod *api.Pod, pullSecrets []api.Secret) error {
 	podData, err := r.buildHyperPod(pod, pullSecrets)
 	if err != nil {
@@ -432,8 +475,27 @@ func (r *runtime) RunPod(pod *api.Pod, pullSecrets []api.Secret) error {
 		return err
 	}
 
-	// TODO: process networks and volumes
-	result, err := r.hyperClient.CreatePod(string(podData))
+	podFullName := r.buildHyperPodFullName(string(pod.UID), string(pod.Name), string(pod.Namespace))
+	err = r.savePodSpec(string(podData), podFullName)
+	if err != nil {
+		glog.Errorf("Hyper: savePodSpec failed, error: %s", err)
+		return err
+	}
+
+	// Setup pod's network by network plugin
+	err = r.networkPlugin.SetUpPod(pod.Namespace, podFullName, "", "hyper")
+	if err != nil {
+		glog.Errorf("Hyper: networkPlugin.SetUpPod %s failed, error: %s", pod.Name, err)
+		return err
+	}
+
+	// Create and start hyper pod
+	podSpec, err := r.getPodSpec(podFullName)
+	if err != nil {
+		glog.Errorf("Hyper: create pod %s failed, error: %s", podFullName, err)
+		return err
+	}
+	result, err := r.hyperClient.CreatePod(podSpec)
 	if err != nil {
 		glog.Errorf("Hyper: create pod %s failed, error: %s", podData, err)
 		return err
@@ -547,6 +609,24 @@ func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 	if err != nil {
 		glog.Errorf("Hyper: remove pod %s failed, error: %s", podID, err)
 		return err
+	}
+
+	// Teardown pod's network
+	podFullName := r.buildHyperPodFullName(string(pod.UID), string(pod.Name), string(pod.Namespace))
+	err = r.networkPlugin.TearDownPod(runningPod.Namespace, podFullName, "", "hyper")
+	if err != nil {
+		glog.Errorf("Hyper: networkPlugin.TearDownPod failed, error: %v", err)
+		return err
+	}
+
+	// Delete pod spec file
+	specFileName := path.Join(hyperPodSpecDir, podFullName)
+	_, err = os.Stat(specFileName)
+	if err == nil {
+		e := os.Remove(specFileName)
+		if e != nil {
+			glog.Errorf("Hyper: delete spec file for %s failed, error: %v", pod.Name, e)
+		}
 	}
 
 	return nil

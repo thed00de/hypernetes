@@ -802,6 +802,8 @@ func getServiceExternalIP(svc *api.Service) string {
 			return strings.Join(svc.Spec.ExternalIPs, ",")
 		}
 		return "nodes"
+	case api.ServiceTypeNetworkProvider:
+		fallthrough
 	case api.ServiceTypeLoadBalancer:
 		lbIps := loadBalancerStatusStringer(svc.Status.LoadBalancer)
 		if len(svc.Spec.ExternalIPs) > 0 {

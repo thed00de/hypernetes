@@ -1460,8 +1460,8 @@ const (
 	// to 'NodePort' type.
 	ServiceTypeLoadBalancer ServiceType = "LoadBalancer"
 
-	// ServiceTypeNetworkProvider means a service and its clusterIP will be created
-	// by networkprovider,
+	// ServiceTypeNetworkProvider means a service's external load-balancer will be
+	// created by networkprovider.
 	ServiceTypeNetworkProvider ServiceType = "NetworkProvider"
 )
 

@@ -318,7 +318,7 @@ func syncNamespace(kubeClient client.Interface, versions *unversioned.APIVersion
 	}
 
 	// if the namespace is already finalized, delete it
-	if finalized(*namespace) {
+	if finalized(namespace) {
 		err = kubeClient.Namespaces().Delete(namespace.Name)
 		if err != nil && !errors.IsNotFound(err) {
 			return err

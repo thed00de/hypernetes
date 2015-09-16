@@ -394,7 +394,7 @@ func (s *KubeletServer) KubeletConfig() (*KubeletConfig, error) {
 		MaxPods:                   s.MaxPods,
 		MinimumGCAge:              s.MinimumGCAge,
 		Mounter:                   mounter,
-		NetworkPluginName:         s.NetworkPluginName,
+		NetworkPluginName:         networkPluginName,
 		NetworkPlugins:            ProbeNetworkPlugins(s.NetworkPluginDir),
 		NodeStatusUpdateFrequency: s.NodeStatusUpdateFrequency,
 		OOMAdjuster:               oom.NewOOMAdjuster(),

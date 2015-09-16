@@ -395,7 +395,7 @@ func (s *KubeletServer) KubeletConfig() (*KubeletConfig, error) {
 		MinimumGCAge:              s.MinimumGCAge,
 		Mounter:                   mounter,
 		NetworkPluginName:         networkPluginName,
-		NetworkPlugins:            ProbeNetworkPlugins(s.NetworkPluginDir),
+		NetworkPlugins:            networkPlugins,
 		NodeStatusUpdateFrequency: s.NodeStatusUpdateFrequency,
 		OOMAdjuster:               oom.NewOOMAdjuster(),
 		OSInterface:               kubecontainer.RealOS{},

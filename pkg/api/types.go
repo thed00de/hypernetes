@@ -1172,13 +1172,13 @@ const (
 	// every node, in addition to 'ClusterIP' type.
 	ServiceTypeNodePort ServiceType = "NodePort"
 
-  // ServiceTypeLoadBalancer means a service will be exposed via an
-  // external load balancer (if the cloud provider supports it), in addition
-  // to 'NodePort' type.
+	// ServiceTypeLoadBalancer means a service will be exposed via an
+	// external load balancer (if the cloud provider supports it), in addition
+	// to 'NodePort' type.
 	ServiceTypeLoadBalancer ServiceType = "LoadBalancer"
 
-  // ServiceTypeNetworkProvider means a service's external load-balancer will be
-  // created by networkprovider.
+	// ServiceTypeNetworkProvider means a service's external load-balancer will be
+	// created by networkprovider.
 	ServiceTypeNetworkProvider ServiceType = "NetworkProvider"
 )
 

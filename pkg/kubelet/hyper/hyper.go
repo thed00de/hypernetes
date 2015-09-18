@@ -265,8 +265,8 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 
 		podID, podName, podNamespace, err := r.parseHyperPodFullName(podInfo.podName)
 		if err != nil {
-			glog.Errorf("Hyper: can't parse pod name %s", podInfo.podName)
-			return nil, err
+			glog.Errorf("Hyper: pod %s is not managed by kubelet", podInfo.podName)
+			continue
 		}
 
 		pod.ID = types.UID(podID)

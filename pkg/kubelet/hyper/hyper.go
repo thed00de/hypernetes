@@ -361,6 +361,11 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 			return nil, err
 		}
 
+		// dns
+		if len(opts.DNS) > 0 {
+			c[KEY_DNS] = opts.DNS
+		}
+
 		// envs
 		envs := make([]map[string]string, 0, 1)
 		for _, e := range opts.Envs {

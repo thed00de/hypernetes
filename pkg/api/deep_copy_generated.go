@@ -1317,7 +1317,7 @@ func DeepCopy_api_NamespaceStatus(in NamespaceStatus, out *NamespaceStatus, c *c
 }
 
 func deepCopy_api_Network(in Network, out *Network, c *conversion.Cloner) error {
-	if err := deepCopy_api_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
+	if err := deepCopy_unversioned_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
 		return err
 	}
 	if err := deepCopy_api_ObjectMeta(in.ObjectMeta, &out.ObjectMeta, c); err != nil {
@@ -1333,10 +1333,10 @@ func deepCopy_api_Network(in Network, out *Network, c *conversion.Cloner) error 
 }
 
 func deepCopy_api_NetworkList(in NetworkList, out *NetworkList, c *conversion.Cloner) error {
-	if err := deepCopy_api_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
+	if err := deepCopy_unversioned_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
 		return err
 	}
-	if err := deepCopy_api_ListMeta(in.ListMeta, &out.ListMeta, c); err != nil {
+	if err := deepCopy_unversioned_ListMeta(in.ListMeta, &out.ListMeta, c); err != nil {
 		return err
 	}
 	if in.Items != nil {

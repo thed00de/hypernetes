@@ -33,6 +33,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/credentialprovider"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
@@ -177,7 +178,7 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID s
 
 		status.State = api.ContainerState{
 			Running: &api.ContainerStateRunning{
-				StartedAt: util.Time{runningStartedAt},
+				StartedAt: unversioned.NewTime(runningStartedAt),
 			},
 		}
 	case StatusPending:
@@ -204,8 +205,8 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID s
 				ExitCode:   container.Terminated.ExitCode,
 				Reason:     container.Terminated.Reason,
 				Message:    container.Terminated.Message,
-				StartedAt:  util.Time{terminatedStartedAt},
-				FinishedAt: util.Time{terminatedFinishedAt},
+				StartedAt:  unversioned.NewTime(terminatedStartedAt),
+				FinishedAt: unversioned.NewTime(terminatedFinishedAt),
 			},
 		}
 	default:
@@ -370,7 +371,7 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 		envs := make([]map[string]string, 0, 1)
 		for _, e := range opts.Envs {
 			envs = append(envs, map[string]string{
-				"env": e.Name,
+				"env":   e.Name,
 				"value": e.Value,
 			})
 		}

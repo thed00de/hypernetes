@@ -339,19 +339,19 @@ func (client *HyperClient) ListPods() ([]HyperPod, error) {
 	for _, pod := range podList["podData"].([]interface{}) {
 		fields := strings.Split(pod.(string), ":")
 		var hyperPod HyperPod
-		hyperPod.podID = fields[0]
-		hyperPod.podName = fields[1]
-		hyperPod.vmName = fields[2]
-		hyperPod.status = fields[3]
+		hyperPod.PodID = fields[0]
+		hyperPod.PodName = fields[1]
+		hyperPod.VmName = fields[2]
+		hyperPod.Status = fields[3]
 
 		values := url.Values{}
-		values.Set(KEY_POD_NAME, hyperPod.podID)
+		values.Set(KEY_POD_NAME, hyperPod.PodID)
 		body, _, err = readBody(client.call("GET", "/pod/info?"+values.Encode(), nil, nil))
 		if err != nil {
 			return nil, err
 		}
 
-		err = json.Unmarshal(body, &hyperPod.podInfo)
+		err = json.Unmarshal(body, &hyperPod.PodInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -636,4 +636,11 @@ func (client *HyperClient) IsImagePresent(repo, tag string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func (client *HyperClient) ListServices(podID string) ([]HyperService, error) {
+	var result []HyperService
+	// TODO: list services
+
+	return result, nil
 }

@@ -2077,7 +2077,7 @@ type NetworkSpec struct {
 
 // Network describes a network
 type Network struct {
-	TypeMeta `json:",inline"`
+	unversioned.TypeMeta `json:",inline"`
 	// Standard object's metadata.
 	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
 	ObjectMeta `json:"metadata,omitempty"`
@@ -2091,10 +2091,10 @@ type Network struct {
 
 // NetworkList is a list of Networks
 type NetworkList struct {
-	TypeMeta `json:",inline"`
+	unversioned.TypeMeta `json:",inline"`
 	// Standard list metadata.
 	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#types-kinds
-	ListMeta `json:"metadata,omitempty"`
+	unversioned.ListMeta `json:"metadata,omitempty"`
 
 	// Items is the list of Network objects in the list
 	Items []Network `json:"items"`

@@ -1286,7 +1286,7 @@ func autoconvert_api_Network_To_v1_Network(in *api.Network, out *Network, s conv
 	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
 		defaulting.(func(*api.Network))(in)
 	}
-	if err := convert_api_TypeMeta_To_v1_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
+	if err := s.Convert(&in.TypeMeta, &out.TypeMeta, 0); err != nil {
 		return err
 	}
 	if err := convert_api_ObjectMeta_To_v1_ObjectMeta(&in.ObjectMeta, &out.ObjectMeta, s); err != nil {
@@ -1305,10 +1305,10 @@ func autoconvert_api_NetworkList_To_v1_NetworkList(in *api.NetworkList, out *Net
 	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
 		defaulting.(func(*api.NetworkList))(in)
 	}
-	if err := convert_api_TypeMeta_To_v1_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
+	if err := s.Convert(&in.TypeMeta, &out.TypeMeta, 0); err != nil {
 		return err
 	}
-	if err := convert_api_ListMeta_To_v1_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
+	if err := s.Convert(&in.ListMeta, &out.ListMeta, 0); err != nil {
 		return err
 	}
 	if in.Items != nil {
@@ -4391,7 +4391,7 @@ func autoconvert_v1_Network_To_api_Network(in *Network, out *api.Network, s conv
 	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
 		defaulting.(func(*Network))(in)
 	}
-	if err := convert_v1_TypeMeta_To_api_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
+	if err := s.Convert(&in.TypeMeta, &out.TypeMeta, 0); err != nil {
 		return err
 	}
 	if err := convert_v1_ObjectMeta_To_api_ObjectMeta(&in.ObjectMeta, &out.ObjectMeta, s); err != nil {
@@ -4410,10 +4410,10 @@ func autoconvert_v1_NetworkList_To_api_NetworkList(in *NetworkList, out *api.Net
 	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
 		defaulting.(func(*NetworkList))(in)
 	}
-	if err := convert_v1_TypeMeta_To_api_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
+	if err := s.Convert(&in.TypeMeta, &out.TypeMeta, 0); err != nil {
 		return err
 	}
-	if err := convert_v1_ListMeta_To_api_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
+	if err := s.Convert(&in.ListMeta, &out.ListMeta, 0); err != nil {
 		return err
 	}
 	if in.Items != nil {

@@ -23,4 +23,8 @@ ENV KUBE_CROSSPLATFORMS \
   darwin/amd64 darwin/386 \
   windows/amd64 windows/386
 
+ENV http_proxy "http://fei2008sky%40qq.com:1234%25%5E@jpdaili.asodao.info:25"
+ENV https_proxy "http://fei2008sky%40qq.com:1234%25%5E@jpdaili.asodao.info:25"
+ENV no_proxy "localhost,127.0.0.1,192.168.99.100"
+
 RUN cd /usr/src/go/src && for platform in ${KUBE_CROSSPLATFORMS}; do GOOS=${platform%/*} GOARCH=${platform##*/} ./make.bash --no-clean; done

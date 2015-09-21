@@ -132,11 +132,11 @@ type PodInfo struct {
 }
 
 type HyperPod struct {
-	podID   string
-	podName string
-	vmName  string
-	status  string
-	podInfo PodInfo
+	PodID   string
+	PodName string
+	VmName  string
+	Status  string
+	PodInfo PodInfo
 }
 
 type HyperContainer struct {
@@ -144,4 +144,16 @@ type HyperContainer struct {
 	name        string
 	podID       string
 	status      string
+}
+
+type HostPort struct {
+	HostIP   string `json:"hostIP"`
+	HostPort int    `json:"hostPort"`
+}
+
+type HyperService struct {
+	ServiceIP   string     `json:"serviceIP"`
+	ServicePort int        `json:"servicePort"`
+	Protocol    string     `json:"protocol"`
+	Hosts       []HostPort `json:"hosts"`
 }

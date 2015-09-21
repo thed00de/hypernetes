@@ -34,6 +34,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/qos"
 	"k8s.io/kubernetes/pkg/proxy"
 	proxyconfig "k8s.io/kubernetes/pkg/proxy/config"
+	"k8s.io/kubernetes/pkg/proxy/haproxy"
 	"k8s.io/kubernetes/pkg/proxy/iptables"
 	"k8s.io/kubernetes/pkg/proxy/userspace"
 	"k8s.io/kubernetes/pkg/types"
@@ -89,8 +90,8 @@ func (s *ProxyServerConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.Kubeconfig, "kubeconfig", s.Kubeconfig, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
 	fs.Var(&s.PortRange, "proxy-port-range", "Range of host ports (beginPort-endPort, inclusive) that may be consumed in order to proxy service traffic. If unspecified (0-0) then ports will be randomly chosen.")
 	fs.StringVar(&s.HostnameOverride, "hostname-override", s.HostnameOverride, "If non-empty, will use this string as identification instead of the actual hostname.")
-	fs.StringVar(&s.ProxyMode, "proxy-mode", "", "Which proxy mode to use: 'userspace' (older, stable) or 'iptables' (experimental). If blank, look at the Node object on the Kubernetes API and respect the '"+experimentalProxyModeAnnotation+"' annotation if provided.  Otherwise use the best-available proxy (currently userspace, but may change in future versions).  If the iptables proxy is selected, regardless of how, but the system's kernel or iptables versions are insufficient, this always falls back to the userspace proxy.")
-	fs.DurationVar(&s.SyncPeriod, "iptables-sync-period", s.SyncPeriod, "How often iptables rules are refreshed (e.g. '5s', '1m', '2h22m').  Must be greater than 0.")
+	fs.StringVar(&s.ProxyMode, "proxy-mode", "", "Which proxy mode to use: 'userspace' (older, stable) , 'iptables' (experimental) or haproxy (for hyper only). If blank, look at the Node object on the Kubernetes API and respect the '"+experimentalProxyModeAnnotation+"' annotation if provided.  Otherwise use the best-available proxy (currently userspace, but may change in future versions).  If the iptables proxy is selected, regardless of how, but the system's kernel or iptables versions are insufficient, this always falls back to the userspace proxy.")
+	fs.DurationVar(&s.SyncPeriod, "iptables-sync-period", 5*time.Second, "How often iptables rules are refreshed (e.g. '5s', '1m', '2h22m').  Must be greater than 0.")
 	fs.BoolVar(&s.MasqueradeAll, "masquerade-all", false, "If using the pure iptables proxy, SNAT everything")
 	fs.BoolVar(&s.CleanupAndExit, "cleanup-iptables", false, "If true cleanup iptables rules and exit.")
 }
@@ -98,12 +99,13 @@ func (s *ProxyServerConfig) AddFlags(fs *pflag.FlagSet) {
 const (
 	proxyModeUserspace              = "userspace"
 	proxyModeIptables               = "iptables"
+	proxyModeHaproxy                = "haproxy"
 	experimentalProxyModeAnnotation = "net.experimental.kubernetes.io/proxy-mode"
 )
 
 func checkKnownProxyMode(proxyMode string) bool {
 	switch proxyMode {
-	case "", proxyModeUserspace, proxyModeIptables:
+	case "", proxyModeUserspace, proxyModeIptables, proxyModeHaproxy:
 		return true
 	}
 	return false
@@ -210,16 +212,20 @@ func NewProxyServerDefault(config *ProxyServerConfig) (*ProxyServer, error) {
 	var endpointsHandler proxyconfig.EndpointsConfigHandler
 
 	useIptablesProxy := false
-	if mayTryIptablesProxy(config.ProxyMode, client.Nodes(), hostname) {
+	if mayTryIptablesProxy(config.ProxyMode, client.Nodes(), hostname) && config.ProxyMode != proxyModeHaproxy {
 		var err error
 		// guaranteed false on error, error only necessary for debugging
 		useIptablesProxy, err = iptables.ShouldUseIptablesProxier()
 		if err != nil {
-			glog.Errorf("Can't determine whether to use iptables proxy, using userspace proxier: %v", err)
+			glog.Fatalf("Can't determine whether to use iptables proxy, using userspace proxier: %v", err)
+			config.ProxyMode = proxyModeUserspace
+		} else {
+			config.ProxyMode = proxyModeIptables
 		}
 	}
 
-	if useIptablesProxy {
+	switch config.ProxyMode {
+	case proxyModeIptables:
 		glog.V(2).Info("Using iptables Proxier.")
 		proxierIptables, err := iptables.NewProxier(iptInterface, execer, config.SyncPeriod, config.MasqueradeAll)
 		if err != nil {
@@ -230,7 +236,15 @@ func NewProxyServerDefault(config *ProxyServerConfig) (*ProxyServer, error) {
 		// No turning back. Remove artifacts that might still exist from the userspace Proxier.
 		glog.V(2).Info("Tearing down userspace rules. Errors here are acceptable.")
 		userspace.CleanupLeftovers(iptInterface)
-	} else {
+	case proxyModeHaproxy:
+		glog.V(2).Info("Using pod-buildin-haproxy proxy.")
+		proxierBuildin, err := haproxy.NewProxier(s.SyncPeriod)
+		if err != nil {
+			glog.Fatalf("Unable to create proxier: %v", err)
+		}
+		proxier = proxierBuildin
+		endpointsHandler = proxierBuildin
+	case proxyModeUserspace:
 		glog.V(2).Info("Using userspace Proxier.")
 		// This is a proxy.LoadBalancer which NewProxier needs but has methods we don't need for
 		// our config.EndpointsConfigHandler.
@@ -246,6 +260,8 @@ func NewProxyServerDefault(config *ProxyServerConfig) (*ProxyServer, error) {
 		// Remove artifacts from the pure-iptables Proxier.
 		glog.V(2).Info("Tearing down pure-iptables proxy rules. Errors here are acceptable.")
 		iptables.CleanupLeftovers(iptInterface)
+	default:
+		glog.Fatalf("Proxy type %s is not supported", s.ProxyType)
 	}
 	iptInterface.AddReloadFunc(proxier.Sync)
 

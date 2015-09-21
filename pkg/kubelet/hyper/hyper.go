@@ -257,16 +257,16 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 
 	var kubepods []*kubecontainer.Pod
 	for _, podInfo := range podInfos {
-		if !all && podInfo.status != "running" {
+		if !all && podInfo.Status != "running" {
 			continue
 		}
 
 		var pod kubecontainer.Pod
 		var containers []*kubecontainer.Container
 
-		podID, podName, podNamespace, err := r.parseHyperPodFullName(podInfo.podName)
+		podID, podName, podNamespace, err := r.parseHyperPodFullName(podInfo.PodName)
 		if err != nil {
-			glog.Errorf("Hyper: pod %s is not managed by kubelet", podInfo.podName)
+			glog.Errorf("Hyper: pod %s is not managed by kubelet", podInfo.PodName)
 			continue
 		}
 
@@ -274,12 +274,12 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 		pod.Name = podName
 		pod.Namespace = podNamespace
 
-		for _, cinfo := range podInfo.podInfo.Spec.Containers {
+		for _, cinfo := range podInfo.PodInfo.Spec.Containers {
 			var container kubecontainer.Container
 			container.ID = types.UID(cinfo.ContainerID)
 			container.Image = cinfo.Image
 
-			for _, cstatus := range podInfo.podInfo.Status.Status {
+			for _, cstatus := range podInfo.PodInfo.Status.Status {
 				if cstatus.ContainerID == cinfo.ContainerID {
 					createAt, err := parseTimeString(cstatus.Running.StartedAt)
 					if err == nil {
@@ -613,8 +613,8 @@ func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 	}
 
 	for _, podInfo := range podInfos {
-		if podInfo.podName == podName {
-			podID = podInfo.podID
+		if podInfo.PodName == podName {
+			podID = podInfo.PodID
 			break
 		}
 	}
@@ -661,20 +661,20 @@ func (r *runtime) GetPodStatus(pod *api.Pod) (*api.PodStatus, error) {
 	var status api.PodStatus
 	podFullName := r.buildHyperPodFullName(string(pod.UID), string(pod.Name), string(pod.Namespace))
 	for _, podInfo := range podInfos {
-		if podInfo.podName != podFullName {
+		if podInfo.PodName != podFullName {
 			continue
 		}
 
-		if len(podInfo.podInfo.Status.PodIP) > 0 {
-			status.PodIP = podInfo.podInfo.Status.PodIP[0]
+		if len(podInfo.PodInfo.Status.PodIP) > 0 {
+			status.PodIP = podInfo.PodInfo.Status.PodIP[0]
 		}
 
-		status.HostIP = podInfo.podInfo.Status.HostIP
-		status.Phase = api.PodPhase(podInfo.podInfo.Status.Phase)
-		status.Message = podInfo.podInfo.Status.Message
-		status.Reason = podInfo.podInfo.Status.Reason
-		for _, containerInfo := range podInfo.podInfo.Status.Status {
-			for _, container := range podInfo.podInfo.Spec.Containers {
+		status.HostIP = podInfo.PodInfo.Status.HostIP
+		status.Phase = api.PodPhase(podInfo.PodInfo.Status.Phase)
+		status.Message = podInfo.PodInfo.Status.Message
+		status.Reason = podInfo.PodInfo.Status.Reason
+		for _, containerInfo := range podInfo.PodInfo.Status.Status {
+			for _, container := range podInfo.PodInfo.Spec.Containers {
 				if container.ContainerID == containerInfo.ContainerID {
 					status.ContainerStatuses = append(
 						status.ContainerStatuses,

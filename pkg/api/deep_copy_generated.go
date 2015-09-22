@@ -1317,10 +1317,10 @@ func DeepCopy_api_NamespaceStatus(in NamespaceStatus, out *NamespaceStatus, c *c
 }
 
 func deepCopy_api_Network(in Network, out *Network, c *conversion.Cloner) error {
-	if err := deepCopy_unversioned_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
+	if err := DeepCopy_unversioned_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
 		return err
 	}
-	if err := deepCopy_api_ObjectMeta(in.ObjectMeta, &out.ObjectMeta, c); err != nil {
+	if err := DeepCopy_api_ObjectMeta(in.ObjectMeta, &out.ObjectMeta, c); err != nil {
 		return err
 	}
 	if err := deepCopy_api_NetworkSpec(in.Spec, &out.Spec, c); err != nil {
@@ -1333,10 +1333,10 @@ func deepCopy_api_Network(in Network, out *Network, c *conversion.Cloner) error 
 }
 
 func deepCopy_api_NetworkList(in NetworkList, out *NetworkList, c *conversion.Cloner) error {
-	if err := deepCopy_unversioned_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
+	if err := DeepCopy_unversioned_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
 		return err
 	}
-	if err := deepCopy_unversioned_ListMeta(in.ListMeta, &out.ListMeta, c); err != nil {
+	if err := DeepCopy_unversioned_ListMeta(in.ListMeta, &out.ListMeta, c); err != nil {
 		return err
 	}
 	if in.Items != nil {
@@ -1838,11 +1838,8 @@ func DeepCopy_api_PersistentVolumeSource(in PersistentVolumeSource, out *Persist
 		out.AWSElasticBlockStore = nil
 	}
 	if in.HostPath != nil {
-		in, out := in.HostPath, &out.HostPath
+		_, out := in.HostPath, &out.HostPath
 		*out = new(HostPathVolumeSource)
-		if err := DeepCopy_api_HostPathVolumeSource(*in, *out, c); err != nil {
-			return err
-		}
 	} else {
 		out.HostPath = nil
 	}

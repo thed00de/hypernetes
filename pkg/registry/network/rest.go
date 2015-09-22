@@ -25,7 +25,7 @@ import (
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/util/fielderrors"
+	"k8s.io/kubernetes/pkg/util/validation/field"
 )
 
 // networkStrategy implements behavior for Networks
@@ -64,7 +64,7 @@ func (networkStrategy) PrepareForUpdate(obj, old runtime.Object) {
 }
 
 // Validate validates a new network.
-func (networkStrategy) Validate(ctx api.Context, obj runtime.Object) fielderrors.ValidationErrorList {
+func (networkStrategy) Validate(ctx api.Context, obj runtime.Object) field.ErrorList {
 	network := obj.(*api.Network)
 	return validation.ValidateNetwork(network)
 }
@@ -75,7 +75,7 @@ func (networkStrategy) AllowCreateOnUpdate() bool {
 }
 
 // ValidateUpdate is the default update validation for an end user.
-func (networkStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) fielderrors.ValidationErrorList {
+func (networkStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) field.ErrorList {
 	errorList := validation.ValidateNetwork(obj.(*api.Network))
 	return append(errorList, validation.ValidateNetworkUpdate(obj.(*api.Network), old.(*api.Network))...)
 }
@@ -96,7 +96,7 @@ func (networkStatusStrategy) PrepareForUpdate(obj, old runtime.Object) {
 	newNetwork.Spec = oldNetwork.Spec
 }
 
-func (networkStatusStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) fielderrors.ValidationErrorList {
+func (networkStatusStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) field.ErrorList {
 	return validation.ValidateNetworkStatusUpdate(obj.(*api.Network), old.(*api.Network))
 }
 

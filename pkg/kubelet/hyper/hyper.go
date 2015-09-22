@@ -437,7 +437,6 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 	glog.V(5).Infof("Hyper: pod limit vcpu=%v mem=%vMiB", podResource[KEY_VCPU], podResource[KEY_MEMORY])
 
 	// other params required
-	specMap[KEY_TYPE] = TYPE_POD
 	specMap[KEY_ID] = r.buildHyperPodFullName(string(pod.UID), string(pod.Name), string(pod.Namespace))
 	specMap[KEY_TTY] = true
 

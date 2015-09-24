@@ -35,10 +35,12 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/client/record"
+	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/credentialprovider"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/kubelet/prober"
+	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/probe"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util"
@@ -66,6 +68,7 @@ type runtime struct {
 	readinessManager    *kubecontainer.ReadinessManager
 	volumeGetter        volumeGetter
 	hyperClient         *HyperClient
+	kubeClient          client.Interface
 	imagePuller         kubecontainer.ImagePuller
 }
 
@@ -81,7 +84,8 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 	networkPlugin network.NetworkPlugin,
 	containerRefManager *kubecontainer.RefManager,
 	readinessManager *kubecontainer.ReadinessManager,
-	volumeGetter volumeGetter) (kubecontainer.Runtime, error) {
+	volumeGetter volumeGetter,
+	kubeClient client.Interface) (kubecontainer.Runtime, error) {
 
 	// check hyper has already installed
 	hyperBinAbsPath, err := exec.LookPath(hyperBinName)
@@ -100,6 +104,7 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 		readinessManager:    readinessManager,
 		volumeGetter:        volumeGetter,
 		hyperClient:         NewHyperClient(),
+		kubeClient:          kubeClient,
 	}
 	hyper.prober = prober.New(hyper, readinessManager, containerRefManager, recorder)
 	hyper.imagePuller = kubecontainer.NewImagePuller(recorder, hyper)
@@ -309,6 +314,40 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 	return kubepods, nil
 }
 
+func (r *runtime) buildHyperPodServices(pod *api.Pod) []HyperService {
+	items, err := r.kubeClient.Services(pod.Namespace).List(labels.Everything())
+	if err != nil {
+		glog.Warningf("Get services failed: %v", err)
+		return nil
+	}
+
+	var services []HyperService
+	for _, svc := range items.Items {
+		hyperService := HyperService{
+			ServiceIP: svc.Spec.ClusterIP,
+		}
+		endpoints, _ := r.kubeClient.Endpoints(pod.Namespace).Get(svc.Name)
+		for _, svcPort := range svc.Spec.Ports {
+			hyperService.ServicePort = svcPort.Port
+			for _, ep := range endpoints.Subsets {
+				for _, epPort := range ep.Ports {
+					if svcPort.Name == "" || svcPort.Name == epPort.Name {
+						for _, eh := range ep.Addresses {
+							hyperService.Hosts = append(hyperService.Hosts, HyperServiceBackend{
+								HostIP:   eh.IP,
+								HostPort: epPort.Port,
+							})
+						}
+					}
+				}
+			}
+			services = append(services, hyperService)
+		}
+	}
+
+	return services
+}
+
 func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte, error) {
 	// check and pull image
 	for _, c := range pod.Spec.Containers {
@@ -334,6 +373,18 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 		volumes = append(volumes, v)
 	}
 	specMap[KEY_VOLUMES] = volumes
+
+	services := r.buildHyperPodServices(pod)
+	if services == nil {
+		// Just for fake
+		services = []HyperService{
+			{
+				ServiceIP:   "127.0.0.2",
+				ServicePort: 65534,
+			},
+		}
+	}
+	specMap["services"] = services
 
 	// build hyper containers spec
 	var containers []map[string]interface{}

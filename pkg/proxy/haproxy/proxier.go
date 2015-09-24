@@ -353,15 +353,6 @@ func (proxier *Proxier) syncProxyRules() {
 			continue
 		}
 
-		// Get hyper services
-		hyperServices, err := proxier.hyperClient.ListServices(podInfo.PodID)
-		if err != nil {
-			glog.Warningf("Can not get hyper service for pod %s: %v", podInfo.PodName, err)
-			continue
-		}
-
-		glog.V(4).Infof("Hyper services of pod %s is %v", podInfo.PodName, hyperServices)
-
 		// Build rules in same namespace
 		consumedServices := make([]hyper.HyperService, 0, 1)
 		for _, svcInfo := range proxier.serviceMap {
@@ -391,7 +382,7 @@ func (proxier *Proxier) syncProxyRules() {
 		glog.V(4).Infof("Services of pod %s should consumed: %v", podInfo.PodName, consumedServices)
 
 		// update existing services
-		err = proxier.hyperClient.UpdateServices(podInfo.PodID, hyperServices)
+		err = proxier.hyperClient.UpdateServices(podInfo.PodID, consumedServices)
 		if err != nil {
 			glog.Warningf("Updating service for hyper pod %s failed: %v", podInfo.PodName, err)
 		}

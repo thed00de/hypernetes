@@ -362,7 +362,9 @@ func NewMainKubelet(
 			klet.networkPlugin,
 			containerRefManager,
 			readinessManager,
-			klet.volumeManager)
+			klet.volumeManager,
+			klet.kubeClient,
+		)
 		if err != nil {
 			return nil, err
 		}

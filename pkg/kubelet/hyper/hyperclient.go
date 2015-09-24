@@ -638,9 +638,40 @@ func (client *HyperClient) IsImagePresent(repo, tag string) (bool, error) {
 	return false, nil
 }
 
-func (client *HyperClient) ListServices(podID string) ([]HyperService, error) {
-	var result []HyperService
-	// TODO: list services
+func (client *HyperClient) ListServices(podId string) ([]HyperService, error) {
+	v := url.Values{}
+	v.Set("podId", podId)
+	body, _, err := readBody(client.call("GET", "/service/list?"+v.Encode(), nil, nil))
+	if err != nil {
+		if strings.Contains(err.Error(), "doesn't have services discovery") {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
 
-	return result, nil
+	var svcList []HyperService
+	err = json.Unmarshal(body, &svcList)
+	if err != nil {
+		return nil, err
+	}
+
+	return svcList, nil
+}
+
+func (client *HyperClient) UpdateServices(podId string, services []HyperService) error {
+	v := url.Values{}
+	v.Set("podId", podId)
+
+	serviceData, err := json.Marshal(services)
+	if err != nil {
+		return err
+	}
+	v.Set("services", string(serviceData))
+	_, _, err = readBody(client.call("POST", "/service/update?"+v.Encode(), nil, nil))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

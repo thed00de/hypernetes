@@ -375,11 +375,11 @@ func (proxier *Proxier) syncProxyRules() {
 				Protocol:    strings.ToLower(string(svcInfo.protocol)),
 			}
 
-			hosts := make([]hyper.HostPort, 0, 1)
+			hosts := make([]hyper.HyperServiceBackend, 0, 1)
 			for _, ep := range svcInfo.endpoints {
 				hostport := strings.Split(ep, ":")
 				port, _ := strconv.ParseInt(hostport[1], 10, 0)
-				hosts = append(hosts, hyper.HostPort{
+				hosts = append(hosts, hyper.HyperServiceBackend{
 					HostIP:   hostport[0],
 					HostPort: int(port),
 				})
@@ -390,10 +390,10 @@ func (proxier *Proxier) syncProxyRules() {
 		}
 		glog.V(4).Infof("Services of pod %s should consumed: %v", podInfo.PodName, consumedServices)
 
-		// TODO: diff services
-
-		// TODO: update existing services
-
-		// TODO: delete services no longer exist
+		// update existing services
+		err = proxier.hyperClient.UpdateServices(podInfo.PodID, hyperServices)
+		if err != nil {
+			glog.Warningf("Updating service for hyper pod %s failed: %v", podInfo.PodName, err)
+		}
 	}
 }

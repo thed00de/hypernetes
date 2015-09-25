@@ -211,16 +211,23 @@ func NewProxyServerDefault(config *ProxyServerConfig) (*ProxyServer, error) {
 	var proxier proxy.ProxyProvider
 	var endpointsHandler proxyconfig.EndpointsConfigHandler
 
-	useIptablesProxy := false
-	if mayTryIptablesProxy(config.ProxyMode, client.Nodes(), hostname) && config.ProxyMode != proxyModeHaproxy {
-		var err error
-		// guaranteed false on error, error only necessary for debugging
-		useIptablesProxy, err = iptables.ShouldUseIptablesProxier()
-		if err != nil {
-			glog.Fatalf("Can't determine whether to use iptables proxy, using userspace proxier: %v", err)
-			config.ProxyMode = proxyModeUserspace
-		} else {
+	if s.ProxyMode != proxyModeHaproxy {
+		useIptablesProxy := false
+		if mayTryIptablesProxy(config.ProxyMode, client.Nodes(), hostname) && config.ProxyMode != proxyModeHaproxy {
+			var err error
+
+			// guaranteed false on error, error only necessary for debugging
+			useIptablesProxy, err = iptables.ShouldUseIptablesProxier()
+			if err != nil {
+				glog.Fatalf("Can't determine whether to use iptables proxy, using userspace proxier: %v", err)
+				config.ProxyMode = proxyModeUserspace
+			}
+		}
+
+		if useIptablesProxy {
 			config.ProxyMode = proxyModeIptables
+		} else {
+			config.ProxyMode = proxyModeUserspace
 		}
 	}
 
@@ -261,7 +268,7 @@ func NewProxyServerDefault(config *ProxyServerConfig) (*ProxyServer, error) {
 		glog.V(2).Info("Tearing down pure-iptables proxy rules. Errors here are acceptable.")
 		iptables.CleanupLeftovers(iptInterface)
 	default:
-		glog.Fatalf("Proxy type %s is not supported", s.ProxyType)
+		glog.Fatalf("Proxy type %s is not supported", s.ProxyMode)
 	}
 	iptInterface.AddReloadFunc(proxier.Sync)
 

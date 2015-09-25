@@ -820,7 +820,7 @@ func (r *runtime) RemoveImage(image kubecontainer.ImageSpec) error {
 // default, it returns a snapshot of the container log. Set 'follow' to true to
 // stream the log. Set 'follow' to false and specify the number of lines (e.g.
 // "100" or "all") to tail the log.
-func (r *runtime) GetContainerLogs(pod *api.Pod, containerID string, tail string, follow bool, stdout, stderr io.Writer) error {
+func (r *runtime) GetContainerLogs(pod *api.Pod, containerID string, logOptions *api.PodLogOptions, stdout, stderr io.Writer) error {
 	// TODO: get container logs for hyper
 	return fmt.Errorf("Hyper: GetContainerLogs unimplemented")
 }

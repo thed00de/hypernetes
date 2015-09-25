@@ -247,7 +247,7 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 		glog.V(0).Info("Tearing down pure-iptables proxy rules.")
 		iptables.CleanupLeftovers(iptInterface)
 	default:
-		glog.Fatalf("Proxy type %s is not supported", s.ProxyType)
+		glog.Fatalf("Proxy type %s is not supported", s.ProxyMode)
 	}
 	iptInterface.AddReloadFunc(proxier.Sync)
 

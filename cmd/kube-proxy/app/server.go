@@ -211,7 +211,7 @@ func NewProxyServerDefault(config *ProxyServerConfig) (*ProxyServer, error) {
 	var proxier proxy.ProxyProvider
 	var endpointsHandler proxyconfig.EndpointsConfigHandler
 
-	if s.ProxyMode != proxyModeHaproxy {
+	if config.ProxyMode != proxyModeHaproxy {
 		useIptablesProxy := false
 		if mayTryIptablesProxy(config.ProxyMode, client.Nodes(), hostname) && config.ProxyMode != proxyModeHaproxy {
 			var err error
@@ -245,7 +245,7 @@ func NewProxyServerDefault(config *ProxyServerConfig) (*ProxyServer, error) {
 		userspace.CleanupLeftovers(iptInterface)
 	case proxyModeHaproxy:
 		glog.V(2).Info("Using pod-buildin-haproxy proxy.")
-		proxierBuildin, err := haproxy.NewProxier(s.SyncPeriod)
+		proxierBuildin, err := haproxy.NewProxier(config.SyncPeriod)
 		if err != nil {
 			glog.Fatalf("Unable to create proxier: %v", err)
 		}
@@ -268,7 +268,7 @@ func NewProxyServerDefault(config *ProxyServerConfig) (*ProxyServer, error) {
 		glog.V(2).Info("Tearing down pure-iptables proxy rules. Errors here are acceptable.")
 		iptables.CleanupLeftovers(iptInterface)
 	default:
-		glog.Fatalf("Proxy type %s is not supported", s.ProxyMode)
+		glog.Fatalf("Proxy type %s is not supported", config.ProxyMode)
 	}
 	iptInterface.AddReloadFunc(proxier.Sync)
 

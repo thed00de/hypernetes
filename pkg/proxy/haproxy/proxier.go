@@ -335,9 +335,6 @@ func (proxier *Proxier) syncProxyRules() {
 	}
 	glog.V(3).Infof("Syncing proxy rules")
 
-	proxier.haveReceivedEndpointsUpdate = false
-	proxier.haveReceivedServiceUpdate = false
-
 	// Get existing pods
 	podList, err := proxier.hyperClient.ListPods()
 	if err != nil {

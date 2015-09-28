@@ -382,6 +382,14 @@ func (proxier *Proxier) syncProxyRules() {
 		glog.V(4).Infof("Services of pod %s should consumed: %v", podInfo.PodName, consumedServices)
 
 		// update existing services
+		if len(consumedServices) == 0 {
+			// Just for fake
+			consumedServices = append(consumedServices, hyper.HyperService{
+				ServiceIP:   "127.0.0.2",
+				ServicePort: 65534,
+			})
+		}
+
 		err = proxier.hyperClient.UpdateServices(podInfo.PodID, consumedServices)
 		if err != nil {
 			glog.Warningf("Updating service for hyper pod %s failed: %v", podInfo.PodName, err)

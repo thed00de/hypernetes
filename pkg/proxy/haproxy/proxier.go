@@ -350,7 +350,8 @@ func (proxier *Proxier) syncProxyRules() {
 			continue
 		}
 
-		// Build rules in same namespace
+		// Build services of same namespace (assume all services within same
+		// namespace will be consumed)
 		consumedServices := make([]hyper.HyperService, 0, 1)
 		for _, svcInfo := range proxier.serviceMap {
 			if svcInfo.namespace != podNamespace {
@@ -380,7 +381,7 @@ func (proxier *Proxier) syncProxyRules() {
 
 		// update existing services
 		if len(consumedServices) == 0 {
-			// Just for fake
+			// services can't be null for kubernetes, so fake one if it is null
 			consumedServices = append(consumedServices, hyper.HyperService{
 				ServiceIP:   "127.0.0.2",
 				ServicePort: 65534,

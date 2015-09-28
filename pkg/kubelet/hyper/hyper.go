@@ -295,7 +295,8 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 
 			_, _, _, containerName, err := r.parseHyperContainerFullName(cinfo.Name)
 			if err != nil {
-				return nil, err
+				glog.Warningf("Hyper: container %s is not managed by kubelet", cinfo.Name)
+				continue
 			}
 			container.Name = strings.Split(containerName, ".")[0]
 
@@ -376,7 +377,7 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 
 	services := r.buildHyperPodServices(pod)
 	if services == nil {
-		// Just for fake
+		// services can't be null for kubernetes, so fake one if it is null
 		services = []HyperService{
 			{
 				ServiceIP:   "127.0.0.2",
@@ -773,7 +774,7 @@ func (r *runtime) PullImage(image kubecontainer.ImageSpec, pullSecrets []api.Sec
 		return fmt.Errorf("Hyper: Failed to pull image: %v", err)
 	}
 
-	if exist, _ = r.hyperClient.IsImagePresent("haproxy", "latest"); !exist {
+	if exist, _ := r.hyperClient.IsImagePresent("haproxy", "latest"); !exist {
 		err = r.hyperClient.PullImage("haproxy", credential)
 		if err != nil {
 			return fmt.Errorf("Hyper: Failed to pull haproxy image: %v", err)

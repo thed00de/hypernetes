@@ -28,6 +28,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
+	kubeclient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/proxy"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util"
@@ -93,6 +94,8 @@ type Proxier struct {
 	iptables      iptables.Interface
 	hostIP        net.IP
 	proxyPorts    PortAllocator
+	kubeClient    *kubeclient.Client
+	withHaproxier bool
 }
 
 // assert Proxier is a ProxyProvider
@@ -137,7 +140,7 @@ func IsProxyLocked(err error) bool {
 // if iptables fails to update or acquire the initial lock. Once a proxier is
 // created, it will keep iptables up to date in the background and will not
 // terminate if a particular iptables call fails.
-func NewProxier(loadBalancer LoadBalancer, listenIP net.IP, iptables iptables.Interface, pr util.PortRange, syncPeriod time.Duration) (*Proxier, error) {
+func NewProxier(loadBalancer LoadBalancer, listenIP net.IP, iptables iptables.Interface, pr util.PortRange, syncPeriod time.Duration, kubeClient *kubeclient.Client, withHaproxier bool) (*Proxier, error) {
 	if listenIP.Equal(localhostIPv4) || listenIP.Equal(localhostIPv6) {
 		return nil, ErrProxyOnLocalhost
 	}
@@ -155,14 +158,14 @@ func NewProxier(loadBalancer LoadBalancer, listenIP net.IP, iptables iptables.In
 	proxyPorts := newPortAllocator(pr)
 
 	glog.V(2).Infof("Setting proxy IP to %v and initializing iptables", hostIP)
-	return createProxier(loadBalancer, listenIP, iptables, hostIP, proxyPorts, syncPeriod)
+	return createProxier(loadBalancer, listenIP, iptables, hostIP, proxyPorts, syncPeriod, kubeClient, withHaproxier)
 }
 
 func setRLimit(limit uint64) error {
 	return syscall.Setrlimit(syscall.RLIMIT_NOFILE, &syscall.Rlimit{Max: limit, Cur: limit})
 }
 
-func createProxier(loadBalancer LoadBalancer, listenIP net.IP, iptables iptables.Interface, hostIP net.IP, proxyPorts PortAllocator, syncPeriod time.Duration) (*Proxier, error) {
+func createProxier(loadBalancer LoadBalancer, listenIP net.IP, iptables iptables.Interface, hostIP net.IP, proxyPorts PortAllocator, syncPeriod time.Duration, kubeClient *kubeclient.Client, withHaproxier bool) (*Proxier, error) {
 	// convenient to pass nil for tests..
 	if proxyPorts == nil {
 		proxyPorts = newPortAllocator(util.PortRange{})
@@ -177,14 +180,16 @@ func createProxier(loadBalancer LoadBalancer, listenIP net.IP, iptables iptables
 		return nil, fmt.Errorf("failed to flush iptables: %v", err)
 	}
 	return &Proxier{
-		loadBalancer: loadBalancer,
-		serviceMap:   make(map[proxy.ServicePortName]*serviceInfo),
-		portMap:      make(map[portMapKey]*portMapValue),
-		syncPeriod:   syncPeriod,
-		listenIP:     listenIP,
-		iptables:     iptables,
-		hostIP:       hostIP,
-		proxyPorts:   proxyPorts,
+		loadBalancer:  loadBalancer,
+		serviceMap:    make(map[proxy.ServicePortName]*serviceInfo),
+		portMap:       make(map[portMapKey]*portMapValue),
+		syncPeriod:    syncPeriod,
+		listenIP:      listenIP,
+		iptables:      iptables,
+		hostIP:        hostIP,
+		proxyPorts:    proxyPorts,
+		kubeClient:    kubeClient,
+		withHaproxier: withHaproxier,
 	}, nil
 }
 
@@ -356,6 +361,20 @@ func (proxier *Proxier) OnServiceUpdate(services []api.Service) {
 	activeServices := make(map[proxy.ServicePortName]bool) // use a map as a set
 	for i := range services {
 		service := &services[i]
+
+		// Check if namespace is configured with network
+		if proxier.withHaproxier {
+			namespace, err := proxier.kubeClient.Namespaces().Get(service.Namespace)
+			if err != nil {
+				glog.Warningf("Get namespace error: %v", err)
+				continue
+			}
+			if namespace.Spec.Network != "" {
+				// Only process namespaces without network
+				// Namespaces with network will be processed by haproxy proxier
+				continue
+			}
+		}
 
 		// if ClusterIP is "None" or empty, skip proxying
 		if !api.IsServiceIPSet(service) {

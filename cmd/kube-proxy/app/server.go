@@ -218,7 +218,7 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 		userspace.CleanupLeftovers(iptInterface)
 	case proxyModeHaproxy:
 		glog.V(2).Info("Using pod-buildin-haproxy proxy.")
-		proxierBuildin, err := haproxy.NewProxier(config.SyncPeriod)
+		proxierBuildin, err := haproxy.NewProxier(config.SyncPeriod, client)
 		if err != nil {
 			glog.Fatalf("Unable to create proxier: %v", err)
 		}
@@ -228,11 +228,11 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 		glog.V(2).Info("Using userspace Proxier.")
 		// This is a proxy.LoadBalancer which NewProxier needs but has methods we don't need for
 		// our config.EndpointsConfigHandler.
-		loadBalancer := userspace.NewLoadBalancerRR()
+		loadBalancer := userspace.NewLoadBalancerRR(client, false)
 		// set EndpointsConfigHandler to our loadBalancer
 		endpointsHandler = loadBalancer
 
-		proxierUserspace, err := userspace.NewProxier(loadBalancer, config.BindAddress, iptInterface, config.PortRange, config.IptablesSyncPeriod, config.UDPIdleTimeout)
+		proxierUserspace, err := userspace.NewProxier(loadBalancer, config.BindAddress, iptInterface, config.PortRange, config.IptablesSyncPeriod, config.UDPIdleTimeout, client, false)
 		if err != nil {
 			glog.Fatalf("Unable to create proxier: %v", err)
 		}
@@ -254,6 +254,21 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 
 	endpointsConfig := proxyconfig.NewEndpointsConfig()
 	endpointsConfig.RegisterHandler(endpointsHandler)
+
+	// Enable userspace proxier to process services in namespaces without network
+	if config.ProxyMode == proxyModeHaproxy {
+		loadBalancer := userspace.NewLoadBalancerRR(client, true)
+		endpointsConfig.RegisterHandler(loadBalancer)
+
+		proxierUserspace, err := userspace.NewProxier(loadBalancer, config.BindAddress, iptInterface, config.PortRange, config.IptablesSyncPeriod, config.UDPIdleTimeout, client, true)
+		if err != nil {
+			glog.Fatalf("Unable to create proxier: %v", err)
+		}
+		serviceConfig.RegisterHandler(proxierUserspace)
+
+		// Remove artifacts from the pure-iptables Proxier.
+		iptables.CleanupLeftovers(iptInterface)
+	}
 
 	proxyconfig.NewSourceAPI(
 		client,

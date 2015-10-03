@@ -27,6 +27,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
+	kubeclient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/proxy"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/slice"
@@ -53,8 +54,10 @@ type affinityPolicy struct {
 
 // LoadBalancerRR is a round-robin load balancer.
 type LoadBalancerRR struct {
-	lock     sync.RWMutex
-	services map[proxy.ServicePortName]*balancerState
+	lock          sync.RWMutex
+	services      map[proxy.ServicePortName]*balancerState
+	kubeClient    *kubeclient.Client
+	withHaproxier bool
 }
 
 // Ensure this implements LoadBalancer.
@@ -75,9 +78,11 @@ func newAffinityPolicy(affinityType api.ServiceAffinity, ttlMinutes int) *affini
 }
 
 // NewLoadBalancerRR returns a new LoadBalancerRR.
-func NewLoadBalancerRR() *LoadBalancerRR {
+func NewLoadBalancerRR(kubeClient *kubeclient.Client, withHaproxier bool) *LoadBalancerRR {
 	return &LoadBalancerRR{
-		services: map[proxy.ServicePortName]*balancerState{},
+		services:      map[proxy.ServicePortName]*balancerState{},
+		kubeClient:    kubeClient,
+		withHaproxier: withHaproxier,
 	}
 }
 
@@ -234,6 +239,20 @@ func (lb *LoadBalancerRR) OnEndpointsUpdate(allEndpoints []api.Endpoints) {
 	// Update endpoints for services.
 	for i := range allEndpoints {
 		svcEndpoints := &allEndpoints[i]
+
+		// Check if namespace is configured with network
+		if lb.withHaproxier {
+			namespace, err := lb.kubeClient.Namespaces().Get(svcEndpoints.Namespace)
+			if err != nil {
+				glog.Warningf("Get namespace error: %v", err)
+				continue
+			}
+			if namespace.Spec.Network != "" {
+				// Only process namespaces without network
+				// Namespaces with network will be processed by haproxy proxier
+				continue
+			}
+		}
 
 		// We need to build a map of portname -> all ip:ports for that
 		// portname.  Explode Endpoints.Subsets[*] into this structure.

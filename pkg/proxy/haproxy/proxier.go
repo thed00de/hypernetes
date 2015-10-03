@@ -25,6 +25,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
+	kubeclient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/kubelet/hyper"
 	"k8s.io/kubernetes/pkg/proxy"
 	"k8s.io/kubernetes/pkg/types"
@@ -58,6 +59,7 @@ type Proxier struct {
 	serviceMap                  map[proxy.ServicePortName]*serviceInfo
 	portsMap                    map[localPort]closeable
 	hyperClient                 *hyper.HyperClient
+	kubeClient                  *kubeclient.Client
 	haveReceivedServiceUpdate   bool // true once we've seen an OnServiceUpdate event
 	haveReceivedEndpointsUpdate bool // true once we've seen an OnEndpointsUpdate event
 
@@ -85,7 +87,7 @@ type closeable interface {
 var _ proxy.ProxyProvider = &Proxier{}
 
 // NewProxier returns a new Proxier given an pod-buildin-haproxy Interface instance.
-func NewProxier(syncPeriod time.Duration) (*Proxier, error) {
+func NewProxier(syncPeriod time.Duration, kubeClient *kubeclient.Client) (*Proxier, error) {
 	client := hyper.NewHyperClient()
 	_, err := client.Version()
 	if err != nil {
@@ -98,6 +100,7 @@ func NewProxier(syncPeriod time.Duration) (*Proxier, error) {
 		portsMap:    make(map[localPort]closeable),
 		syncPeriod:  syncPeriod,
 		hyperClient: client,
+		kubeClient:  kubeClient,
 	}, nil
 }
 
@@ -162,6 +165,19 @@ func (proxier *Proxier) OnServiceUpdate(allServices []api.Service) {
 
 	for i := range allServices {
 		service := &allServices[i]
+
+		// Check if namespace is configured with network
+		namespace, err := proxier.kubeClient.Namespaces().Get(service.Namespace)
+		if err != nil {
+			glog.Warningf("Get namespace error: %v", err)
+			continue
+		}
+		if namespace.Spec.Network == "" {
+			// Only process namespaces with network
+			// Namespaces without network will be processed by userspace proxier
+			continue
+		}
+
 		svcName := types.NamespacedName{
 			Namespace: service.Namespace,
 			Name:      service.Name,
@@ -232,6 +248,18 @@ func (proxier *Proxier) OnEndpointsUpdate(allEndpoints []api.Endpoints) {
 	// Update endpoints for services.
 	for i := range allEndpoints {
 		svcEndpoints := &allEndpoints[i]
+
+		// Check is namespace is configured with network
+		namespace, err := proxier.kubeClient.Namespaces().Get(svcEndpoints.Namespace)
+		if err != nil {
+			glog.Warningf("Get namespace error: %v", err)
+			continue
+		}
+		if namespace.Spec.Network == "" {
+			// Only process namespaces with network
+			// Namespaces without network will be processed by userspace proxier
+			continue
+		}
 
 		// We need to build a map of portname -> all ip:ports for that
 		// portname.  Explode Endpoints.Subsets[*] into this structure.

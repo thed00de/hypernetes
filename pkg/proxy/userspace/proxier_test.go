@@ -237,7 +237,7 @@ func waitForNumProxyClients(t *testing.T, s *serviceInfo, want int, timeout time
 }
 
 func TestTCPProxy(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -249,7 +249,7 @@ func TestTCPProxy(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,7 +264,7 @@ func TestTCPProxy(t *testing.T) {
 }
 
 func TestUDPProxy(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -276,7 +276,7 @@ func TestUDPProxy(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -291,7 +291,7 @@ func TestUDPProxy(t *testing.T) {
 }
 
 func TestUDPProxyTimeout(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -303,7 +303,7 @@ func TestUDPProxyTimeout(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,7 +322,7 @@ func TestUDPProxyTimeout(t *testing.T) {
 }
 
 func TestMultiPortProxy(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	serviceP := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo-p"}, Port: "p"}
 	serviceQ := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo-q"}, Port: "q"}
 	lb.OnEndpointsUpdate([]api.Endpoints{{
@@ -339,7 +339,7 @@ func TestMultiPortProxy(t *testing.T) {
 		}},
 	}})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -361,12 +361,12 @@ func TestMultiPortProxy(t *testing.T) {
 }
 
 func TestMultiPortOnServiceUpdate(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	serviceP := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	serviceQ := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "q"}
 	serviceX := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "x"}
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -417,7 +417,7 @@ func stopProxyByName(proxier *Proxier, service proxy.ServicePortName) error {
 }
 
 func TestTCPProxyStop(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -429,7 +429,7 @@ func TestTCPProxyStop(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -461,7 +461,7 @@ func TestTCPProxyStop(t *testing.T) {
 }
 
 func TestUDPProxyStop(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -473,7 +473,7 @@ func TestUDPProxyStop(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -499,7 +499,7 @@ func TestUDPProxyStop(t *testing.T) {
 }
 
 func TestTCPProxyUpdateDelete(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -511,7 +511,7 @@ func TestTCPProxyUpdateDelete(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -536,7 +536,7 @@ func TestTCPProxyUpdateDelete(t *testing.T) {
 }
 
 func TestUDPProxyUpdateDelete(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -548,7 +548,7 @@ func TestUDPProxyUpdateDelete(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -573,7 +573,7 @@ func TestUDPProxyUpdateDelete(t *testing.T) {
 }
 
 func TestTCPProxyUpdateDeleteUpdate(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -585,7 +585,7 @@ func TestTCPProxyUpdateDeleteUpdate(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -625,7 +625,7 @@ func TestTCPProxyUpdateDeleteUpdate(t *testing.T) {
 }
 
 func TestUDPProxyUpdateDeleteUpdate(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -637,7 +637,7 @@ func TestUDPProxyUpdateDeleteUpdate(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -677,7 +677,7 @@ func TestUDPProxyUpdateDeleteUpdate(t *testing.T) {
 }
 
 func TestTCPProxyUpdatePort(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -689,7 +689,7 @@ func TestTCPProxyUpdatePort(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -725,7 +725,7 @@ func TestTCPProxyUpdatePort(t *testing.T) {
 }
 
 func TestUDPProxyUpdatePort(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -737,7 +737,7 @@ func TestUDPProxyUpdatePort(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -770,7 +770,7 @@ func TestUDPProxyUpdatePort(t *testing.T) {
 }
 
 func TestProxyUpdatePublicIPs(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -782,7 +782,7 @@ func TestProxyUpdatePublicIPs(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -822,7 +822,7 @@ func TestProxyUpdatePublicIPs(t *testing.T) {
 }
 
 func TestProxyUpdatePortal(t *testing.T) {
-	lb := NewLoadBalancerRR()
+	lb := NewLoadBalancerRR(nil, false)
 	service := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: "testnamespace", Name: "echo"}, Port: "p"}
 	lb.OnEndpointsUpdate([]api.Endpoints{
 		{
@@ -834,7 +834,7 @@ func TestProxyUpdatePortal(t *testing.T) {
 		},
 	})
 
-	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest)
+	p, err := createProxier(lb, net.ParseIP("0.0.0.0"), &fakeIptables{}, net.ParseIP("127.0.0.1"), nil, time.Minute, udpIdleTimeoutForTest, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}

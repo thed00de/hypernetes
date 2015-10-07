@@ -100,6 +100,8 @@ const (
 type KubeletConfiguration struct {
 	// config is the path to the config file or directory of files
 	Config string `json:"config"`
+	// cinderConfig is the config file for openstack cinder
+	CinderConfig string `json:""CinderConfig`
 	// syncFrequency is the max period between synchronizing running
 	// containers and config
 	SyncFrequency unversioned.Duration `json:"syncFrequency"`

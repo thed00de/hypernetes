@@ -2585,18 +2585,18 @@ func ValidateSubnet(ipAddress, cidr string) (bool, string) {
 }
 
 // ValidateNetwork tests if required fields are set.
-func ValidateNetwork(network *api.Network) errs.ValidationErrorList {
-	allErrs := errs.ValidationErrorList{}
-	allErrs = append(allErrs, ValidateObjectMeta(&network.ObjectMeta, false, ValidateNetworkName).Prefix("metadata")...)
+func ValidateNetwork(network *api.Network) field.ErrorList {
+	allErrs := ValidateObjectMeta(&network.ObjectMeta, false, ValidateNetworkName, field.NewPath("metadata"))
 
+	specPath := field.NewPath("spec")
 	if network.Spec.TenantID == "" {
-		allErrs = append(allErrs, errs.NewFieldRequired("tenantID"))
+		allErrs = append(allErrs, field.Required(specPath.Child("tenantID"), "the id of tenant is required"))
 	}
 
 	if network.Spec.ProviderNetworkID == "" {
 		for _, subnet := range network.Spec.Subnets {
 			if validated, errMsg := ValidateSubnet(subnet.Gateway, subnet.CIDR); !validated {
-				allErrs = append(allErrs, errs.NewFieldInvalid("subnets", subnet.CIDR, errMsg))
+				allErrs = append(allErrs, field.Invalid(specPath.Child("subnets"), subnet, errMsg))
 			}
 		}
 	}
@@ -2605,20 +2605,20 @@ func ValidateNetwork(network *api.Network) errs.ValidationErrorList {
 }
 
 // ValidateNetworkUpdate tests to make sure a network update can be applied.
-func ValidateNetworkUpdate(newNetwork *api.Network, oldNetwork *api.Network) errs.ValidationErrorList {
-	allErrs := errs.ValidationErrorList{}
-	allErrs = append(allErrs, ValidateObjectMetaUpdate(&newNetwork.ObjectMeta, &oldNetwork.ObjectMeta).Prefix("metadata")...)
+func ValidateNetworkUpdate(newNetwork *api.Network, oldNetwork *api.Network) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&newNetwork.ObjectMeta, &oldNetwork.ObjectMeta, field.NewPath("metadata"))
 	newNetwork.Status = oldNetwork.Status
 	return allErrs
 }
 
 // ValidateNetworkStatusUpdate tests to see if the update is legal for an end user to make
-func ValidateNetworkStatusUpdate(newNetwork, oldNetwork *api.Network) errs.ValidationErrorList {
-	allErrs := errs.ValidationErrorList{}
-	allErrs = append(allErrs, ValidateObjectMetaUpdate(&newNetwork.ObjectMeta, &oldNetwork.ObjectMeta).Prefix("metadata")...)
+func ValidateNetworkStatusUpdate(newNetwork, oldNetwork *api.Network) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&newNetwork.ObjectMeta, &oldNetwork.ObjectMeta, field.NewPath("metadata"))
 	newNetwork.Spec = oldNetwork.Spec
+
+	specPath := field.NewPath("spec")
 	if !newNetwork.DeletionTimestamp.IsZero() && newNetwork.Status.Phase != api.NetworkTerminating {
-		allErrs = append(allErrs, errs.NewFieldInvalid("Status.Phase", newNetwork.Status.Phase, "A network may only be in terminating status if it has a deletion timestamp."))
+		allErrs = append(allErrs, field.Invalid(specPath.Child("Status.Phase"), newNetwork.Status.Phase, "A network may only be in terminating status if it has a deletion timestamp."))
 	}
 	return allErrs
 }

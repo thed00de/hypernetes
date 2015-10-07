@@ -201,6 +201,7 @@ func UnsecuredKubeletConfig(s *options.KubeletServer) (*KubeletConfig, error) {
 		CAdvisorInterface:         nil, // launches background processes, not set here
 		VolumeStatsAggPeriod:      s.VolumeStatsAggPeriod.Duration,
 		CgroupRoot:                s.CgroupRoot,
+		CinderConfig:              s.CinderConfig,
 		Cloud:                     nil, // cloud provider might start background processes
 		ClusterDNS:                net.ParseIP(s.ClusterDNS),
 		ClusterDomain:             s.ClusterDomain,
@@ -710,6 +711,7 @@ type KubeletConfig struct {
 	CAdvisorInterface              cadvisor.Interface
 	VolumeStatsAggPeriod           time.Duration
 	CgroupRoot                     string
+	CinderConfig                   string
 	Cloud                          cloudprovider.Interface
 	ClusterDNS                     net.IP
 	ClusterDomain                  string
@@ -821,6 +823,7 @@ func CreateAndInitKubelet(kc *KubeletConfig) (k KubeletBootstrap, pc *config.Pod
 		kc.NodeName,
 		kc.DockerClient,
 		kubeClient,
+		kc.CinderConfig,
 		kc.RootDirectory,
 		kc.PodInfraContainerImage,
 		kc.SyncFrequency,

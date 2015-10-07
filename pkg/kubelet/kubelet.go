@@ -162,6 +162,7 @@ func NewMainKubelet(
 	nodeName string,
 	dockerClient dockertools.DockerInterface,
 	kubeClient clientset.Interface,
+	cinderConfig string,
 	rootDirectory string,
 	podInfraContainerImage string,
 	resyncInterval time.Duration,
@@ -292,6 +293,7 @@ func NewMainKubelet(
 	klet := &Kubelet{
 		hostname:                       hostname,
 		nodeName:                       nodeName,
+		cinderConfig:                   cinderConfig,
 		dockerClient:                   dockerClient,
 		kubeClient:                     kubeClient,
 		rootDirectory:                  rootDirectory,
@@ -665,6 +667,8 @@ type Kubelet struct {
 	//    status. Kubelet may fail to update node status reliably if the value is too small,
 	//    as it takes time to gather all necessary node information.
 	nodeStatusUpdateFrequency time.Duration
+	// Cinder auth configure file
+	cinderConfig string
 
 	// Generates pod events.
 	pleg pleg.PodLifecycleEventGenerator

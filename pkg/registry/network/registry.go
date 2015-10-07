@@ -19,17 +19,15 @@ package network
 import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/rest"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/watch"
 )
 
 // Registry is an interface implemented by things that know how to store Network objects.
 type Registry interface {
 	// ListNetworks obtains a list of Networks having labels which match selector.
-	ListNetworks(ctx api.Context, selector labels.Selector) (*api.NetworkList, error)
+	ListNetworks(ctx api.Context, options *api.ListOptions) (*api.NetworkList, error)
 	// Watch for new/changed/deleted Networks
-	WatchNetworks(ctx api.Context, label labels.Selector, field fields.Selector, resourceVersion string) (watch.Interface, error)
+	WatchNetworks(ctx api.Context, options *api.ListOptions) (watch.Interface, error)
 	// Get a specific Network
 	GetNetwork(ctx api.Context, NetworkID string) (*api.Network, error)
 	// Create a Network based on a specification.
@@ -51,16 +49,16 @@ func NewRegistry(s rest.StandardStorage) Registry {
 	return &storage{s}
 }
 
-func (s *storage) ListNetworks(ctx api.Context, label labels.Selector) (*api.NetworkList, error) {
-	obj, err := s.List(ctx, label, fields.Everything())
+func (s *storage) ListNetworks(ctx api.Context, options *api.ListOptions) (*api.NetworkList, error) {
+	obj, err := s.List(ctx, options)
 	if err != nil {
 		return nil, err
 	}
 	return obj.(*api.NetworkList), nil
 }
 
-func (s *storage) WatchNetworks(ctx api.Context, label labels.Selector, field fields.Selector, resourceVersion string) (watch.Interface, error) {
-	return s.Watch(ctx, label, field, resourceVersion)
+func (s *storage) WatchNetworks(ctx api.Context, options *api.ListOptions) (watch.Interface, error) {
+	return s.Watch(ctx, options)
 }
 
 func (s *storage) GetNetwork(ctx api.Context, NetworkName string) (*api.Network, error) {

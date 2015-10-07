@@ -588,6 +588,8 @@ type CinderVolumeSource struct {
 	// the ReadOnly setting in VolumeMounts.
 	// More info: http://releases.k8s.io/release-1.2/examples/mysql-cinder-pd/README.md
 	ReadOnly bool `json:"readOnly,omitempty"`
+	// Optional: Specify if using cinder volume together with OpenStack CloudProvider
+	WithoutOpenStackCP bool `json:"withoutOpenStackCP,omitempty"`
 }
 
 // Represents a Ceph Filesystem mount that lasts the lifetime of a pod

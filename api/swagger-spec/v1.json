@@ -3238,7 +3238,7 @@
    },
    {
     "path": "/api/v1/networks",
-    "description": "API at /api/v1 version v1",
+    "description": "API at /api/v1",
     "operations": [
      {
       "type": "v1.NetworkList",
@@ -3283,6 +3283,14 @@
         "paramType": "query",
         "name": "resourceVersion",
         "description": "When specified with a watch call, shows changes that occur after that particular version of a resource. Defaults to changes from the beginning of history.",
+        "required": false,
+        "allowMultiple": false
+       },
+       {
+        "type": "integer",
+        "paramType": "query",
+        "name": "timeoutSeconds",
+        "description": "Timeout for the list/watch call.",
         "required": false,
         "allowMultiple": false
        }
@@ -3337,12 +3345,81 @@
       "consumes": [
        "*/*"
       ]
+     },
+     {
+      "type": "unversioned.Status",
+      "method": "DELETE",
+      "summary": "delete collection of Network",
+      "nickname": "deletecollectionNamespacedNetwork",
+      "parameters": [
+       {
+        "type": "string",
+        "paramType": "query",
+        "name": "pretty",
+        "description": "If 'true', then the output is pretty printed.",
+        "required": false,
+        "allowMultiple": false
+       },
+       {
+        "type": "string",
+        "paramType": "query",
+        "name": "labelSelector",
+        "description": "A selector to restrict the list of returned objects by their labels. Defaults to everything.",
+        "required": false,
+        "allowMultiple": false
+       },
+       {
+        "type": "string",
+        "paramType": "query",
+        "name": "fieldSelector",
+        "description": "A selector to restrict the list of returned objects by their fields. Defaults to everything.",
+        "required": false,
+        "allowMultiple": false
+       },
+       {
+        "type": "boolean",
+        "paramType": "query",
+        "name": "watch",
+        "description": "Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.",
+        "required": false,
+        "allowMultiple": false
+       },
+       {
+        "type": "string",
+        "paramType": "query",
+        "name": "resourceVersion",
+        "description": "When specified with a watch call, shows changes that occur after that particular version of a resource. Defaults to changes from the beginning of history.",
+        "required": false,
+        "allowMultiple": false
+       },
+       {
+        "type": "integer",
+        "paramType": "query",
+        "name": "timeoutSeconds",
+        "description": "Timeout for the list/watch call.",
+        "required": false,
+        "allowMultiple": false
+       }
+      ],
+      "responseMessages": [
+       {
+        "code": 200,
+        "message": "OK",
+        "responseModel": "unversioned.Status"
+       }
+      ],
+      "produces": [
+       "application/json"
+      ],
+      "consumes": [
+       "*/*"
+      ]
      }
     ]
    },
    {
     "path": "/api/v1/watch/networks",
-    "description": "API at /api/v1 version v1",
+    "description": "API at /api/v1",
     "operations": [
      {
       "type": "json.WatchEvent",
@@ -3389,6 +3466,14 @@
         "description": "When specified with a watch call, shows changes that occur after that particular version of a resource. Defaults to changes from the beginning of history.",
         "required": false,
         "allowMultiple": false
+       },
+       {
+        "type": "integer",
+        "paramType": "query",
+        "name": "timeoutSeconds",
+        "description": "Timeout for the list/watch call.",
+        "required": false,
+        "allowMultiple": false
        }
       ],
       "responseMessages": [
@@ -3409,7 +3494,7 @@
    },
    {
     "path": "/api/v1/networks/{name}",
-    "description": "API at /api/v1 version v1",
+    "description": "API at /api/v1",
     "operations": [
      {
       "type": "v1.Network",
@@ -3422,6 +3507,22 @@
         "paramType": "query",
         "name": "pretty",
         "description": "If 'true', then the output is pretty printed.",
+        "required": false,
+        "allowMultiple": false
+       },
+       {
+        "type": "boolean",
+        "paramType": "query",
+        "name": "export",
+        "description": "Should this value be exported.  Export strips fields that a user can not specify.",
+        "required": false,
+        "allowMultiple": false
+       },
+       {
+        "type": "boolean",
+        "paramType": "query",
+        "name": "exact",
+        "description": "Should the export be exact.  Exact export maintains cluster-specific fields like 'Namespace'",
         "required": false,
         "allowMultiple": false
        },
@@ -3508,7 +3609,7 @@
         "allowMultiple": false
        },
        {
-        "type": "api.Patch",
+        "type": "unversioned.Patch",
         "paramType": "body",
         "name": "body",
         "description": "",
@@ -3589,7 +3690,7 @@
    },
    {
     "path": "/api/v1/watch/networks/{name}",
-    "description": "API at /api/v1 version v1",
+    "description": "API at /api/v1",
     "operations": [
      {
       "type": "json.WatchEvent",
@@ -3638,6 +3739,14 @@
         "allowMultiple": false
        },
        {
+        "type": "integer",
+        "paramType": "query",
+        "name": "timeoutSeconds",
+        "description": "Timeout for the list/watch call.",
+        "required": false,
+        "allowMultiple": false
+       },
+       {
         "type": "string",
         "paramType": "path",
         "name": "name",
@@ -3664,7 +3773,7 @@
    },
    {
     "path": "/api/v1/networks/{name}/status",
-    "description": "API at /api/v1 version v1",
+    "description": "API at /api/v1",
     "operations": [
      {
       "type": "v1.Network",
@@ -16841,6 +16950,10 @@
      "readOnly": {
       "type": "boolean",
       "description": "Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. More info: http://releases.k8s.io/release-1.2/examples/mysql-cinder-pd/README.md"
+     },
+     "withoutOpenStackCP": {
+      "type": "boolean",
+      "description": "Optional: Specify if using cinder volume together with OpenStack CloudProvider"
      }
     }
    },

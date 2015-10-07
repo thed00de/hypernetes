@@ -151,6 +151,9 @@ type VolumeHost interface {
 	// Get cloud provider from kubelet.
 	GetCloudProvider() cloudprovider.Interface
 
+	// Get cinder configure file from kubelet.
+	GetCinderConfig() string
+
 	// Get mounter interface.
 	GetMounter() mount.Interface
 

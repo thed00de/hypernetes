@@ -63,7 +63,8 @@ func (plugin *cinderPlugin) GetAccessModes() []api.PersistentVolumeAccessMode {
 }
 
 func (plugin *cinderPlugin) NewBuilder(spec *volume.Spec, pod *api.Pod, _ volume.VolumeOptions) (volume.Builder, error) {
-	return plugin.newBuilderInternal(spec, pod.UID, &CinderDiskUtil{}, plugin.host.GetMounter())
+	return plugin.newBuilderInternal(spec, pod.UID, newCinderDiskUtil(plugin.host.GetCinderConfig()),
+		plugin.host.GetMounter())
 }
 
 func (plugin *cinderPlugin) newBuilderInternal(spec *volume.Spec, podUID types.UID, manager cdManager, mounter mount.Interface) (volume.Builder, error) {
@@ -77,6 +78,7 @@ func (plugin *cinderPlugin) newBuilderInternal(spec *volume.Spec, podUID types.U
 	pdName := cinder.VolumeID
 	fsType := cinder.FSType
 	readOnly := cinder.ReadOnly
+	withoutOpenStackCloudProvider := cinder.WithoutOpenStackCP
 
 	return &cinderVolumeBuilder{
 		cinderVolume: &cinderVolume{
@@ -89,22 +91,33 @@ func (plugin *cinderPlugin) newBuilderInternal(spec *volume.Spec, podUID types.U
 		},
 		fsType:             fsType,
 		readOnly:           readOnly,
+		withoutOpenStackCP: withoutOpenStackCloudProvider,
 		blockDeviceMounter: &cinderSafeFormatAndMount{mounter, exec.New()}}, nil
 }
 
 func (plugin *cinderPlugin) NewCleaner(volName string, podUID types.UID) (volume.Cleaner, error) {
-	return plugin.newCleanerInternal(volName, podUID, &CinderDiskUtil{}, plugin.host.GetMounter())
+	return plugin.newCleanerInternal(volName, podUID, newCinderDiskUtil(plugin.host.GetCinderConfig()),
+		plugin.host.GetMounter())
 }
 
 func (plugin *cinderPlugin) newCleanerInternal(volName string, podUID types.UID, manager cdManager, mounter mount.Interface) (volume.Cleaner, error) {
-	return &cinderVolumeCleaner{
+	pv, err := plugin.host.GetKubeClient().PersistentVolumes().Get(volName)
+	if err != nil {
+		return nil, err
+	}
+
+	clearner := cinderVolumeCleaner{
 		&cinderVolume{
 			podUID:  podUID,
 			volName: volName,
 			manager: manager,
 			mounter: mounter,
 			plugin:  plugin,
-		}}, nil
+		},
+		pv.Spec.Cinder.WithoutOpenStackCP,
+	}
+
+	return &clearner, nil
 }
 
 // Abstract interface to PD operations.
@@ -121,6 +134,7 @@ type cinderVolumeBuilder struct {
 	*cinderVolume
 	fsType             string
 	readOnly           bool
+	withoutOpenStackCP bool
 	blockDeviceMounter mount.Interface
 }
 
@@ -147,7 +161,7 @@ type cinderVolume struct {
 }
 
 func detachDiskLogError(cd *cinderVolume) {
-	err := cd.manager.DetachDisk(&cinderVolumeCleaner{cd})
+	err := cd.manager.DetachDisk(&cinderVolumeCleaner{cd, true})
 	if err != nil {
 		glog.Warningf("Failed to detach disk: %v (%v)", cd, err)
 	}
@@ -232,6 +246,7 @@ func (cd *cinderVolume) GetPath() string {
 
 type cinderVolumeCleaner struct {
 	*cinderVolume
+	withoutOpenStackCP bool
 }
 
 var _ volume.Cleaner = &cinderVolumeCleaner{}

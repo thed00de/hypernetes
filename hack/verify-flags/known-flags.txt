@@ -34,6 +34,7 @@ cert-dir
 certificate-authority
 cgroup-root
 chaos-chance
+cinder-config
 cleanup-iptables
 client-ca-file
 client-certificate

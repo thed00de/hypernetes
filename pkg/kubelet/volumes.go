@@ -85,6 +85,10 @@ func (vh *volumeHost) GetCloudProvider() cloudprovider.Interface {
 	return vh.kubelet.cloud
 }
 
+func (vh *volumeHost) GetCinderConfig() string {
+	return vh.kubelet.cinderConfig
+}
+
 func (vh *volumeHost) GetMounter() mount.Interface {
 	return vh.kubelet.mounter
 }

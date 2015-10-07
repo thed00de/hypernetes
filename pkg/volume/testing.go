@@ -36,6 +36,7 @@ type fakeVolumeHost struct {
 	kubeClient client.Interface
 	pluginMgr  VolumePluginMgr
 	cloud      cloudprovider.Interface
+	cinderConf string
 	mounter    mount.Interface
 	writer     io.Writer
 }
@@ -66,6 +67,10 @@ func (f *fakeVolumeHost) GetKubeClient() client.Interface {
 
 func (f *fakeVolumeHost) GetCloudProvider() cloudprovider.Interface {
 	return f.cloud
+}
+
+func (f *fakeVolumeHost) GetCinderConfig() string {
+	return f.cinderConf
 }
 
 func (f *fakeVolumeHost) GetMounter() mount.Interface {

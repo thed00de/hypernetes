@@ -201,6 +201,7 @@ func (s *KubeletExecutorServer) Run(hks hyperkube.Interface, _ []string) error {
 		AllowPrivileged:   s.AllowPrivileged,
 		CAdvisorInterface: cAdvisorInterface,
 		CgroupRoot:        s.CgroupRoot,
+		CinderConfig:      s.CinderConfig,
 		Cloud:             nil, // TODO(jdef) Cloud, specifying null here because we don't want all kubelets polling mesos-master; need to account for this in the cloudprovider impl
 		ClusterDNS:        s.ClusterDNS,
 		ClusterDomain:     s.ClusterDomain,
@@ -324,6 +325,7 @@ func (ks *KubeletExecutorServer) createAndInitKubelet(
 		kc.NodeName,
 		kc.DockerClient,
 		kubeClient,
+		kc.CinderConfig,
 		kc.RootDirectory,
 		kc.PodInfraContainerImage,
 		kc.SyncFrequency,

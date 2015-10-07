@@ -29,13 +29,48 @@ import (
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/openstack"
 	"k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/mount"
+	"k8s.io/kubernetes/pkg/util/node"
 )
 
-type CinderDiskUtil struct{}
+type CinderDiskUtil struct {
+	cinderBaremetalUtil *CinderBaremetalUtil
+}
+
+func newCinderDiskUtil(cinderConfigFile string) *CinderDiskUtil {
+	result := &CinderDiskUtil{}
+
+	if cinderConfigFile != "" {
+		cinderClient, err := newCinderClient(cinderConfigFile)
+		if err != nil {
+			glog.Warningf("Init cinder client failed: %v", err)
+		} else {
+			result.cinderBaremetalUtil = &CinderBaremetalUtil{
+				client:   cinderClient,
+				hostname: node.GetHostname(""),
+			}
+		}
+	} else {
+		glog.V(4).Info("Cinder volume configure is not provided")
+	}
+
+	return result
+}
 
 // Attaches a disk specified by a volume.CinderPersistenDisk to the current kubelet.
 // Mounts the disk to it's global path.
 func (util *CinderDiskUtil) AttachDisk(b *cinderVolumeBuilder, globalPDPath string) error {
+	if b.withoutOpenStackCP {
+		glog.V(4).Infof("Attaching cinder volume %s baremetal", b.volName)
+		return util.cinderBaremetalUtil.AttachDiskBaremetal(b, globalPDPath)
+	} else {
+		glog.V(4).Infof("Attaching cinder volume %s with cloudprovider", b.volName)
+		return util.AttachDiskCloudProvider(b, globalPDPath)
+	}
+}
+
+// Attaches a disk specified by a volume.CinderPersistenDisk to the current kubelet.
+// Mounts the disk to it's global path.
+func (util *CinderDiskUtil) AttachDiskCloudProvider(b *cinderVolumeBuilder, globalPDPath string) error {
 	options := []string{}
 	if b.readOnly {
 		options = append(options, "ro")
@@ -110,6 +145,18 @@ func makeDevicePath(diskid string) string {
 
 // Unmounts the device and detaches the disk from the kubelet's host machine.
 func (util *CinderDiskUtil) DetachDisk(cd *cinderVolumeCleaner) error {
+	if cd.withoutOpenStackCP {
+		globalPDPath := makeGlobalPDName(cd.plugin.host, cd.pdName)
+		return util.cinderBaremetalUtil.DetachDiskBaremetal(cd, globalPDPath)
+	} else {
+		return util.DetachDiskCloudProvider(cd)
+	}
+
+	return nil
+}
+
+// Unmounts the device and detaches the disk from the kubelet's host machine.
+func (util *CinderDiskUtil) DetachDiskCloudProvider(cd *cinderVolumeCleaner) error {
 	globalPDPath := makeGlobalPDName(cd.plugin.host, cd.pdName)
 	if err := cd.mounter.Unmount(globalPDPath); err != nil {
 		return err

@@ -75,6 +75,7 @@ type KubeletServer struct {
 	CAdvisorPort                   uint
 	CertDirectory                  string
 	CgroupRoot                     string
+	CinderConfig                   string
 	CloudConfigFile                string
 	CloudProvider                  string
 	ClusterDNS                     net.IP
@@ -229,6 +230,7 @@ func (s *KubeletServer) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.PodInfraContainerImage, "pod-infra-container-image", s.PodInfraContainerImage, "The image whose network/ipc namespaces containers in each pod will use.")
 	fs.StringVar(&s.DockerEndpoint, "docker-endpoint", s.DockerEndpoint, "If non-empty, use this for the docker endpoint to communicate with")
 	fs.StringVar(&s.RootDirectory, "root-dir", s.RootDirectory, "Directory path for managing kubelet files (volume mounts,etc).")
+	fs.StringVar(&s.CinderConfig, "cinder-config", s.CinderConfig, "The path to the cinder auth configuration file.  Empty string for no configuration file.")
 	fs.BoolVar(&s.AllowPrivileged, "allow-privileged", s.AllowPrivileged, "If true, allow containers to request privileged mode. [default=false]")
 	fs.StringVar(&s.HostNetworkSources, "host-network-sources", s.HostNetworkSources, "Comma-separated list of sources from which the Kubelet allows pods to use of host network. [default=\"*\"]")
 	fs.StringVar(&s.HostPIDSources, "host-pid-sources", s.HostPIDSources, "Comma-separated list of sources from which the Kubelet allows pods to use the host pid namespace. [default=\"*\"]")
@@ -362,6 +364,7 @@ func (s *KubeletServer) KubeletConfig() (*KubeletConfig, error) {
 		AllowPrivileged:           s.AllowPrivileged,
 		CAdvisorInterface:         nil, // launches background processes, not set here
 		CgroupRoot:                s.CgroupRoot,
+		CinderConfig:              s.CinderConfig,
 		Cloud:                     nil, // cloud provider might start background processes
 		ClusterDNS:                s.ClusterDNS,
 		ClusterDomain:             s.ClusterDomain,
@@ -802,6 +805,7 @@ type KubeletConfig struct {
 	Builder                        KubeletBuilder
 	CAdvisorInterface              cadvisor.Interface
 	CgroupRoot                     string
+	CinderConfig                   string
 	Cloud                          cloudprovider.Interface
 	ClusterDNS                     net.IP
 	ClusterDomain                  string
@@ -895,6 +899,7 @@ func CreateAndInitKubelet(kc *KubeletConfig) (k KubeletBootstrap, pc *config.Pod
 		kc.NodeName,
 		kc.DockerClient,
 		kubeClient,
+		kc.CinderConfig,
 		kc.RootDirectory,
 		kc.PodInfraContainerImage,
 		kc.SyncFrequency,

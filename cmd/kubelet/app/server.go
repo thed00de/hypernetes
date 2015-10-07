@@ -191,6 +191,7 @@ func UnsecuredKubeletConfig(s *options.KubeletServer) (*KubeletConfig, error) {
 		Auth:                      nil, // default does not enforce auth[nz]
 		CAdvisorInterface:         nil, // launches background processes, not set here
 		CgroupRoot:                s.CgroupRoot,
+		CinderConfig:              s.CinderConfig,
 		Cloud:                     nil, // cloud provider might start background processes
 		ClusterDNS:                s.ClusterDNS,
 		ClusterDomain:             s.ClusterDomain,
@@ -666,6 +667,7 @@ type KubeletConfig struct {
 	Builder                        KubeletBuilder
 	CAdvisorInterface              cadvisor.Interface
 	CgroupRoot                     string
+	CinderConfig                   string
 	Cloud                          cloudprovider.Interface
 	ClusterDNS                     net.IP
 	ClusterDomain                  string
@@ -772,6 +774,7 @@ func CreateAndInitKubelet(kc *KubeletConfig) (k KubeletBootstrap, pc *config.Pod
 		kc.NodeName,
 		kc.DockerClient,
 		kubeClient,
+		kc.CinderConfig,
 		kc.RootDirectory,
 		kc.PodInfraContainerImage,
 		kc.SyncFrequency,

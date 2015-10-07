@@ -133,6 +133,7 @@ func deepCopy_v1_CinderVolumeSource(in CinderVolumeSource, out *CinderVolumeSour
 	out.VolumeID = in.VolumeID
 	out.FSType = in.FSType
 	out.ReadOnly = in.ReadOnly
+	out.WithoutOpenStackCP = in.WithoutOpenStackCP
 	return nil
 }
 

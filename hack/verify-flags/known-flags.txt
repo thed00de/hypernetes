@@ -35,6 +35,7 @@ cgroup-root
 chaos-chance
 clean-start
 cleanup-iptables
+cinder-config
 client-ca-file
 client-certificate
 client-key

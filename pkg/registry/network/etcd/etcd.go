@@ -61,7 +61,7 @@ func NewREST(s storage.Interface, storageDecorator generic.StorageDecorator) (*R
 		PredicateFunc: func(label labels.Selector, field fields.Selector) generic.Matcher {
 			return network.MatchNetwork(label, field)
 		},
-		EndpointName: "networks",
+		QualifiedResource: api.Resource("networks"),
 
 		CreateStrategy:      network.Strategy,
 		UpdateStrategy:      network.Strategy,

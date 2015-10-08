@@ -175,7 +175,7 @@ func TestCNIPlugin(t *testing.T) {
 		t.Fatalf("Failed to select the desired plugin: %v", err)
 	}
 
-	err = plug.SetUpPod("podNamespace", "podName", "dockerid2345")
+	err = plug.SetUpPod("podNamespace", "podName", "dockerid2345", "docker")
 	if err != nil {
 		t.Errorf("Expected nil: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestCNIPlugin(t *testing.T) {
 	if string(output) != expectedOutput {
 		t.Errorf("Mismatch in expected output for setup hook. Expected '%s', got '%s'", expectedOutput, string(output))
 	}
-	err = plug.TearDownPod("podNamespace", "podName", "dockerid4545454")
+	err = plug.TearDownPod("podNamespace", "podName", "dockerid4545454", "docker")
 	if err != nil {
 		t.Errorf("Expected nil: %v", err)
 	}

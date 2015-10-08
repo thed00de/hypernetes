@@ -48,6 +48,7 @@ import (
 
 const (
 	hyperBinName             = "hyper"
+	typeHyper                = "hyper"
 	hyperContainerNamePrefix = "kube"
 	hyperPodNamePrefix       = "kube"
 	hyperBaseMemory          = 64
@@ -65,7 +66,6 @@ type runtime struct {
 	recorder            record.EventRecorder
 	prober              prober.Prober
 	networkPlugin       network.NetworkPlugin
-	readinessManager    *kubecontainer.ReadinessManager
 	volumeGetter        volumeGetter
 	hyperClient         *HyperClient
 	kubeClient          client.Interface
@@ -83,7 +83,7 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 	recorder record.EventRecorder,
 	networkPlugin network.NetworkPlugin,
 	containerRefManager *kubecontainer.RefManager,
-	readinessManager *kubecontainer.ReadinessManager,
+	prober prober.Prober,
 	volumeGetter volumeGetter,
 	kubeClient client.Interface) (kubecontainer.Runtime, error) {
 
@@ -99,14 +99,13 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 		dockerKeyring:       credentialprovider.NewDockerKeyring(),
 		containerRefManager: containerRefManager,
 		generator:           generator,
+		prober:              prober,
 		recorder:            recorder,
 		networkPlugin:       networkPlugin,
-		readinessManager:    readinessManager,
 		volumeGetter:        volumeGetter,
 		hyperClient:         NewHyperClient(),
 		kubeClient:          kubeClient,
 	}
-	hyper.prober = prober.New(hyper, readinessManager, containerRefManager, recorder)
 	hyper.imagePuller = kubecontainer.NewImagePuller(recorder, hyper)
 
 	return hyper, nil
@@ -160,6 +159,10 @@ func parseTimeString(str string) (time.Time, error) {
 	return t, nil
 }
 
+func (r *runtime) buildContainerID(hyperContainerID string) string {
+	return typeHyper + "://" + hyperContainerID
+}
+
 func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID string) api.ContainerStatus {
 	var status api.ContainerStatus
 
@@ -169,7 +172,7 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID s
 	}
 
 	status.Name = strings.Split(containerName, ".")[0]
-	status.ContainerID = container.ContainerID
+	status.ContainerID = r.buildContainerID(container.ContainerID)
 	status.Image = image
 	status.ImageID = imageID
 
@@ -271,7 +274,7 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 
 		podID, podName, podNamespace, err := r.parseHyperPodFullName(podInfo.PodName)
 		if err != nil {
-			glog.Errorf("Hyper: pod %s is not managed by kubelet", podInfo.PodName)
+			glog.V(5).Infof("Hyper: pod %s is not managed by kubelet", podInfo.PodName)
 			continue
 		}
 
@@ -281,11 +284,11 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 
 		for _, cinfo := range podInfo.PodInfo.Spec.Containers {
 			var container kubecontainer.Container
-			container.ID = types.UID(cinfo.ContainerID)
+			container.ID = kubecontainer.ContainerID{Type: typeHyper, ID: cinfo.ContainerID}
 			container.Image = cinfo.Image
 
 			for _, cstatus := range podInfo.PodInfo.Status.Status {
-				if cstatus.ContainerID == cinfo.ContainerID {
+				if cstatus.ContainerID == r.buildContainerID(cinfo.ContainerID) {
 					createAt, err := parseTimeString(cstatus.Running.StartedAt)
 					if err == nil {
 						container.Created = createAt.Unix()
@@ -295,7 +298,7 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 
 			_, _, _, containerName, err := r.parseHyperContainerFullName(cinfo.Name)
 			if err != nil {
-				glog.Warningf("Hyper: container %s is not managed by kubelet", cinfo.Name)
+				glog.V(5).Infof("Hyper: container %s is not managed by kubelet", cinfo.Name)
 				continue
 			}
 			container.Name = strings.Split(containerName, ".")[0]
@@ -591,7 +594,7 @@ func (r *runtime) SyncPod(pod *api.Pod, runningPod kubecontainer.Pod, podStatus 
 	}
 
 	// Add references to all containers.
-	unidentifiedContainers := make(map[types.UID]*kubecontainer.Container)
+	unidentifiedContainers := make(map[kubecontainer.ContainerID]*kubecontainer.Container)
 	for _, c := range runningPod.Containers {
 		unidentifiedContainers[c.ID] = c
 	}
@@ -602,7 +605,7 @@ func (r *runtime) SyncPod(pod *api.Pod, runningPod kubecontainer.Pod, podStatus 
 
 		c := runningPod.FindContainerByName(container.Name)
 		if c == nil {
-			if kubecontainer.ShouldContainerBeRestarted(&container, pod, &podStatus, r.readinessManager) {
+			if kubecontainer.ShouldContainerBeRestarted(&container, pod, &podStatus) {
 				glog.V(3).Infof("Container %+v is dead, but RestartPolicy says that we should restart it.", container)
 				restartPod = true
 				break
@@ -618,7 +621,7 @@ func (r *runtime) SyncPod(pod *api.Pod, runningPod kubecontainer.Pod, podStatus 
 			break
 		}
 
-		result, err := r.prober.Probe(pod, podStatus, container, string(c.ID), c.Created)
+		result, err := r.prober.ProbeLiveness(pod, podStatus, container, c.ID, c.Created)
 		if err == nil && result != probe.Success {
 			glog.V(4).Infof("Pod %q container %q is unhealthy (probe result: %v), it will be killed and re-created.",
 				podFullName, container.Name, result)
@@ -829,16 +832,16 @@ func (r *runtime) RemoveImage(image kubecontainer.ImageSpec) error {
 // default, it returns a snapshot of the container log. Set 'follow' to true to
 // stream the log. Set 'follow' to false and specify the number of lines (e.g.
 // "100" or "all") to tail the log.
-func (r *runtime) GetContainerLogs(pod *api.Pod, containerID string, logOptions *api.PodLogOptions, stdout, stderr io.Writer) error {
+func (r *runtime) GetContainerLogs(pod *api.Pod, containerID kubecontainer.ContainerID, logOptions *api.PodLogOptions, stdout, stderr io.Writer) error {
 	// TODO: get container logs for hyper
 	return fmt.Errorf("Hyper: GetContainerLogs unimplemented")
 }
 
 // Runs the command in the container of the specified pod
-func (r *runtime) RunInContainer(containerID string, cmd []string) ([]byte, error) {
-	glog.V(4).Infof("Hyper: running %s in container %s.", cmd, containerID)
+func (r *runtime) RunInContainer(containerID kubecontainer.ContainerID, cmd []string) ([]byte, error) {
+	glog.V(4).Infof("Hyper: running %s in container %s.", cmd, containerID.ID)
 
-	args := append([]string{}, "exec", containerID)
+	args := append([]string{}, "exec", containerID.ID)
 	args = append(args, cmd...)
 
 	result, err := r.runCommand(args...)
@@ -854,10 +857,10 @@ func (r *runtime) PortForward(pod *kubecontainer.Pod, port uint16, stream io.Rea
 // Runs the command in the container of the specified pod.
 // Attaches the processes stdin, stdout, and stderr. Optionally uses a
 // tty.
-func (r *runtime) ExecInContainer(containerID string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
-	glog.V(4).Infof("Hyper: execing %s in container %s.", cmd, containerID)
+func (r *runtime) ExecInContainer(containerID kubecontainer.ContainerID, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
+	glog.V(4).Infof("Hyper: execing %s in container %s.", cmd, containerID.ID)
 
-	args := append([]string{}, "exec", "-a", containerID)
+	args := append([]string{}, "exec", "-a", containerID.ID)
 	args = append(args, cmd...)
 	command := r.buildCommand(args...)
 
@@ -881,11 +884,11 @@ func (r *runtime) ExecInContainer(containerID string, cmd []string, stdin io.Rea
 
 }
 
-func (r *runtime) AttachContainer(containerID string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
-	glog.V(4).Infof("Hyper: attaching container %s.", containerID)
+func (r *runtime) AttachContainer(containerID kubecontainer.ContainerID, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
+	glog.V(4).Infof("Hyper: attaching container %s.", containerID.ID)
 
 	opts := AttachToContainerOptions{
-		Container:    containerID,
+		Container:    containerID.ID,
 		InputStream:  stdin,
 		OutputStream: stdout,
 		ErrorStream:  stderr,

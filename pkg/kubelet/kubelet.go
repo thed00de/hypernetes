@@ -363,7 +363,7 @@ func NewMainKubelet(
 			recorder,
 			klet.networkPlugin,
 			containerRefManager,
-			readinessManager,
+			klet, // prober
 			klet.volumeManager,
 			klet.kubeClient,
 		)

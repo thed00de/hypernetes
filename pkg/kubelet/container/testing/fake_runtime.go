@@ -189,6 +189,10 @@ func (f *FakeRuntime) GetPods(all bool) ([]*Pod, error) {
 	return f.PodList, f.Err
 }
 
+func (f *FakeRuntime) Name() string {
+	return "FakeRuntime"
+}
+
 func (f *FakeRuntime) SyncPod(pod *api.Pod, _ api.PodStatus, _ *PodStatus, _ []api.Secret, backOff *util.Backoff) (result PodSyncResult) {
 	f.Lock()
 	defer f.Unlock()

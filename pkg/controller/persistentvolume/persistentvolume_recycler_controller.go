@@ -412,3 +412,7 @@ func (f *PersistentVolumeRecycler) GetCinderConfig() string {
 func (f *PersistentVolumeRecycler) GetHostName() string {
 	return ""
 }
+
+func (f *PersistentVolumeRecycler) IsNoMountSupported() bool {
+	return false
+}

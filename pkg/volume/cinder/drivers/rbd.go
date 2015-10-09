@@ -48,7 +48,7 @@ func init() {
 	cinder.RegisterCinderDriver(DriverName, func() (cinder.DriverInterface, error) { return newRBDDriver() })
 }
 
-func (d *RBDDriver) toRBDVolume(volumeData map[string]interface{}) (*RBDVolume, error) {
+func (d *RBDDriver) ToRBDVolume(volumeData map[string]interface{}) (*RBDVolume, error) {
 	data, err := json.Marshal(volumeData)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (d *RBDDriver) toRBDVolume(volumeData map[string]interface{}) (*RBDVolume, 
 }
 
 func (d *RBDDriver) Attach(volumeData map[string]interface{}, globalPDPath string) error {
-	volume, err := d.toRBDVolume(volumeData)
+	volume, err := d.ToRBDVolume(volumeData)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (d *RBDDriver) Attach(volumeData map[string]interface{}, globalPDPath strin
 }
 
 func (d *RBDDriver) Detach(volumeData map[string]interface{}, globalPDPath string) error {
-	volume, err := d.toRBDVolume(volumeData)
+	volume, err := d.ToRBDVolume(volumeData)
 	if err != nil {
 		return err
 	}

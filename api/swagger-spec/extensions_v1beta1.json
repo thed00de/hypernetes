@@ -7089,7 +7089,7 @@
       "$ref": "v1beta1.DeploymentStatus",
       "description": "Most recently observed status of the Deployment."
       },
-     "withoutOpenStackCP": {
+     "withOpenStackCP": {
       "type": "boolean",
       "description": "Optional: Specify if using cinder volume together with OpenStack CloudProvider"
      }

@@ -1064,6 +1064,11 @@ func (r *Runtime) Status() error {
 	return r.checkVersion(minimumRktBinVersion, recommendedRktBinVersion, minimumAppcVersion, minimumRktApiVersion, minimumSystemdVersion)
 }
 
+// Name returns the name of the container runtime
+func (r *Runtime) Name() string {
+	return "rkt"
+}
+
 // SyncPod syncs the running pod to match the specified desired pod.
 func (r *Runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStatus *kubecontainer.PodStatus, pullSecrets []api.Secret, backOff *util.Backoff) (result kubecontainer.PodSyncResult) {
 	var err error

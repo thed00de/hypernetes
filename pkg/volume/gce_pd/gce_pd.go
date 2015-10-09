@@ -295,6 +295,10 @@ func (pd *gcePersistentDisk) GetPath() string {
 	return pd.plugin.host.GetPodVolumeDir(pd.podUID, strings.EscapeQualifiedNameForDisk(name), pd.volName)
 }
 
+func (pd *gcePersistentDisk) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 type gcePersistentDiskCleaner struct {
 	*gcePersistentDisk
 }

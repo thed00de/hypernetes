@@ -30,8 +30,9 @@ const (
 )
 
 type CinderBaremetalUtil struct {
-	client   *cinderClient
-	hostname string
+	client             *cinderClient
+	hostname           string
+	isNoMountSupported bool
 }
 
 func (cb *CinderBaremetalUtil) AttachDiskBaremetal(b *cinderVolumeBuilder, globalPDPath string) error {
@@ -69,20 +70,26 @@ func (cb *CinderBaremetalUtil) AttachDiskBaremetal(b *cinderVolumeBuilder, globa
 	glog.V(4).Infof("Get cinder connection info %v", connectionInfo)
 
 	volumeType := connectionInfo["driver_volume_type"].(string)
-	cinderDriver, err := GetCinderDriver(volumeType)
-	if err != nil {
-		glog.Warningf("Get cinder driver %s failed: %v", volumeType, err)
-		return err
-	}
-
 	data := connectionInfo["data"].(map[string]interface{})
+	data["volume_type"] = volumeType
 	if volumeType == "rbd" {
 		data["keyring"] = cb.client.keyring
 	}
 
-	err = cinderDriver.Attach(data, globalPDPath)
-	if err != nil {
-		return err
+	if cb.isNoMountSupported && volumeType == "rbd" {
+		glog.V(4).Infof("Volume %s willn't be mounted since rbd is natively supported", volume.Name)
+		b.cinderVolume.metadata = data
+	} else {
+		cinderDriver, err := GetCinderDriver(volumeType)
+		if err != nil {
+			glog.Warningf("Get cinder driver %s failed: %v", volumeType, err)
+			return err
+		}
+
+		err = cinderDriver.Attach(data, globalPDPath)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -113,9 +120,13 @@ func (cb *CinderBaremetalUtil) DetachDiskBaremetal(cd *cinderVolumeCleaner, glob
 		data["keyring"] = cb.client.keyring
 	}
 
-	err = cinderDriver.Detach(data, globalPDPath)
-	if err != nil {
-		return err
+	if cb.isNoMountSupported && volumeType == "rbd" {
+		glog.V(4).Infof("Volume %s is not mounted since rbd is natively supported", volume.Name)
+	} else {
+		err = cinderDriver.Detach(data, globalPDPath)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = cb.client.detach(volume.ID, cb.getConnectionOptions())

@@ -112,6 +112,10 @@ func getPathFromHost(host volume.VolumeHost, podUID types.UID, volName string) s
 	return host.GetPodVolumeDir(podUID, strings.EscapeQualifiedNameForDisk(secretPluginName), volName)
 }
 
+func (sv *secretVolume) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 // secretVolumeBuilder handles retrieving secrets from the API server
 // and placing them into the volume on the host.
 type secretVolumeBuilder struct {

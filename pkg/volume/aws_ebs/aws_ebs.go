@@ -317,6 +317,10 @@ func (ebs *awsElasticBlockStore) GetPath() string {
 	return ebs.plugin.host.GetPodVolumeDir(ebs.podUID, utilstrings.EscapeQualifiedNameForDisk(name), ebs.volName)
 }
 
+func (ebs *awsElasticBlockStore) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 type awsElasticBlockStoreCleaner struct {
 	*awsElasticBlockStore
 }

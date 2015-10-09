@@ -964,6 +964,11 @@ func (dm *DockerManager) checkVersionCompatibility() error {
 	return nil
 }
 
+// Name returns the name of the container runtime
+func (dm *DockerManager) Name() string {
+	return "docker"
+}
+
 // The first version of docker that supports exec natively is 1.3.0 == API 1.15
 var dockerAPIVersionWithExec = "1.15"
 

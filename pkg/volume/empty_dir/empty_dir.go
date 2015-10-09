@@ -279,6 +279,10 @@ func GetPath(uid types.UID, volName string, host volume.VolumeHost) string {
 	return host.GetPodVolumeDir(uid, strings.EscapeQualifiedNameForDisk(name), volName)
 }
 
+func (ed *emptyDir) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 // TearDown simply discards everything in the directory.
 func (ed *emptyDir) TearDown() error {
 	return ed.TearDownAt(ed.GetPath())

@@ -638,7 +638,7 @@ type CinderVolumeSource struct {
 	// the ReadOnly setting in VolumeMounts.
 	ReadOnly bool `json:"readOnly,omitempty"`
 	// Optional: Specify whether using cinder volume together with OpenStack CloudProvider
-	WithoutOpenStackCP bool `json:"withoutOpenStackCP,omitempty"`
+	WithOpenStackCP bool `json:"withOpenStackCP,omitempty"`
 }
 
 // Represents a Ceph Filesystem mount that lasts the lifetime of a pod

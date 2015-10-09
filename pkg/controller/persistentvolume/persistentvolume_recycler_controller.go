@@ -297,3 +297,7 @@ func (f *PersistentVolumeRecycler) GetWriter() ioutil.Writer {
 func (f *PersistentVolumeRecycler) GetCinderConfig() string {
 	return ""
 }
+
+func (f *PersistentVolumeRecycler) IsNoMountSupported() bool {
+	return false
+}

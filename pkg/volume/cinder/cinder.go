@@ -17,6 +17,7 @@ limitations under the License.
 package cinder
 
 import (
+	"io/ioutil"
 	"os"
 	"path"
 
@@ -27,6 +28,10 @@ import (
 	"k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/volume"
+)
+
+const (
+	OpenStackCloudProviderTagFile = "OpenStackCloudProviderTagFile"
 )
 
 // This is the primary entrypoint for volume plugins.
@@ -101,11 +106,6 @@ func (plugin *cinderPlugin) NewCleaner(volName string, podUID types.UID) (volume
 }
 
 func (plugin *cinderPlugin) newCleanerInternal(volName string, podUID types.UID, manager cdManager, mounter mount.Interface, isNoMountSupported bool) (volume.Cleaner, error) {
-	pv, err := plugin.host.GetKubeClient().PersistentVolumes().Get(volName)
-	if err != nil {
-		return nil, err
-	}
-
 	clearner := cinderVolumeCleaner{
 		&cinderVolume{
 			podUID:  podUID,
@@ -114,7 +114,7 @@ func (plugin *cinderPlugin) newCleanerInternal(volName string, podUID types.UID,
 			mounter: mounter,
 			plugin:  plugin,
 		},
-		pv.Spec.Cinder.WithOpenStackCP,
+		false,
 		isNoMountSupported,
 	}
 
@@ -191,15 +191,35 @@ func (b *cinderVolumeBuilder) SetUpAt(dir string) error {
 		return err
 	}
 
-	options := []string{"bind"}
-	if b.readOnly {
-		options = append(options, "ro")
-	}
-
 	if err := os.MkdirAll(dir, 0750); err != nil {
 		// TODO: we should really eject the attach/detach out into its own control loop.
 		detachDiskLogError(b.cinderVolume, b.isNoMountSupported)
 		return err
+	}
+
+	// Without openstack cloud provider, create a tag file
+	if !b.withOpenStackCP && b.isNoMountSupported {
+		fw, err := os.Create(path.Join(dir, OpenStackCloudProviderTagFile))
+		if err != nil {
+			os.Remove(dir)
+			detachDiskLogError(b.cinderVolume, b.isNoMountSupported)
+			return err
+		}
+
+		_, err = fw.WriteString(b.pdName)
+		if err != nil {
+			os.Remove(dir)
+			detachDiskLogError(b.cinderVolume, b.isNoMountSupported)
+			return err
+		}
+
+		fw.Close()
+		return nil
+	}
+
+	options := []string{"bind"}
+	if b.readOnly {
+		options = append(options, "ro")
 	}
 
 	// Perform a bind mount to the full path to allow duplicate mounts of the same PD.
@@ -272,9 +292,30 @@ func (c *cinderVolumeCleaner) TearDownAt(dir string) error {
 	if err != nil {
 		return err
 	}
-	if notmnt {
-		return os.Remove(dir)
+
+	exist, _ := util.FileExists(path.Join(dir, OpenStackCloudProviderTagFile))
+	if exist {
+		c.withOpenStackCP = false
+	} else {
+		c.withOpenStackCP = true
 	}
+
+	if notmnt {
+		if !c.withOpenStackCP && c.isNoMountSupported {
+			volumeID, err := ioutil.ReadFile(path.Join(dir, OpenStackCloudProviderTagFile))
+			if err != nil {
+				return err
+			}
+
+			c.pdName = string(volumeID)
+			if err := c.manager.DetachDisk(c); err != nil {
+				return err
+			}
+		}
+
+		return os.RemoveAll(dir)
+	}
+
 	refs, err := mount.GetMountRefs(c.mounter, dir)
 	if err != nil {
 		return err

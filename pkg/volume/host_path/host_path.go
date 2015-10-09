@@ -160,6 +160,10 @@ func (hp *hostPath) GetPath() string {
 	return hp.path
 }
 
+func (hp *hostPath) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 type hostPathBuilder struct {
 	*hostPath
 	readOnly bool
@@ -221,6 +225,10 @@ type hostPathRecycler struct {
 
 func (r *hostPathRecycler) GetPath() string {
 	return r.path
+}
+
+func (r *hostPathRecycler) GetMetaData() map[string]interface{} {
+	return nil
 }
 
 // Recycle recycles/scrubs clean a HostPath volume.
@@ -287,6 +295,10 @@ type hostPathDeleter struct {
 
 func (r *hostPathDeleter) GetPath() string {
 	return r.path
+}
+
+func (r *hostPathDeleter) GetMetaData() map[string]interface{} {
+	return nil
 }
 
 // Delete for hostPath removes the local directory so long as it is beneath /tmp/*.

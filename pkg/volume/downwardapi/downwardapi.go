@@ -341,6 +341,10 @@ func (d *downwardAPIVolume) GetPath() string {
 	return d.plugin.host.GetPodVolumeDir(d.podUID, util.EscapeQualifiedNameForDisk(downwardAPIPluginName), d.volName)
 }
 
+func (d *downwardAPIVolume) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 // downwardAPIVolumeCleander handles cleaning up downwardAPI volumes
 type downwardAPIVolumeCleaner struct {
 	*downwardAPIVolume

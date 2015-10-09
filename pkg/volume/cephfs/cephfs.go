@@ -205,6 +205,10 @@ func (cephfsVolume *cephfs) GetPath() string {
 	return cephfsVolume.plugin.host.GetPodVolumeDir(cephfsVolume.podUID, util.EscapeQualifiedNameForDisk(name), cephfsVolume.volName)
 }
 
+func (cephfsVolume *cephfs) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 func (cephfsVolume *cephfs) cleanup(dir string) error {
 	noMnt, err := cephfsVolume.mounter.IsLikelyNotMountPoint(dir)
 	if err != nil && !os.IsNotExist(err) {

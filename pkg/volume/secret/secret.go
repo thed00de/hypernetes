@@ -85,6 +85,10 @@ func (sv *secretVolume) GetPath() string {
 	return sv.plugin.host.GetPodVolumeDir(sv.podUID, util.EscapeQualifiedNameForDisk(secretPluginName), sv.volName)
 }
 
+func (sv *secretVolume) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 // secretVolumeBuilder handles retrieving secrets from the API server
 // and placing them into the volume on the host.
 type secretVolumeBuilder struct {

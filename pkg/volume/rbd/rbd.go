@@ -180,6 +180,10 @@ func (rbd *rbd) GetPath() string {
 	return rbd.plugin.host.GetPodVolumeDir(rbd.podUID, util.EscapeQualifiedNameForDisk(name), rbd.volName)
 }
 
+func (rbd *rbd) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 type rbdBuilder struct {
 	*rbd
 	// capitalized so they can be exported in persistRBD()

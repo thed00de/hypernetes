@@ -138,6 +138,10 @@ func (nfsVolume *nfs) GetPath() string {
 	return nfsVolume.plugin.host.GetPodVolumeDir(nfsVolume.pod.UID, util.EscapeQualifiedNameForDisk(name), nfsVolume.volName)
 }
 
+func (nfsVolume *nfs) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 type nfsBuilder struct {
 	*nfs
 	server     string
@@ -270,6 +274,10 @@ type nfsRecycler struct {
 
 func (r *nfsRecycler) GetPath() string {
 	return r.path
+}
+
+func (r *nfsRecycler) GetMetaData() map[string]interface{} {
+	return nil
 }
 
 // Recycle recycles/scrubs clean an NFS volume.

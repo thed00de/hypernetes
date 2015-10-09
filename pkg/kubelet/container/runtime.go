@@ -52,6 +52,8 @@ type ImageSpec struct {
 // Runtime interface defines the interfaces that should be implemented
 // by a container runtime.
 type Runtime interface {
+	// Name returns the name of the container runtime
+	Name() string
 	// Version returns the version information of the container runtime.
 	Version() (Version, error)
 	// GetPods returns a list containers group by pods. The boolean parameter

@@ -148,6 +148,10 @@ func (iscsi *iscsiDisk) GetPath() string {
 	return iscsi.plugin.host.GetPodVolumeDir(iscsi.podUID, util.EscapeQualifiedNameForDisk(name), iscsi.volName)
 }
 
+func (iscsi *iscsiDisk) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 type iscsiDiskBuilder struct {
 	*iscsiDisk
 	readOnly bool

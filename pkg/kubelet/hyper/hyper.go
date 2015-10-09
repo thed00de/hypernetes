@@ -384,9 +384,9 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 			v[KEY_VOLUME_DRIVE] = metadata["volume_type"]
 			v["source"] = "rbd:" + metadata["name"].(string)
 			monitors := make([]string, 0, 1)
-			for _, host := range metadata["hosts"].([]string) {
-				for _, port := range metadata["ports"].([]int) {
-					monitors = append(monitors, fmt.Sprintf("%s:%d", host, port))
+			for _, host := range metadata["hosts"].([]interface{}) {
+				for _, port := range metadata["ports"].([]interface{}) {
+					monitors = append(monitors, fmt.Sprintf("%s:%s", host.(string), port.(string)))
 				}
 			}
 			v["option"] = map[string]interface{}{

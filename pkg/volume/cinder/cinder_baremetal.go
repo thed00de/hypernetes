@@ -25,10 +25,6 @@ import (
 	"github.com/rackspace/gophercloud/openstack/blockstorage/v2/extensions/volumeactions"
 )
 
-const (
-	defaultMountPoint = "xvda"
-)
-
 type CinderBaremetalUtil struct {
 	client             *cinderClient
 	hostname           string
@@ -39,6 +35,16 @@ func (cb *CinderBaremetalUtil) AttachDiskBaremetal(b *cinderVolumeBuilder, globa
 	volume, err := cb.client.getVolume(b.pdName)
 	if err != nil {
 		return err
+	}
+
+	glog.V(4).Infof("Begin to attach volume %v", volume)
+	if len(volume.Attachments) > 0 {
+		for _, att := range volume.Attachments {
+			if att["host_name"].(string) == cb.hostname && att["device"].(string) == b.GetPath() {
+				glog.V(5).Infof("Volume %s is already attached", b.pdName)
+				return nil
+			}
+		}
 	}
 
 	if volume.Status != "available" {
@@ -52,18 +58,21 @@ func (cb *CinderBaremetalUtil) AttachDiskBaremetal(b *cinderVolumeBuilder, globa
 
 	// attach volume
 	attachOpts := volumeactions.AttachOpts{
-		MountPoint: defaultMountPoint,
+		MountPoint: b.GetPath(),
 		Mode:       mountMode,
 		HostName:   cb.hostname,
 	}
 
 	err = cb.client.attach(volume.ID, attachOpts)
-	if err != nil {
+	if err != nil && err.Error() != "EOF" {
 		return err
 	}
 
 	connectionInfo, err := cb.client.getConnectionInfo(volume.ID, cb.getConnectionOptions())
 	if err != nil {
+		if detachErr := cb.client.detach(volume.ID); detachErr != nil {
+			glog.Warningf("Detach cinder volume %s failed: %v", volume.ID, detachErr)
+		}
 		return err
 	}
 
@@ -77,7 +86,8 @@ func (cb *CinderBaremetalUtil) AttachDiskBaremetal(b *cinderVolumeBuilder, globa
 	}
 
 	if cb.isNoMountSupported && volumeType == "rbd" {
-		glog.V(4).Infof("Volume %s willn't be mounted since rbd is natively supported", volume.Name)
+		glog.V(4).Infof("Volume %s willn't be mounted on host since rbd is natively supported",
+			volume.Name)
 		b.cinderVolume.metadata = data
 	} else {
 		cinderDriver, err := GetCinderDriver(volumeType)
@@ -129,7 +139,12 @@ func (cb *CinderBaremetalUtil) DetachDiskBaremetal(cd *cinderVolumeCleaner, glob
 		}
 	}
 
-	err = cb.client.detach(volume.ID, cb.getConnectionOptions())
+	err = cb.client.terminateConnection(volume.ID, cb.getConnectionOptions())
+	if err != nil {
+		return err
+	}
+
+	err = cb.client.detach(volume.ID)
 	if err != nil {
 		return err
 	}

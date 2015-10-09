@@ -126,7 +126,7 @@ func (client *cinderClient) getConnectionInfo(id string, copts *volumeactions.Co
 		return nil, err
 	}
 
-	return connectionInfo, nil
+	return connectionInfo["connection_info"].(map[string]interface{}), nil
 }
 
 func (client *cinderClient) attach(id string, opts volumeactions.AttachOpts) error {
@@ -138,12 +138,16 @@ func (client *cinderClient) attach(id string, opts volumeactions.AttachOpts) err
 	return nil
 }
 
-func (client *cinderClient) detach(id string, copts *volumeactions.ConnectorOpts) error {
+func (client *cinderClient) terminateConnection(id string, copts *volumeactions.ConnectorOpts) error {
 	terminateResult := volumeactions.TerminateConnection(client.cinder, id, copts)
 	if terminateResult.Err != nil {
 		glog.Warningf("Terminate cinder volume %s failed: %v", id, terminateResult.Err)
 	}
 
+	return nil
+}
+
+func (client *cinderClient) detach(id string) error {
 	detachResult := volumeactions.Detach(client.cinder, id)
 	if detachResult.Err != nil {
 		glog.Warningf("Detach cinder volume %s failed: %v", id, detachResult.Err)

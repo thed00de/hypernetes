@@ -159,6 +159,10 @@ func (fc *fcDisk) GetPath() string {
 	return fc.plugin.host.GetPodVolumeDir(fc.podUID, util.EscapeQualifiedNameForDisk(name), fc.volName)
 }
 
+func (fc *fcDisk) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 type fcDiskBuilder struct {
 	*fcDisk
 	readOnly bool

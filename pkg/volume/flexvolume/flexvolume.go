@@ -329,6 +329,10 @@ func (f *flexVolumeDisk) GetPath() string {
 	return f.plugin.host.GetPodVolumeDir(f.podUID, util.EscapeQualifiedNameForDisk(name), f.volName)
 }
 
+func (f *flexVolumeDisk) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 // TearDown simply deletes everything in the directory.
 func (f *flexVolumeCleaner) TearDown() error {
 	path := f.GetPath()

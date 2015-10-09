@@ -21,8 +21,8 @@ import (
 
 	"github.com/golang/glog"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
+	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/network"
-	kubeletTypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/networkprovider"
 )
 
@@ -91,7 +91,7 @@ func (plugin *RemoteNetworkPlugin) Name() string {
 // SetUpPod is the method called after the infra container of
 // the pod has been created but before the other containers of the
 // pod are launched.
-func (plugin *RemoteNetworkPlugin) SetUpPod(namespace string, name string, podInfraContainerID kubeletTypes.DockerID, containerRuntime string) error {
+func (plugin *RemoteNetworkPlugin) SetUpPod(namespace string, name string, podInfraContainerID kubecontainer.DockerID, containerRuntime string) error {
 	network, err := plugin.getNetworkOfNamespace(namespace)
 	if err != nil {
 		glog.Errorf("GetNetworkOfNamespace failed: %v", err)
@@ -113,7 +113,7 @@ func (plugin *RemoteNetworkPlugin) SetUpPod(namespace string, name string, podIn
 }
 
 // TearDownPod is the method called before a pod's infra container will be deleted
-func (plugin *RemoteNetworkPlugin) TearDownPod(namespace string, name string, podInfraContainerID kubeletTypes.DockerID, containerRuntime string) error {
+func (plugin *RemoteNetworkPlugin) TearDownPod(namespace string, name string, podInfraContainerID kubecontainer.DockerID, containerRuntime string) error {
 	network, err := plugin.getNetworkOfNamespace(namespace)
 	if err != nil {
 		glog.Errorf("GetNetworkOfNamespace failed: %v", err)
@@ -135,7 +135,7 @@ func (plugin *RemoteNetworkPlugin) TearDownPod(namespace string, name string, po
 }
 
 // Status is the method called to obtain the ipv4 or ipv6 addresses of the container
-func (plugin *RemoteNetworkPlugin) Status(namespace string, name string, podInfraContainerID kubeletTypes.DockerID, containerRuntime string) (*network.PodNetworkStatus, error) {
+func (plugin *RemoteNetworkPlugin) Status(namespace string, name string, podInfraContainerID kubecontainer.DockerID, containerRuntime string) (*network.PodNetworkStatus, error) {
 	networkInfo, err := plugin.getNetworkOfNamespace(namespace)
 	if err != nil {
 		glog.Errorf("GetNetworkOfNamespace failed: %v", err)

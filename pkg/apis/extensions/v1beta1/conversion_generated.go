@@ -109,7 +109,7 @@ func autoConvert_api_CinderVolumeSource_To_v1_CinderVolumeSource(in *api.CinderV
 	out.VolumeID = in.VolumeID
 	out.FSType = in.FSType
 	out.ReadOnly = in.ReadOnly
-	out.WithoutOpenStackCP = in.WithoutOpenStackCP
+	out.WithOpenStackCP = in.WithOpenStackCP
 	return nil
 }
 
@@ -1273,7 +1273,7 @@ func autoConvert_v1_CinderVolumeSource_To_api_CinderVolumeSource(in *v1.CinderVo
 	out.VolumeID = in.VolumeID
 	out.FSType = in.FSType
 	out.ReadOnly = in.ReadOnly
-	out.WithoutOpenStackCP = in.WithoutOpenStackCP
+	out.WithOpenStackCP = in.WithOpenStackCP
 	return nil
 }
 

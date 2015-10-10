@@ -75,6 +75,7 @@ func init() {
 	rootScoped := sets.NewString(
 		"Node",
 		"Minion",
+		"Tenant",
 		"Namespace",
 		"Network",
 		"PersistentVolume",

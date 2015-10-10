@@ -1129,6 +1129,7 @@ func deepCopy_v1_ObjectFieldSelector(in ObjectFieldSelector, out *ObjectFieldSel
 func deepCopy_v1_ObjectMeta(in ObjectMeta, out *ObjectMeta, c *conversion.Cloner) error {
 	out.Name = in.Name
 	out.GenerateName = in.GenerateName
+	out.Tenant = in.Tenant
 	out.Namespace = in.Namespace
 	out.SelfLink = in.SelfLink
 	out.UID = in.UID
@@ -1173,6 +1174,7 @@ func deepCopy_v1_ObjectMeta(in ObjectMeta, out *ObjectMeta, c *conversion.Cloner
 func deepCopy_v1_ObjectReference(in ObjectReference, out *ObjectReference, c *conversion.Cloner) error {
 	out.Kind = in.Kind
 	out.Namespace = in.Namespace
+	out.Tenant = in.Tenant
 	out.Name = in.Name
 	out.UID = in.UID
 	out.APIVersion = in.APIVersion
@@ -2217,6 +2219,61 @@ func deepCopy_v1_TCPSocketAction(in TCPSocketAction, out *TCPSocketAction, c *co
 	return nil
 }
 
+func deepCopy_v1_Tenant(in Tenant, out *Tenant, c *conversion.Cloner) error {
+	if err := deepCopy_unversioned_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
+		return err
+	}
+	if err := deepCopy_v1_ObjectMeta(in.ObjectMeta, &out.ObjectMeta, c); err != nil {
+		return err
+	}
+	if err := deepCopy_v1_TenantSpec(in.Spec, &out.Spec, c); err != nil {
+		return err
+	}
+	if err := deepCopy_v1_TenantStatus(in.Status, &out.Status, c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deepCopy_v1_TenantList(in TenantList, out *TenantList, c *conversion.Cloner) error {
+	if err := deepCopy_unversioned_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
+		return err
+	}
+	if err := deepCopy_unversioned_ListMeta(in.ListMeta, &out.ListMeta, c); err != nil {
+		return err
+	}
+	if in.Items != nil {
+		out.Items = make([]Tenant, len(in.Items))
+		for i := range in.Items {
+			if err := deepCopy_v1_Tenant(in.Items[i], &out.Items[i], c); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
+	return nil
+}
+
+func deepCopy_v1_TenantSpec(in TenantSpec, out *TenantSpec, c *conversion.Cloner) error {
+	if in.Namespaces != nil {
+		out.Namespaces = make([]Namespace, len(in.Namespaces))
+		for i := range in.Namespaces {
+			if err := deepCopy_v1_Namespace(in.Namespaces[i], &out.Namespaces[i], c); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Namespaces = nil
+	}
+	return nil
+}
+
+func deepCopy_v1_TenantStatus(in TenantStatus, out *TenantStatus, c *conversion.Cloner) error {
+	out.Phase = in.Phase
+	return nil
+}
+
 func deepCopy_v1_Volume(in Volume, out *Volume, c *conversion.Cloner) error {
 	out.Name = in.Name
 	if err := deepCopy_v1_VolumeSource(in.VolumeSource, &out.VolumeSource, c); err != nil {
@@ -2510,6 +2567,10 @@ func init() {
 		deepCopy_v1_ServiceStatus,
 		deepCopy_v1_Subnet,
 		deepCopy_v1_TCPSocketAction,
+		deepCopy_v1_Tenant,
+		deepCopy_v1_TenantList,
+		deepCopy_v1_TenantSpec,
+		deepCopy_v1_TenantStatus,
 		deepCopy_v1_Volume,
 		deepCopy_v1_VolumeMount,
 		deepCopy_v1_VolumeSource,

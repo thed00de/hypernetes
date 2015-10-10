@@ -59,6 +59,7 @@ func NewNamespaceController(kubeClient client.Interface, experimentalMode bool, 
 		framework.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				namespace := obj.(*api.Namespace)
+				syncTenantAndNamespace(kubeClient, namespace)
 				if err := syncNamespace(kubeClient, experimentalMode, namespace); err != nil {
 					if estimate, ok := err.(*contentRemainingError); ok {
 						go func() {
@@ -252,8 +253,31 @@ func updateNamespaceStatusFunc(kubeClient client.Interface, namespace *api.Names
 	return kubeClient.Namespaces().Status(&newNamespace)
 }
 
+func syncTenantAndNamespace(kubeClient client.Interface, namespace *api.Namespace) error {
+	if namespace.Tenant == "" {
+		namespace.Tenant = api.TenantDefault
+	}
+	te, err := kubeClient.Tenants().Get(namespace.Tenant)
+	if err != nil {
+		return err
+	}
+	for i, n := range te.Spec.Namespaces {
+		if n.Name == namespace.Name {
+			te.Spec.Namespaces = append(te.Spec.Namespaces[:i], te.Spec.Namespaces[i+1:]...)
+			break
+		}
+	}
+	te.Spec.Namespaces = append(te.Spec.Namespaces, *namespace)
+
+	_, err = kubeClient.Tenants().Update(te)
+	return err
+}
+
 // syncNamespace orchestrates deletion of a Namespace and its associated content.
 func syncNamespace(kubeClient client.Interface, experimentalMode bool, namespace *api.Namespace) (err error) {
+	if err = syncTenantAndNamespace(kubeClient, namespace); err != nil {
+		return
+	}
 	if namespace.DeletionTimestamp == nil {
 		if namespace.Spec.Network != "" {
 

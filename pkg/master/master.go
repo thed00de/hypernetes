@@ -75,6 +75,8 @@ import (
 	serviceetcd "k8s.io/kubernetes/pkg/registry/service/etcd"
 	ipallocator "k8s.io/kubernetes/pkg/registry/service/ipallocator"
 	serviceaccountetcd "k8s.io/kubernetes/pkg/registry/serviceaccount/etcd"
+	"k8s.io/kubernetes/pkg/registry/tenant"
+	tenantetcd "k8s.io/kubernetes/pkg/registry/tenant/etcd"
 	thirdpartyresourceetcd "k8s.io/kubernetes/pkg/registry/thirdpartyresource/etcd"
 	"k8s.io/kubernetes/pkg/registry/thirdpartyresourcedata"
 	thirdpartyresourcedataetcd "k8s.io/kubernetes/pkg/registry/thirdpartyresourcedata/etcd"
@@ -297,6 +299,7 @@ type Master struct {
 	// TODO: define the internal typed interface in a way that clients can
 	// also be replaced
 	nodeRegistry              node.Registry
+	tenantRegistry            tenant.Registry
 	namespaceRegistry         namespace.Registry
 	networkRegistry           network.Registry
 	serviceRegistry           service.Registry
@@ -524,6 +527,9 @@ func (m *Master) init(c *Config) {
 	persistentVolumeStorage, persistentVolumeStatusStorage := pvetcd.NewREST(dbClient("persistentVolumes"))
 	persistentVolumeClaimStorage, persistentVolumeClaimStatusStorage := pvcetcd.NewREST(dbClient("persistentVolumeClaims"))
 
+	tenantStorage, tenantStatusStorage := tenantetcd.NewREST(dbClient("tenants"))
+	m.tenantRegistry = tenant.NewRegistry(tenantStorage)
+
 	namespaceStorage, namespaceStatusStorage, namespaceFinalizeStorage := namespaceetcd.NewREST(dbClient("namespaces"))
 	m.namespaceRegistry = namespace.NewRegistry(namespaceStorage)
 
@@ -583,6 +589,8 @@ func (m *Master) init(c *Config) {
 		"limitRanges":                   limitRangeStorage,
 		"resourceQuotas":                resourceQuotaStorage,
 		"resourceQuotas/status":         resourceQuotaStatusStorage,
+		"tenants":                       tenantStorage,
+		"tenants/status":                tenantStatusStorage,
 		"namespaces":                    namespaceStorage,
 		"namespaces/status":             namespaceStatusStorage,
 		"namespaces/finalize":           namespaceFinalizeStorage,
@@ -776,6 +784,7 @@ func (m *Master) init(c *Config) {
 // NewBootstrapController returns a controller for watching the core capabilities of the master.
 func (m *Master) NewBootstrapController() *Controller {
 	return &Controller{
+		TenantRegistry:    m.tenantRegistry,
 		NamespaceRegistry: m.namespaceRegistry,
 		ServiceRegistry:   m.serviceRegistry,
 		MasterCount:       m.masterCount,

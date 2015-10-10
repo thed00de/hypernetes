@@ -39,7 +39,7 @@ const (
 Possible resource types include (case insensitive): pods (po), services (svc),
 replicationcontrollers (rc), nodes (no), events (ev), componentstatuses (cs),
 limitranges (limits), persistentvolumes (pv), persistentvolumeclaims (pvc),
-resourcequotas (quota), namespaces (ns), endpoints (ep), serviceaccounts, 
+resourcequotas (quota), tenants (te), namespaces (ns), endpoints (ep), serviceaccounts, 
 networks (net) or secrets.
 
 By specifying the output as 'template' and providing a Go template as the value

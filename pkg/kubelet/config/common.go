@@ -58,6 +58,9 @@ func applyDefaults(pod *api.Pod, source string, isFile bool, nodeName string) er
 	if pod.Namespace == "" {
 		pod.Namespace = kubelet.NamespaceDefault
 	}
+	if pod.Tenant == "" {
+		pod.Tenant = kubelet.TenantDefault
+	}
 	glog.V(5).Infof("Using namespace %q for pod %q from %s", pod.Namespace, pod.Name, source)
 
 	// Set the Host field to indicate this pod is scheduled on the current node.

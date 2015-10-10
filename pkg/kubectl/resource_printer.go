@@ -397,6 +397,7 @@ var daemonSetColumns = []string{"NAME", "CONTAINER(S)", "IMAGE(S)", "SELECTOR", 
 var eventColumns = []string{"FIRSTSEEN", "LASTSEEN", "COUNT", "NAME", "KIND", "SUBOBJECT", "REASON", "SOURCE", "MESSAGE"}
 var limitRangeColumns = []string{"NAME", "AGE"}
 var resourceQuotaColumns = []string{"NAME", "AGE"}
+var tenantColumns = []string{"NAME", "LABELS", "STATUS", "AGE"}
 var namespaceColumns = []string{"NAME", "LABELS", "STATUS", "AGE"}
 var networkColumns = []string{"NAME", "SUBNETS", "PROVIDERNETWORKID", "TENANTID", "LABELS", "STATUS"}
 var secretColumns = []string{"NAME", "TYPE", "DATA", "AGE"}
@@ -435,6 +436,8 @@ func (h *HumanReadablePrinter) addDefaultHandlers() {
 	h.Handler(limitRangeColumns, printLimitRangeList)
 	h.Handler(resourceQuotaColumns, printResourceQuota)
 	h.Handler(resourceQuotaColumns, printResourceQuotaList)
+	h.Handler(tenantColumns, printTenant)
+	h.Handler(tenantColumns, printTenantList)
 	h.Handler(namespaceColumns, printNamespace)
 	h.Handler(namespaceColumns, printNamespaceList)
 	h.Handler(networkColumns, printNetwork)
@@ -1010,7 +1013,7 @@ func printNamespace(item *api.Namespace, w io.Writer, withNamespace bool, wide b
 		return fmt.Errorf("namespace is not namespaced")
 	}
 
-	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s", item.Name, labels.FormatLabels(item.Labels), item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {
+	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s", item.Name, labels.FormatLabels(item.Labels), item.ObjectMeta.Tenant, item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {
 		return err
 	}
 	_, err := fmt.Fprint(w, appendLabels(item.Labels, columnLabels))
@@ -1041,6 +1044,27 @@ func printNetwork(item *api.Network, w io.Writer, withNamespace bool, wide bool,
 func printNetworkList(list *api.NetworkList, w io.Writer, withNamespace bool, wide bool, showAll bool, columnLabels []string) error {
 	for _, item := range list.Items {
 		if err := printNetwork(&item, w, withNamespace, wide, showAll, columnLabels); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func printTenant(item *api.Tenant, w io.Writer, withNamespace bool, wide bool, showAll bool, columnLabels []string) error {
+	if withNamespace {
+		return fmt.Errorf("namespace is not namespaced")
+	}
+
+	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s", item.Name, labels.FormatLabels(item.Labels), item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {
+		return err
+	}
+	_, err := fmt.Fprint(w, appendLabels(item.Labels, columnLabels))
+	return err
+}
+
+func printTenantList(list *api.TenantList, w io.Writer, withNamespace bool, wide bool, showAll bool, columnLabels []string) error {
+	for _, item := range list.Items {
+		if err := printTenant(&item, w, withNamespace, wide, showAll, columnLabels); err != nil {
 			return err
 		}
 	}

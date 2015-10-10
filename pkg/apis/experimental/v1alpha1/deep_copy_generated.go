@@ -451,6 +451,7 @@ func deepCopy_v1_ObjectFieldSelector(in v1.ObjectFieldSelector, out *v1.ObjectFi
 func deepCopy_v1_ObjectMeta(in v1.ObjectMeta, out *v1.ObjectMeta, c *conversion.Cloner) error {
 	out.Name = in.Name
 	out.GenerateName = in.GenerateName
+	out.Tenant = in.Tenant
 	out.Namespace = in.Namespace
 	out.SelfLink = in.SelfLink
 	out.UID = in.UID

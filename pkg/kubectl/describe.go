@@ -79,6 +79,7 @@ func describerMap(c *client.Client) map[string]Describer {
 		"ResourceQuota":         &ResourceQuotaDescriber{c},
 		"PersistentVolume":      &PersistentVolumeDescriber{c},
 		"PersistentVolumeClaim": &PersistentVolumeClaimDescriber{c},
+		"Tenant":                &TenantDescriber{c},
 		"Namespace":             &NamespaceDescriber{c},
 		"Network":               &NetworkDescriber{c},
 	}
@@ -168,6 +169,45 @@ func describeNetwork(network *api.Network) (string, error) {
 		fmt.Fprintf(out, "ProviderNetworkID:\t%s\n", network.Spec.ProviderNetworkID)
 		fmt.Fprintf(out, "Labels:\t%s\n", labels.FormatLabels(network.Labels))
 		fmt.Fprintf(out, "Status:\t%s\n", string(network.Status.Phase))
+		return nil
+	})
+}
+
+// TenantDescriber generates information about a tenant
+type TenantDescriber struct {
+	client.Interface
+}
+
+func (d *TenantDescriber) Describe(tenant, name string) (string, error) {
+	t, err := d.Tenants().Get(name)
+	if err != nil {
+		return "", err
+	}
+	resourceQuotaList, err := d.ResourceQuotas(name).List(labels.Everything())
+	if err != nil {
+		return "", err
+	}
+	limitRangeList, err := d.LimitRanges(name).List(labels.Everything())
+	if err != nil {
+		return "", err
+	}
+
+	return describeTenant(t, resourceQuotaList, limitRangeList)
+}
+
+func describeTenant(tenant *api.Tenant, resourceQuotaList *api.ResourceQuotaList, limitRangeList *api.LimitRangeList) (string, error) {
+	return tabbedString(func(out io.Writer) error {
+		fmt.Fprintf(out, "Name:\t%s\n", tenant.Name)
+		fmt.Fprintf(out, "Labels:\t%s\n", labels.FormatLabels(tenant.Labels))
+		fmt.Fprintf(out, "Status:\t%s\n", string(tenant.Status.Phase))
+		if resourceQuotaList != nil {
+			fmt.Fprintf(out, "\n")
+			DescribeResourceQuotas(resourceQuotaList, out)
+		}
+		if limitRangeList != nil {
+			fmt.Fprintf(out, "\n")
+			DescribeLimitRanges(limitRangeList, out)
+		}
 		return nil
 	})
 }

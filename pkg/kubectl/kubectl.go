@@ -102,6 +102,7 @@ func expandResourceShortcut(resource string) string {
 		"net":    "networks",
 		"no":     "nodes",
 		"ns":     "namespaces",
+		"te":     "tenants",
 		"po":     "pods",
 		"pv":     "persistentvolumes",
 		"pvc":    "persistentvolumeclaims",

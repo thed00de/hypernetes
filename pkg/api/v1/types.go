@@ -91,6 +91,9 @@ type ObjectMeta struct {
 	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#idempotency
 	GenerateName string `json:"generateName,omitempty"`
 
+	// Tenant defines the tenant
+	Tenant string `json:"tenant,omitempty"`
+
 	// Namespace defines the space within each name must be unique. An empty namespace is
 	// equivalent to the "default" namespace, but "default" is the canonical representation.
 	// Not all objects are required to be scoped to a namespace - the value of this field for
@@ -180,6 +183,8 @@ type ObjectMeta struct {
 }
 
 const (
+	// TenantDefault
+	TenantDefault string = "default"
 	// NamespaceDefault means the object is in the default namespace which is applied when not specified by clients
 	NamespaceDefault string = "default"
 	// NamespaceAll is the default argument to specify on a context when you want to list or filter resources across all namespaces
@@ -2044,6 +2049,51 @@ type NetworkList struct {
 	Items []Network `json:"items"`
 }
 
+// TenantSpec is a description of a tenant
+type TenantSpec struct {
+	// There must be at least one namespace in a tenant
+	Namespaces []Namespace `json:"namespaces"`
+}
+
+// TenantStatus is information about the current status of a Tenant.
+type TenantStatus struct {
+	// Phase is the current lifecycle phase of the tenant.
+	Phase TenantPhase `json:"phase,omitempty"`
+}
+
+type TenantPhase string
+
+// These are the valid phases of a network.
+const (
+	// TenantActive means the network is available for use in the system
+	TenantActive TenantPhase = "Active"
+	// NetworkTerminating means the network is undergoing graceful termination
+	TenantTerminating TenantPhase = "Terminating"
+)
+
+// Tenant
+type Tenant struct {
+	unversioned.TypeMeta `json:",inline"`
+	// ObjectMeta describes the object that is being bound.
+	ObjectMeta `json:"metadata,omitempty"`
+
+	// Spec defines the behavior of the Network.
+	Spec TenantSpec `json:"spec,omitempty"`
+
+	// Status describes the current status of a Network
+	Status TenantStatus `json:"status,omitempty"`
+}
+
+// TenantList
+type TenantList struct {
+	unversioned.TypeMeta `json:",inline"`
+	// Standard list metadata.
+	unversioned.ListMeta `json:"metadata,omitempty"`
+
+	// Items is the list of Network objects in the list
+	Items []Tenant `json:"items"`
+}
+
 // Binding ties one object to another.
 // For example, a pod is bound to a node by a scheduler.
 type Binding struct {
@@ -2194,6 +2244,8 @@ type ObjectReference struct {
 	// Namespace of the referent.
 	// More info: http://releases.k8s.io/HEAD/docs/user-guide/namespaces.md
 	Namespace string `json:"namespace,omitempty"`
+	// Tenant of the referent.
+	Tenant string `json:"tenant,omitempty"`
 	// Name of the referent.
 	// More info: http://releases.k8s.io/HEAD/docs/user-guide/identifiers.md#names
 	Name string `json:"name,omitempty"`

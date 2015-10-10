@@ -92,6 +92,7 @@ func GetReference(obj runtime.Object) (*ObjectReference, error) {
 		APIVersion:      version,
 		Name:            meta.Name(),
 		Namespace:       meta.Namespace(),
+		Tenant:          meta.Tenant(),
 		UID:             meta.UID(),
 		ResourceVersion: meta.ResourceVersion(),
 	}, nil

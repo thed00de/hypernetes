@@ -51,6 +51,8 @@ const (
 	AllSource = "*"
 
 	NamespaceDefault = api.NamespaceDefault
+
+	TenantDefault = api.TenantDefault
 )
 
 // PodUpdate defines an operation sent on the channel. You can add or remove single services by

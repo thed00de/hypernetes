@@ -92,6 +92,7 @@ $ kubectl config view -o template --template='{{range .users}}{{ if eq .name "e2
       --password="": Password for basic authentication to the API server.
   -s, --server="": The address and port of the Kubernetes API server
       --stderrthreshold=2: logs at or above this threshold go to stderr
+      --tenant="": If present, the tenant scope for this CLI request.
       --token="": Bearer token for authentication to the API server.
       --user="": The name of the kubeconfig user to use
       --username="": Username for basic authentication to the API server.

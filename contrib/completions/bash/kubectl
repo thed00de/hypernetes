@@ -307,6 +307,7 @@ _kubectl_get()
     must_have_one_noun+=("secret")
     must_have_one_noun+=("service")
     must_have_one_noun+=("serviceaccount")
+    must_have_one_noun+=("tenant")
     must_have_one_noun+=("thirdpartyresource")
 }
 
@@ -344,6 +345,7 @@ _kubectl_describe()
     must_have_one_noun+=("secret")
     must_have_one_noun+=("service")
     must_have_one_noun+=("serviceaccount")
+    must_have_one_noun+=("tenant")
 }
 
 _kubectl_create()
@@ -482,6 +484,7 @@ _kubectl_delete()
     must_have_one_noun+=("secret")
     must_have_one_noun+=("service")
     must_have_one_noun+=("serviceaccount")
+    must_have_one_noun+=("tenant")
     must_have_one_noun+=("thirdpartyresource")
 }
 
@@ -959,6 +962,7 @@ _kubectl_label()
     must_have_one_noun+=("secret")
     must_have_one_noun+=("service")
     must_have_one_noun+=("serviceaccount")
+    must_have_one_noun+=("tenant")
     must_have_one_noun+=("thirdpartyresource")
 }
 
@@ -1296,6 +1300,7 @@ _kubectl()
     flags+=("--server=")
     two_word_flags+=("-s")
     flags+=("--stderrthreshold=")
+    flags+=("--tenant=")
     flags+=("--token=")
     flags+=("--user=")
     flags+=("--username=")

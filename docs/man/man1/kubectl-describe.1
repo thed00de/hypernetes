@@ -30,7 +30,8 @@ exists, it will output details for every resource that has a name prefixed with 
 Possible resource types include (case insensitive): pods (po), services (svc),
 replicationcontrollers (rc), nodes (no), events (ev), limitranges (limits),
 persistentvolumes (pv), persistentvolumeclaims (pvc), resourcequotas (quota),
-namespaces (ns), serviceaccounts, endpoints (ep), networks (net) or secrets.
+namespaces (ns), serviceaccounts, endpoints (ep), networks (net), secrets or
+tenants (te).
 
 
 .SH OPTIONS
@@ -115,6 +116,10 @@ namespaces (ns), serviceaccounts, endpoints (ep), networks (net) or secrets.
 .PP
 \fB\-\-stderrthreshold\fP=2
     logs at or above this threshold go to stderr
+
+.PP
+\fB\-\-tenant\fP=""
+    If present, the tenant scope for this CLI request.
 
 .PP
 \fB\-\-token\fP=""

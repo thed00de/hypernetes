@@ -55,6 +55,7 @@ func addConversionFuncs() {
 			switch label {
 			case "metadata.name",
 				"metadata.namespace",
+				"metadata.tenant",
 				"metadata.labels",
 				"metadata.annotations",
 				"status.phase",
@@ -106,6 +107,7 @@ func addConversionFuncs() {
 			switch label {
 			case "involvedObject.kind",
 				"involvedObject.namespace",
+				"involvedObject.tenant",
 				"involvedObject.name",
 				"involvedObject.uid",
 				"involvedObject.apiVersion",

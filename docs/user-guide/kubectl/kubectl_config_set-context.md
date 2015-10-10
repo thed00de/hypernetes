@@ -79,6 +79,7 @@ $ kubectl config set-context gce --user=cluster-admin
       --password="": Password for basic authentication to the API server.
   -s, --server="": The address and port of the Kubernetes API server
       --stderrthreshold=2: logs at or above this threshold go to stderr
+      --tenant="": If present, the tenant scope for this CLI request.
       --token="": Bearer token for authentication to the API server.
       --username="": Username for basic authentication to the API server.
       --v=0: log level for V logs

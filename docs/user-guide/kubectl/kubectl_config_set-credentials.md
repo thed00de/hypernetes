@@ -100,6 +100,7 @@ $ kubectl config set-credentials cluster-admin --client-certificate=~/.kube/admi
       --namespace="": If present, the namespace scope for this CLI request.
   -s, --server="": The address and port of the Kubernetes API server
       --stderrthreshold=2: logs at or above this threshold go to stderr
+      --tenant="": If present, the tenant scope for this CLI request.
       --user="": The name of the kubeconfig user to use
       --v=0: log level for V logs
       --vmodule=: comma-separated list of pattern=N settings for file-filtered logging

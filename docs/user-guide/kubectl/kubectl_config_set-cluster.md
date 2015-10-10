@@ -85,6 +85,7 @@ $ kubectl config set-cluster e2e --insecure-skip-tls-verify=true
       --namespace="": If present, the namespace scope for this CLI request.
       --password="": Password for basic authentication to the API server.
       --stderrthreshold=2: logs at or above this threshold go to stderr
+      --tenant="": If present, the tenant scope for this CLI request.
       --token="": Bearer token for authentication to the API server.
       --user="": The name of the kubeconfig user to use
       --username="": Username for basic authentication to the API server.

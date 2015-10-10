@@ -30,6 +30,7 @@ import (
 	"k8s.io/kubernetes/pkg/registry/service"
 	servicecontroller "k8s.io/kubernetes/pkg/registry/service/ipallocator/controller"
 	portallocatorcontroller "k8s.io/kubernetes/pkg/registry/service/portallocator/controller"
+	"k8s.io/kubernetes/pkg/registry/tenant"
 	"k8s.io/kubernetes/pkg/util"
 
 	"github.com/golang/glog"
@@ -39,6 +40,7 @@ import (
 // loops, which manage creating the "kubernetes" service, the "default"
 // namespace, and provide the IP repair check on service IPs
 type Controller struct {
+	TenantRegistry    tenant.Registry
 	NamespaceRegistry namespace.Registry
 	ServiceRegistry   service.Registry
 	// TODO: MasterCount is yucky
@@ -116,6 +118,10 @@ func (c *Controller) UpdateKubernetesService(reconcile bool) error {
 	if err := c.CreateNamespaceIfNeeded(api.NamespaceDefault); err != nil {
 		return err
 	}
+	if err := c.CreateTenantIfNeeded(api.TenantDefault); err != nil {
+		return err
+	}
+
 	if c.ServiceIP != nil {
 		servicePorts, serviceType := createPortAndServiceSpec(c.ServicePort, c.KubernetesServiceNodePort, "https", c.ExtraServicePorts)
 		if err := c.CreateOrUpdateMasterServiceIfNeeded("kubernetes", c.ServiceIP, servicePorts, serviceType, reconcile); err != nil {
@@ -140,6 +146,7 @@ func (c *Controller) CreateNamespaceIfNeeded(ns string) error {
 		ObjectMeta: api.ObjectMeta{
 			Name:      ns,
 			Namespace: "",
+			Tenant:    api.TenantDefault,
 		},
 	}
 	err := c.NamespaceRegistry.CreateNamespace(ctx, newNs)
@@ -179,6 +186,35 @@ func createEndpointPortSpec(endpointPort int, endpointPortName string, extraEndp
 		endpointPorts = append(endpointPorts, extraEndpointPorts...)
 	}
 	return endpointPorts
+}
+
+// CreateTenantIfNeeded will create the tenant that contains the master services if it doesn't already exist
+func (c *Controller) CreateTenantIfNeeded(te string) error {
+	ctx := api.NewContext()
+	if _, err := c.TenantRegistry.GetTenant(ctx, api.TenantDefault); err == nil {
+		// the tenant already exists
+		return nil
+	}
+	ns, err := c.NamespaceRegistry.GetNamespace(ctx, api.NamespaceDefault)
+	if err != nil {
+		// the namespace already exists
+		return err
+	}
+	newTenant := &api.Tenant{
+		ObjectMeta: api.ObjectMeta{
+			Name:      te,
+			Namespace: api.NamespaceDefault,
+			Tenant:    "",
+		},
+		Spec: api.TenantSpec{
+			Namespaces: []api.Namespace{*ns},
+		},
+	}
+	err = c.TenantRegistry.CreateTenant(ctx, newTenant)
+	if err != nil && errors.IsAlreadyExists(err) {
+		err = nil
+	}
+	return err
 }
 
 // CreateMasterServiceIfNeeded will create the specified service if it

@@ -148,6 +148,10 @@ func ValidateNetworkName(name string, prefix bool) (bool, string) {
 	return NameIsDNSLabel(name, prefix)
 }
 
+func ValidateTenantName(name string, prefix bool) (bool, string) {
+	return NameIsDNSLabel(name, prefix)
+}
+
 // ValidateNamespaceName can be used to check whether the given namespace name is valid.
 // Prefix indicates this name will be used as part of generation, in which case
 // trailing dashes are allowed.
@@ -1834,6 +1838,19 @@ func ValidateResourceQuotaStatusUpdate(newResourceQuota, oldResourceQuota *api.R
 	}
 	newResourceQuota.Spec = oldResourceQuota.Spec
 	return allErrs
+}
+
+// fake functions for 'tenant' validatation
+func ValidateTenant(tenant *api.Tenant) errs.ValidationErrorList {
+	return nil
+}
+
+func ValidateTenantUpdate(newTenant *api.Tenant, oldTenant *api.Tenant) errs.ValidationErrorList {
+	return nil
+}
+
+func ValidateTenantStatusUpdate(newTenant, oldTenant *api.Tenant) errs.ValidationErrorList {
+	return nil
 }
 
 // ValidateNamespace tests if required fields are set.

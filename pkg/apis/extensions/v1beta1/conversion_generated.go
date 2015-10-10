@@ -605,6 +605,7 @@ func autoconvert_api_ObjectMeta_To_v1_ObjectMeta(in *api.ObjectMeta, out *v1.Obj
 	}
 	out.Name = in.Name
 	out.GenerateName = in.GenerateName
+	out.Tenant = in.Tenant
 	out.Namespace = in.Namespace
 	out.SelfLink = in.SelfLink
 	out.UID = in.UID
@@ -1665,6 +1666,7 @@ func autoconvert_v1_ObjectMeta_To_api_ObjectMeta(in *v1.ObjectMeta, out *api.Obj
 	}
 	out.Name = in.Name
 	out.GenerateName = in.GenerateName
+	out.Tenant = in.Tenant
 	out.Namespace = in.Namespace
 	out.SelfLink = in.SelfLink
 	out.UID = in.UID

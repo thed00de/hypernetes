@@ -51,7 +51,8 @@ exists, it will output details for every resource that has a name prefixed with 
 Possible resource types include (case insensitive): pods (po), services (svc),
 replicationcontrollers (rc), nodes (no), events (ev), limitranges (limits),
 persistentvolumes (pv), persistentvolumeclaims (pvc), resourcequotas (quota),
-namespaces (ns), serviceaccounts, endpoints (ep), networks (net) or secrets.
+namespaces (ns), serviceaccounts, endpoints (ep), networks (net), secrets or
+tennts (te).
 
 ```
 kubectl describe (-f FILENAME | TYPE [NAME_PREFIX | -l label] | TYPE/NAME)
@@ -108,6 +109,7 @@ $ kubectl describe pods frontend
       --password="": Password for basic authentication to the API server.
   -s, --server="": The address and port of the Kubernetes API server
       --stderrthreshold=2: logs at or above this threshold go to stderr
+      --tenant="": If present, the tenant scope for this CLI request.
       --token="": Bearer token for authentication to the API server.
       --user="": The name of the kubeconfig user to use
       --username="": Username for basic authentication to the API server.

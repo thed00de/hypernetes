@@ -3,6 +3,7 @@
     "apiVersion": "v1",
     "metadata": {
         "name": "etcd-server-e2e-test-wojtekt-master",
+        "Tenant": "default",
         "namespace": "default",
         "selfLink": "/api/v1/namespaces/default/pods/etcd-server-e2e-test-wojtekt-master",
         "uid": "a671734a-e8e5-11e4-8fde-42010af09327",

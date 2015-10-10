@@ -413,6 +413,7 @@ func deepCopy_api_ObjectFieldSelector(in api.ObjectFieldSelector, out *api.Objec
 func deepCopy_api_ObjectMeta(in api.ObjectMeta, out *api.ObjectMeta, c *conversion.Cloner) error {
 	out.Name = in.Name
 	out.GenerateName = in.GenerateName
+	out.Tenant = in.Tenant
 	out.Namespace = in.Namespace
 	out.SelfLink = in.SelfLink
 	out.UID = in.UID

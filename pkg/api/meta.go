@@ -28,6 +28,7 @@ func FillObjectMetaSystemFields(ctx Context, meta *ObjectMeta) {
 	meta.CreationTimestamp = unversioned.Now()
 	meta.UID = util.NewUUID()
 	meta.SelfLink = ""
+	meta.Tenant = meta.Tenant
 }
 
 // HasObjectMetaSystemFieldValues returns true if fields that are managed by the system on ObjectMeta have values.

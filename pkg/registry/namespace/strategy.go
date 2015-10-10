@@ -50,6 +50,9 @@ func (namespaceStrategy) PrepareForCreate(obj runtime.Object) {
 	namespace.Status = api.NamespaceStatus{
 		Phase: api.NamespaceActive,
 	}
+	if namespace.Tenant == "" {
+		namespace.Tenant = api.TenantDefault
+	}
 	// on create, we require the kubernetes value
 	// we cannot use this in defaults conversion because we let it get removed over life of object
 	hasKubeFinalizer := false

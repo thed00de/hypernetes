@@ -38,6 +38,8 @@ type Interface interface {
 
 	Namespace() string
 	SetNamespace(namespace string)
+	Tenant() string
+	SetTenant(tenant string)
 	Name() string
 	SetName(name string)
 	GenerateName() string
@@ -77,6 +79,9 @@ type MetadataAccessor interface {
 
 	Namespace(obj runtime.Object) (string, error)
 	SetNamespace(obj runtime.Object, namespace string) error
+
+	Tenant(obj runtime.Object) (string, error)
+	SetTenant(obj runtime.Object, tenant string) error
 
 	Name(obj runtime.Object) (string, error)
 	SetName(obj runtime.Object, name string) error

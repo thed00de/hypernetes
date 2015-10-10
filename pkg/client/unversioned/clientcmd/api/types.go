@@ -100,6 +100,8 @@ type Context struct {
 	AuthInfo string `json:"user"`
 	// Namespace is the default namespace to use on unspecified requests
 	Namespace string `json:"namespace,omitempty"`
+	// Tenant
+	Tenant string `json:"tenant,omitempty"`
 	// Extensions holds additional information. This is useful for extenders so that reads and writes don't clobber unknown fields
 	Extensions map[string]*runtime.EmbeddedObject `json:"extensions,omitempty"`
 }

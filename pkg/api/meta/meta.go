@@ -144,6 +144,23 @@ func (resourceAccessor) SetAPIVersion(obj runtime.Object, version string) error 
 	return nil
 }
 
+func (resourceAccessor) Tenant(obj runtime.Object) (string, error) {
+	accessor, err := Accessor(obj)
+	if err != nil {
+		return "", err
+	}
+	return accessor.Tenant(), nil
+}
+
+func (resourceAccessor) SetTenant(obj runtime.Object, tenant string) error {
+	accessor, err := Accessor(obj)
+	if err != nil {
+		return err
+	}
+	accessor.SetTenant(tenant)
+	return nil
+}
+
 func (resourceAccessor) Namespace(obj runtime.Object) (string, error) {
 	accessor, err := Accessor(obj)
 	if err != nil {
@@ -284,6 +301,7 @@ func (resourceAccessor) SetResourceVersion(obj runtime.Object, version string) e
 // struct and implements the Accessor interface.
 type genericAccessor struct {
 	namespace       *string
+	tenant          *string
 	name            *string
 	generateName    *string
 	uid             *types.UID
@@ -307,6 +325,20 @@ func (a genericAccessor) SetNamespace(namespace string) {
 		return
 	}
 	*a.namespace = namespace
+}
+
+func (a genericAccessor) Tenant() string {
+	if a.tenant == nil {
+		return ""
+	}
+	return *a.tenant
+}
+
+func (a genericAccessor) SetTenant(tenant string) {
+	if a.tenant == nil {
+		return
+	}
+	*a.tenant = tenant
 }
 
 func (a genericAccessor) Name() string {
@@ -419,6 +451,9 @@ func extractFromTypeMeta(v reflect.Value, a *genericAccessor) error {
 // extractFromObjectMeta extracts pointers to metadata fields from an object
 func extractFromObjectMeta(v reflect.Value, a *genericAccessor) error {
 	if err := runtime.FieldPtr(v, "Namespace", &a.namespace); err != nil {
+		return err
+	}
+	if err := runtime.FieldPtr(v, "Tenant", &a.tenant); err != nil {
 		return err
 	}
 	if err := runtime.FieldPtr(v, "Name", &a.name); err != nil {

@@ -52,12 +52,16 @@ type Builder struct {
 	resources []string
 
 	namespace string
+	tenant    string
 	names     []string
 
 	resourceTuples []resourceTuple
 
 	defaultNamespace bool
 	requireNamespace bool
+
+	defaultTenant bool
+	requireTenant bool
 
 	flatten bool
 	latest  bool

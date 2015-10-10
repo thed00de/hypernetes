@@ -51,6 +51,7 @@ type ClientConfig interface {
 	// result of all overrides and a boolean indicating if it was
 	// overridden
 	Namespace() (string, bool, error)
+	Tenant() (string, bool, error)
 }
 
 // DirectClientConfig is a ClientConfig interface that is backed by a clientcmdapi.Config, options overrides, and an optional fallbackReader for auth information
@@ -208,6 +209,25 @@ func canIdentifyUser(config client.Config) bool {
 
 }
 
+// Tenant implements KubeConfig
+func (config DirectClientConfig) Tenant() (string, bool, error) {
+	if err := config.ConfirmUsable(); err != nil {
+		return "", false, err
+	}
+
+	configContext := config.getContext()
+
+	if len(configContext.Tenant) == 0 {
+		return api.TenantDefault, false, nil
+	}
+
+	overridden := false
+	if config.overrides != nil && config.overrides.Context.Tenant != "" {
+		overridden = true
+	}
+	return configContext.Tenant, overridden, nil
+}
+
 // Namespace implements KubeConfig
 func (config DirectClientConfig) Namespace() (string, bool, error) {
 	if err := config.ConfirmUsable(); err != nil {
@@ -312,6 +332,16 @@ func (inClusterClientConfig) RawConfig() (clientcmdapi.Config, error) {
 
 func (inClusterClientConfig) ClientConfig() (*client.Config, error) {
 	return client.InClusterConfig()
+}
+
+func (inClusterClientConfig) Tenant() (string, error) {
+	// TODO: generic way to figure out what tenant you are running in?
+	// This way assumes you've set the POD_TENANT environment variable
+	// using the downward API.
+	if ns := os.Getenv("POD_TENANT"); ns != "" {
+		return ns, nil
+	}
+	return "default", nil
 }
 
 func (inClusterClientConfig) Namespace() (string, error) {

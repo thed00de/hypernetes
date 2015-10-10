@@ -144,6 +144,11 @@ func (r *runtime) Version() (kubecontainer.Version, error) {
 	return parseVersion(version)
 }
 
+// Name returns the name of the container runtime
+func (r *runtime) Name() string {
+	return "hyper"
+}
+
 func parseTimeString(str string) (time.Time, error) {
 	t := time.Date(0, 0, 0, 0, 0, 0, 0, time.Local)
 	if str == "" {
@@ -367,16 +372,39 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 		return nil, fmt.Errorf("cannot get the volumes for pod %q", kubecontainer.GetPodFullName(pod))
 	}
 
-	volumes := []map[string]string{}
+	volumes := make([]map[string]interface{}, 0, 1)
 	for name, volume := range volumeMap {
-		glog.V(4).Infof("Hyper: volume %s %s", name, volume.GetPath())
-		v := make(map[string]string)
+		glog.V(4).Infof("Hyper: volume %s, path %s, meta %s", name, volume.GetPath(), volume.GetMetaData())
+		v := make(map[string]interface{})
 		v[KEY_NAME] = name
-		v[KEY_VOLUME_DRIVE] = VOLUME_TYPE_VFS
-		v[KEY_VOLUME_SOURCE] = volume.GetPath()
+
+		// Process rbd volume
+		metadata := volume.GetMetaData()
+		if metadata != nil && metadata["volume_type"].(string) == "rbd" {
+			v[KEY_VOLUME_DRIVE] = metadata["volume_type"]
+			v["source"] = "rbd:" + metadata["name"].(string)
+			monitors := make([]string, 0, 1)
+			for _, host := range metadata["hosts"].([]interface{}) {
+				for _, port := range metadata["ports"].([]interface{}) {
+					monitors = append(monitors, fmt.Sprintf("%s:%s", host.(string), port.(string)))
+				}
+			}
+			v["option"] = map[string]interface{}{
+				"user":     metadata["auth_username"],
+				"keyring":  metadata["keyring"],
+				"mointors": monitors,
+			}
+		} else {
+			glog.V(4).Infof("Hyper: volume %s %s", name, volume.GetPath())
+
+			v[KEY_VOLUME_DRIVE] = VOLUME_TYPE_VFS
+			v[KEY_VOLUME_SOURCE] = volume.GetPath()
+		}
+
 		volumes = append(volumes, v)
 	}
 	specMap[KEY_VOLUMES] = volumes
+	glog.V(4).Infof("Hyper volumes: %v", volumes)
 
 	services := r.buildHyperPodServices(pod)
 	if services == nil {

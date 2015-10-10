@@ -97,6 +97,10 @@ func (vh *volumeHost) GetWriter() io.Writer {
 	return vh.kubelet.writer
 }
 
+func (vh *volumeHost) IsNoMountSupported() bool {
+	return vh.kubelet.GetRuntime().Name() == "hyper"
+}
+
 func (kl *Kubelet) newVolumeBuilderFromPlugins(spec *volume.Spec, pod *api.Pod, opts volume.VolumeOptions) (volume.Builder, error) {
 	plugin, err := kl.volumePluginMgr.FindPluginBySpec(spec)
 	if err != nil {

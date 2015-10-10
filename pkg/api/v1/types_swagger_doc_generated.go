@@ -73,11 +73,11 @@ func (CephFSVolumeSource) SwaggerDoc() map[string]string {
 }
 
 var map_CinderVolumeSource = map[string]string{
-	"":                   "CinderVolumeSource represents a cinder volume resource in Openstack. A Cinder volume must exist before mounting to a container. The volume must also be in the same region as the kubelet.",
-	"volumeID":           "volume id used to identify the volume in cinder More info: http://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md",
-	"fsType":             "Required: Filesystem type to mount. Must be a filesystem type supported by the host operating system. Only ext3 and ext4 are allowed More info: http://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md",
-	"readOnly":           "Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. More info: http://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md",
-	"withoutOpenStackCP": "Optional: Specify if using cinder volume together with OpenStack CloudProvider",
+	"":                "CinderVolumeSource represents a cinder volume resource in Openstack. A Cinder volume must exist before mounting to a container. The volume must also be in the same region as the kubelet.",
+	"volumeID":        "volume id used to identify the volume in cinder More info: http://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md",
+	"fsType":          "Required: Filesystem type to mount. Must be a filesystem type supported by the host operating system. Only ext3 and ext4 are allowed More info: http://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md",
+	"readOnly":        "Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. More info: http://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md",
+	"withOpenStackCP": "Optional: Specify if using cinder volume together with OpenStack CloudProvider",
 }
 
 func (CinderVolumeSource) SwaggerDoc() map[string]string {

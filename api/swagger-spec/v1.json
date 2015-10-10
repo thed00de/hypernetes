@@ -2650,7 +2650,7 @@
    },
    {
     "path": "/api/v1/networks",
-    "description": "API at /api/v1 version v1",
+    "description": "API at /api/v1",
     "operations": [
      {
       "type": "v1.NetworkList",
@@ -2754,7 +2754,7 @@
    },
    {
     "path": "/api/v1/watch/networks",
-    "description": "API at /api/v1 version v1",
+    "description": "API at /api/v1",
     "operations": [
      {
       "type": "json.WatchEvent",
@@ -2821,7 +2821,7 @@
    },
    {
     "path": "/api/v1/networks/{name}",
-    "description": "API at /api/v1 version v1",
+    "description": "API at /api/v1",
     "operations": [
      {
       "type": "v1.Network",
@@ -3001,7 +3001,7 @@
    },
    {
     "path": "/api/v1/watch/networks/{name}",
-    "description": "API at /api/v1 version v1",
+    "description": "API at /api/v1",
     "operations": [
      {
       "type": "json.WatchEvent",
@@ -3076,7 +3076,7 @@
    },
    {
     "path": "/api/v1/networks/{name}/status",
-    "description": "API at /api/v1 version v1",
+    "description": "API at /api/v1",
     "operations": [
      {
       "type": "v1.Network",
@@ -12995,7 +12995,7 @@
       "type": "boolean",
       "description": "Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. More info: http://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md"
      },
-     "withoutOpenStackCP": {
+     "withOpenStackCP": {
       "type": "boolean",
       "description": "Optional: Specify if using cinder volume together with OpenStack CloudProvider"
      }

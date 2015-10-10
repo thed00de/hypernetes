@@ -73,6 +73,10 @@ func (f *fakeVolumeHost) GetCinderConfig() string {
 	return f.cinderConf
 }
 
+func (f *fakeVolumeHost) IsNoMountSupported() bool {
+	return false
+}
+
 func (f *fakeVolumeHost) GetMounter() mount.Interface {
 	return f.mounter
 }
@@ -177,6 +181,10 @@ func (fv *FakeVolume) GetPath() string {
 	return path.Join(fv.Plugin.Host.GetPodVolumeDir(fv.PodUID, util.EscapeQualifiedNameForDisk(fv.Plugin.PluginName), fv.VolName))
 }
 
+func (fv *FakeVolume) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 func (fv *FakeVolume) TearDown() error {
 	return fv.TearDownAt(fv.GetPath())
 }
@@ -196,6 +204,14 @@ func (fr *fakeRecycler) Recycle() error {
 
 func (fr *fakeRecycler) GetPath() string {
 	return fr.path
+}
+
+func (fr *fakeRecycler) IsNoMountSupported() bool {
+	return false
+}
+
+func (fr *fakeRecycler) GetMetaData() map[string]interface{} {
+	return nil
 }
 
 func NewFakeRecycler(spec *Spec, host VolumeHost, config VolumeConfig) (Recycler, error) {
@@ -218,4 +234,12 @@ func (fd *FakeDeleter) Delete() error {
 
 func (fd *FakeDeleter) GetPath() string {
 	return fd.path
+}
+
+func (fd *FakeDeleter) IsNoMountSupported() bool {
+	return false
+}
+
+func (fd *FakeDeleter) GetMetaData() map[string]interface{} {
+	return nil
 }

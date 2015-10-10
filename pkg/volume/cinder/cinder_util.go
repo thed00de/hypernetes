@@ -36,7 +36,7 @@ type CinderDiskUtil struct {
 	cinderBaremetalUtil *CinderBaremetalUtil
 }
 
-func newCinderDiskUtil(cinderConfigFile string) *CinderDiskUtil {
+func newCinderDiskUtil(cinderConfigFile string, isNoMountSupported bool) *CinderDiskUtil {
 	result := &CinderDiskUtil{}
 
 	if cinderConfigFile != "" {
@@ -45,8 +45,9 @@ func newCinderDiskUtil(cinderConfigFile string) *CinderDiskUtil {
 			glog.Warningf("Init cinder client failed: %v", err)
 		} else {
 			result.cinderBaremetalUtil = &CinderBaremetalUtil{
-				client:   cinderClient,
-				hostname: node.GetHostname(""),
+				client:             cinderClient,
+				hostname:           node.GetHostname(""),
+				isNoMountSupported: isNoMountSupported,
 			}
 		}
 	} else {
@@ -59,12 +60,12 @@ func newCinderDiskUtil(cinderConfigFile string) *CinderDiskUtil {
 // Attaches a disk specified by a volume.CinderPersistenDisk to the current kubelet.
 // Mounts the disk to it's global path.
 func (util *CinderDiskUtil) AttachDisk(b *cinderVolumeBuilder, globalPDPath string) error {
-	if b.withoutOpenStackCP {
-		glog.V(4).Infof("Attaching cinder volume %s baremetal", b.volName)
-		return util.cinderBaremetalUtil.AttachDiskBaremetal(b, globalPDPath)
-	} else {
+	if b.withOpenStackCP {
 		glog.V(4).Infof("Attaching cinder volume %s with cloudprovider", b.volName)
 		return util.AttachDiskCloudProvider(b, globalPDPath)
+	} else {
+		glog.V(4).Infof("Attaching cinder volume %s baremetal", b.volName)
+		return util.cinderBaremetalUtil.AttachDiskBaremetal(b, globalPDPath)
 	}
 }
 
@@ -145,11 +146,11 @@ func makeDevicePath(diskid string) string {
 
 // Unmounts the device and detaches the disk from the kubelet's host machine.
 func (util *CinderDiskUtil) DetachDisk(cd *cinderVolumeCleaner) error {
-	if cd.withoutOpenStackCP {
+	if cd.withOpenStackCP {
+		return util.DetachDiskCloudProvider(cd)
+	} else {
 		globalPDPath := makeGlobalPDName(cd.plugin.host, cd.pdName)
 		return util.cinderBaremetalUtil.DetachDiskBaremetal(cd, globalPDPath)
-	} else {
-		return util.DetachDiskCloudProvider(cd)
 	}
 
 	return nil

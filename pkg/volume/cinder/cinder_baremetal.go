@@ -25,19 +25,26 @@ import (
 	"github.com/rackspace/gophercloud/openstack/blockstorage/v2/extensions/volumeactions"
 )
 
-const (
-	defaultMountPoint = "xvda"
-)
-
 type CinderBaremetalUtil struct {
-	client   *cinderClient
-	hostname string
+	client             *cinderClient
+	hostname           string
+	isNoMountSupported bool
 }
 
 func (cb *CinderBaremetalUtil) AttachDiskBaremetal(b *cinderVolumeBuilder, globalPDPath string) error {
 	volume, err := cb.client.getVolume(b.pdName)
 	if err != nil {
 		return err
+	}
+
+	glog.V(4).Infof("Begin to attach volume %v", volume)
+	if len(volume.Attachments) > 0 {
+		for _, att := range volume.Attachments {
+			if att["host_name"].(string) == cb.hostname && att["device"].(string) == b.GetPath() {
+				glog.V(5).Infof("Volume %s is already attached", b.pdName)
+				return nil
+			}
+		}
 	}
 
 	if volume.Status != "available" {
@@ -51,38 +58,48 @@ func (cb *CinderBaremetalUtil) AttachDiskBaremetal(b *cinderVolumeBuilder, globa
 
 	// attach volume
 	attachOpts := volumeactions.AttachOpts{
-		MountPoint: defaultMountPoint,
+		MountPoint: b.GetPath(),
 		Mode:       mountMode,
 		HostName:   cb.hostname,
 	}
 
 	err = cb.client.attach(volume.ID, attachOpts)
-	if err != nil {
+	if err != nil && err.Error() != "EOF" {
 		return err
 	}
 
 	connectionInfo, err := cb.client.getConnectionInfo(volume.ID, cb.getConnectionOptions())
 	if err != nil {
+		if detachErr := cb.client.detach(volume.ID); detachErr != nil {
+			glog.Warningf("Detach cinder volume %s failed: %v", volume.ID, detachErr)
+		}
 		return err
 	}
 
 	glog.V(4).Infof("Get cinder connection info %v", connectionInfo)
 
 	volumeType := connectionInfo["driver_volume_type"].(string)
-	cinderDriver, err := GetCinderDriver(volumeType)
-	if err != nil {
-		glog.Warningf("Get cinder driver %s failed: %v", volumeType, err)
-		return err
-	}
-
 	data := connectionInfo["data"].(map[string]interface{})
+	data["volume_type"] = volumeType
 	if volumeType == "rbd" {
 		data["keyring"] = cb.client.keyring
 	}
 
-	err = cinderDriver.Attach(data, globalPDPath)
-	if err != nil {
-		return err
+	if cb.isNoMountSupported && volumeType == "rbd" {
+		glog.V(4).Infof("Volume %s willn't be mounted on host since rbd is natively supported",
+			volume.Name)
+		b.cinderVolume.metadata = data
+	} else {
+		cinderDriver, err := GetCinderDriver(volumeType)
+		if err != nil {
+			glog.Warningf("Get cinder driver %s failed: %v", volumeType, err)
+			return err
+		}
+
+		err = cinderDriver.Attach(data, globalPDPath)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -113,12 +130,21 @@ func (cb *CinderBaremetalUtil) DetachDiskBaremetal(cd *cinderVolumeCleaner, glob
 		data["keyring"] = cb.client.keyring
 	}
 
-	err = cinderDriver.Detach(data, globalPDPath)
+	if cb.isNoMountSupported && volumeType == "rbd" {
+		glog.V(4).Infof("Volume %s is not mounted since rbd is natively supported", volume.Name)
+	} else {
+		err = cinderDriver.Detach(data, globalPDPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = cb.client.terminateConnection(volume.ID, cb.getConnectionOptions())
 	if err != nil {
 		return err
 	}
 
-	err = cb.client.detach(volume.ID, cb.getConnectionOptions())
+	err = cb.client.detach(volume.ID)
 	if err != nil {
 		return err
 	}

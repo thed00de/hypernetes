@@ -117,6 +117,10 @@ func (b flockerBuilder) GetPath() string {
 	return b.flocker.path
 }
 
+func (b flockerBuilder) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 func (b flockerBuilder) SetUp() error {
 	return b.SetUpAt(b.flocker.datasetName)
 }

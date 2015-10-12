@@ -75,7 +75,7 @@ Config kubestack
 
 ```shell
 # cat /etc/kubestack.conf
-[Global](#)
+[Global]
 auth-url = http://172.31.17.48:5000/v2.0
 username = admin
 password = admin
@@ -83,32 +83,32 @@ tenant-name = admin
 region = RegionOne
 ext-net-id = c0a96e14-b90f-49ef-b1d7-86321d55f7a0
 
-[LoadBalancer](#)
+[LoadBalancer]
 create-monitor = yes
 monitor-delay = 1m
 monitor-timeout = 30s
 monitor-max-retries = 3
 
-[Plugin](#)
+[Plugin]
 plugin-name = ovs
 ```
 
 ```shell
 # cat /usr/lib/systemd/system/kubestack.service
-[Unit](#)
+[Unit]
 Description=OpenStack Network Provider for Kubernetes
 After=syslog.target network.target openvswitch.service
 Requires=openvswitch.service
 
-[Service](#)
-ExecStart=/usr/local/bin/kubestack \\
-  -logtostderr=false -v=4 \\
-  -group=kube \\
-  -log_dir=/var/log/kubestack \\
+[Service]
+ExecStart=/usr/local/bin/kubestack \
+  -logtostderr=false -v=4 \
+  -group=kube \
+  -log_dir=/var/log/kubestack \
   -conf=/etc/kubestack.conf
 Restart=on-failure
 
-[Install](#)
+[Install]
 WantedBy=multi-user.target
 ```
 
@@ -139,7 +139,7 @@ chown kube:kube kubernetes/
 Config etcd
 
 ```shell
-cat \>\> /etc/etcd/etcd.conf \<\<EOF
+cat >> /etc/etcd/etcd.conf <<EOF
 ETCD_LISTEN_CLIENT_URLS="http://master:2379"
 EOF
 ```
@@ -218,14 +218,14 @@ KUBELET_API_SERVER="--api_servers=http://ostack:8080"
 KUBELET_ARGS="--container-runtime=hyper --network-provider=openstack --cinder-config=/etc/kubernetes/cinder.conf"
 
 # cat /etc/kubernetes/cinder.conf
-[Global](#)
+[Global]
 auth-url = http://172.31.17.48:5000/v2.0
 username = admin
 password = admin
 tenant-name = admin
 region = RegionOne
 
-[RBD](#)
+[RBD]
 keyring = "AQAtqv9V3u4nKRAA9xfic687DqPW1FV/rly3nw=="
 ```
 

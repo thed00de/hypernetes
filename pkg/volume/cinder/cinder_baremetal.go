@@ -70,13 +70,9 @@ func (cb *CinderBaremetalUtil) AttachDiskBaremetal(b *cinderVolumeBuilder, globa
 
 	connectionInfo, err := cb.client.getConnectionInfo(volume.ID, cb.getConnectionOptions())
 	if err != nil {
-		if detachErr := cb.client.detach(volume.ID); detachErr != nil {
-			glog.Warningf("Detach cinder volume %s failed: %v", volume.ID, detachErr)
-		}
+		cb.client.detach(volume.ID)
 		return err
 	}
-
-	glog.V(4).Infof("Get cinder connection info %v", connectionInfo)
 
 	volumeType := connectionInfo["driver_volume_type"].(string)
 	data := connectionInfo["data"].(map[string]interface{})
@@ -84,20 +80,29 @@ func (cb *CinderBaremetalUtil) AttachDiskBaremetal(b *cinderVolumeBuilder, globa
 	if volumeType == "rbd" {
 		data["keyring"] = cb.client.keyring
 	}
+	b.cinderVolume.metadata = data
+
+	cinderDriver, err := GetCinderDriver(volumeType)
+	if err != nil {
+		glog.Warningf("Get cinder driver %s failed: %v", volumeType, err)
+		cb.client.detach(volume.ID)
+		return err
+	}
+
+	err = cinderDriver.Format(data, b.fsType)
+	if err != nil {
+		glog.Warningf("Format cinder volume %s failed: %v", b.pdName, err)
+		cb.client.detach(volume.ID)
+		return err
+	}
 
 	if cb.isNoMountSupported && volumeType == "rbd" {
 		glog.V(4).Infof("Volume %s willn't be mounted on host since rbd is natively supported",
 			volume.Name)
-		b.cinderVolume.metadata = data
 	} else {
-		cinderDriver, err := GetCinderDriver(volumeType)
-		if err != nil {
-			glog.Warningf("Get cinder driver %s failed: %v", volumeType, err)
-			return err
-		}
-
 		err = cinderDriver.Attach(data, globalPDPath)
 		if err != nil {
+			cb.client.detach(volume.ID)
 			return err
 		}
 	}
@@ -116,8 +121,6 @@ func (cb *CinderBaremetalUtil) DetachDiskBaremetal(cd *cinderVolumeCleaner, glob
 	if err != nil {
 		return err
 	}
-
-	glog.V(4).Infof("Get cinder connection info %v", connectionInfo)
 
 	volumeType := connectionInfo["driver_volume_type"].(string)
 	cinderDriver, err := GetCinderDriver(volumeType)
@@ -142,6 +145,10 @@ func (cb *CinderBaremetalUtil) DetachDiskBaremetal(cd *cinderVolumeCleaner, glob
 	err = cb.client.terminateConnection(volume.ID, cb.getConnectionOptions())
 	if err != nil {
 		return err
+	}
+
+	if volume.Status == "available" {
+		return nil
 	}
 
 	err = cb.client.detach(volume.ID)

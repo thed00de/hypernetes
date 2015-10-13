@@ -18,6 +18,9 @@ package drivers
 
 import (
 	"encoding/json"
+	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/volume/cinder"
@@ -31,13 +34,14 @@ type RBDDriver struct {
 }
 
 type RBDVolume struct {
-	keyring     string   `json:"keyring"`
-	authEnabled bool     `json:"auth_enabled"`
-	authUser    string   `json:"auth_username"`
-	hosts       []string `json:"hosts"`
-	ports       []int    `json:"ports"`
-	name        string   `json:"name"`
-	accessMode  bool     `json:"access_mode"`
+	Keyring     string   `json:"keyring"`
+	AuthEnabled bool     `json:"auth_enabled"`
+	AuthUser    string   `json:"auth_username"`
+	Hosts       []string `json:"hosts"`
+	Ports       []string `json:"ports"`
+	Name        string   `json:"name"`
+	AccessMode  string   `json:"access_mode"`
+	VolumeType  string   `json:"volume_type"`
 }
 
 func newRBDDriver() (cinder.DriverInterface, error) {
@@ -80,5 +84,60 @@ func (d *RBDDriver) Detach(volumeData map[string]interface{}, globalPDPath strin
 	}
 
 	glog.V(4).Infof("Attach cinder rbd %v to %s", volume, globalPDPath)
+	return nil
+}
+
+func (d *RBDDriver) unmapRBD(rbdPath, mappedDevice string) error {
+	_, err := exec.Command(rbdPath, "unmap", mappedDevice).CombinedOutput()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *RBDDriver) Format(volumeData map[string]interface{}, fsType string) error {
+	volume, err := d.ToRBDVolume(volumeData)
+	if err != nil {
+		return err
+	}
+
+	glog.V(4).Infof("Format cinder rbd %v to %s", volume, fsType)
+
+	rbdPath, err := exec.LookPath("rbd")
+	if err != nil {
+		return fmt.Errorf("rbd command not found")
+	}
+
+	filePath, err := exec.LookPath("file")
+	if err != nil {
+		return fmt.Errorf("file command not found")
+	}
+
+	mappedDeviceByte, err := exec.Command(rbdPath, "map", volume.Name).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("rbd map failed: %v", err)
+	}
+
+	mappedDevice := strings.TrimSpace(string(mappedDeviceByte))
+	defer d.unmapRBD(rbdPath, mappedDevice)
+
+	deviceInfo, err := exec.Command(filePath, "-s", mappedDevice).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("rbd map failed: %v", err)
+	}
+
+	if !strings.Contains(string(deviceInfo), fmt.Sprintf("%s filesystem", fsType)) {
+		mkfsPath, err := exec.LookPath(fmt.Sprintf("mkfs.%s", fsType))
+		if err != nil {
+			return fmt.Errorf("mkfs.%s not found", fsType)
+		}
+
+		_, err = exec.Command(mkfsPath, mappedDevice).CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("rbd format failed: %v", err)
+		}
+	}
+
 	return nil
 }

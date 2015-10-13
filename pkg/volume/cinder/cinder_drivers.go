@@ -25,6 +25,7 @@ import (
 type DriverInterface interface {
 	Attach(volumeData map[string]interface{}, globalPDPath string) error
 	Detach(volumeData map[string]interface{}, globalPDPath string) error
+	Format(volumeData map[string]interface{}, fstype string) error
 }
 
 // Factory is a function that returns a DriverInterface

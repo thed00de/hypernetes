@@ -18,7 +18,6 @@ package keystone
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/golang/glog"
 	"github.com/rackspace/gophercloud"
@@ -45,14 +44,31 @@ func (keystoneAuthenticator *KeystoneAuthenticator) AuthenticatePassword(usernam
 		return nil, false, errors.New("Failed to authenticate")
 	}
 
-	return &user.DefaultInfo{Name: username}, true, nil
+	return &user.DefaultInfo{Name: username, Password: password}, true, nil
+}
+
+func (keystoneAuthenticator *KeystoneAuthenticator) AuthenticateToken(token string) (user.Info, bool, error) {
+	opts := gophercloud.AuthOptions{
+		IdentityEndpoint: keystoneAuthenticator.authURL,
+		TokenID:          token,
+	}
+
+	_, err := openstack.AuthenticatedClient(opts)
+	if err != nil {
+		glog.Info("Failed: Starting openstack authenticate client")
+		return nil, false, errors.New("Failed to authenticate")
+	}
+
+	return &user.DefaultInfo{Token: token}, true, nil
 }
 
 // New returns a request authenticator that validates credentials using openstack keystone
 func NewKeystoneAuthenticator(authURL string) (*KeystoneAuthenticator, error) {
-	if !strings.HasPrefix(authURL, "https") {
-		return nil, errors.New("Auth URL should be secure and start with https")
-	}
+	/*
+		if !strings.HasPrefix(authURL, "https") {
+			return nil, errors.New("Auth URL should be secure and start with https")
+		}
+	*/
 	if authURL == "" {
 		return nil, errors.New("Auth URL is empty")
 	}

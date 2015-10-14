@@ -21,6 +21,13 @@ type Info interface {
 	// GetName returns the name that uniquely identifies this user among all
 	// other active users.
 	GetName() string
+
+	// GetPassword
+	GetPassword() string
+
+	// GetToken
+	GetToken() string
+
 	// GetUID returns a unique value for a particular user that will change
 	// if the user is removed from the system and another user is added with
 	// the same name.
@@ -32,13 +39,23 @@ type Info interface {
 // DefaultInfo provides a simple user information exchange object
 // for components that implement the UserInfo interface.
 type DefaultInfo struct {
-	Name   string
-	UID    string
-	Groups []string
+	Name     string
+	Password string
+	Token    string
+	UID      string
+	Groups   []string
 }
 
 func (i *DefaultInfo) GetName() string {
 	return i.Name
+}
+
+func (i *DefaultInfo) GetPassword() string {
+	return i.Password
+}
+
+func (i *DefaultInfo) GetToken() string {
+	return i.Token
 }
 
 func (i *DefaultInfo) GetUID() string {

@@ -29,6 +29,12 @@ type Attributes interface {
 	// no authentication occurred and the request was allowed to proceed.
 	GetUserName() string
 
+	// GetPassword
+	GetPassword() string
+
+	// GetToken
+	GetToken() string
+
 	// The list of group names the authenticated user is a member of. Can be
 	// empty if the authenticated user is not in any groups, or if no
 	// authentication occurred.
@@ -41,6 +47,9 @@ type Attributes interface {
 	// When IsReadOnly() == true, the request has no side effects, other than
 	// caching, logging, and other incidentals.
 	IsReadOnly() bool
+
+	// The tenant of the object, if a request is for a REST object.
+	GetTenant() string
 
 	// The namespace of the object, if a request is for a REST object.
 	GetNamespace() string
@@ -74,6 +83,7 @@ type RequestAttributesGetter interface {
 type AttributesRecord struct {
 	User      user.Info
 	Verb      string
+	Tenant    string
 	Namespace string
 	APIGroup  string
 	Resource  string
@@ -81,6 +91,14 @@ type AttributesRecord struct {
 
 func (a AttributesRecord) GetUserName() string {
 	return a.User.GetName()
+}
+
+func (a AttributesRecord) GetPassword() string {
+	return a.User.GetPassword()
+}
+
+func (a AttributesRecord) GetToken() string {
+	return a.User.GetToken()
 }
 
 func (a AttributesRecord) GetGroups() []string {
@@ -93,6 +111,10 @@ func (a AttributesRecord) GetVerb() string {
 
 func (a AttributesRecord) IsReadOnly() bool {
 	return a.Verb == "get" || a.Verb == "list" || a.Verb == "watch"
+}
+
+func (a AttributesRecord) GetTenant() string {
+	return a.Tenant
 }
 
 func (a AttributesRecord) GetNamespace() string {

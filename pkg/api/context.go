@@ -37,6 +37,9 @@ const namespaceKey key = 0
 // userKey is the context key for the request user.
 const userKey key = 1
 
+// tenantKey
+const tenantKey key = 2
+
 // NewContext instantiates a base context object for request flows.
 func NewContext() Context {
 	return context.TODO()

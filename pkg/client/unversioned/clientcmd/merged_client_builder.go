@@ -93,6 +93,16 @@ func (config DeferredLoadingClientConfig) ClientConfig() (*client.Config, error)
 	return mergedConfig, nil
 }
 
+// Tenant implements KubeConfig
+func (config DeferredLoadingClientConfig) Tenant() (string, bool, error) {
+	mergedKubeConfig, err := config.createClientConfig()
+	if err != nil {
+		return "", false, err
+	}
+
+	return mergedKubeConfig.Tenant()
+}
+
 // Namespace implements KubeConfig
 func (config DeferredLoadingClientConfig) Namespace() (string, bool, error) {
 	mergedKubeConfig, err := config.createClientConfig()

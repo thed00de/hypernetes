@@ -56,6 +56,7 @@ type ContextOverrideFlags struct {
 	ClusterName  FlagInfo
 	AuthInfoName FlagInfo
 	Namespace    FlagInfo
+	Tenant       FlagInfo
 }
 
 // ClusterOverride holds the flag names to be used for binding command line flags for Cluster objects
@@ -107,6 +108,7 @@ const (
 	FlagAuthInfoName = "user"
 	FlagContext      = "context"
 	FlagNamespace    = "namespace"
+	FlagTenant       = "tenant"
 	FlagAPIServer    = "server"
 	FlagAPIVersion   = "api-version"
 	FlagInsecure     = "insecure-skip-tls-verify"
@@ -156,6 +158,7 @@ func RecommendedContextOverrideFlags(prefix string) ContextOverrideFlags {
 		ClusterName:  FlagInfo{prefix + FlagClusterName, "", "", "The name of the kubeconfig cluster to use"},
 		AuthInfoName: FlagInfo{prefix + FlagAuthInfoName, "", "", "The name of the kubeconfig user to use"},
 		Namespace:    FlagInfo{prefix + FlagNamespace, "", "", "If present, the namespace scope for this CLI request."},
+		Tenant:       FlagInfo{prefix + FlagTenant, "", "", "If present, the tenant scope for this CLI request."},
 	}
 }
 
@@ -189,4 +192,5 @@ func BindContextFlags(contextInfo *clientcmdapi.Context, flags *pflag.FlagSet, f
 	flagNames.ClusterName.BindStringFlag(flags, &contextInfo.Cluster)
 	flagNames.AuthInfoName.BindStringFlag(flags, &contextInfo.AuthInfo)
 	flagNames.Namespace.BindStringFlag(flags, &contextInfo.Namespace)
+	flagNames.Tenant.BindStringFlag(flags, &contextInfo.Tenant)
 }

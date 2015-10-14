@@ -116,6 +116,7 @@ __custom_func() {
    * services (aka 'svc')
    * events (aka 'ev')
    * nodes (aka 'no')
+   * tenants (aks 'te')
    * namespaces (aka 'ns')
    * networks (aka 'net')
    * secrets

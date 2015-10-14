@@ -1564,6 +1564,7 @@ func autoconvert_api_ObjectMeta_To_v1_ObjectMeta(in *api.ObjectMeta, out *Object
 	}
 	out.Name = in.Name
 	out.GenerateName = in.GenerateName
+	out.Tenant = in.Tenant
 	out.Namespace = in.Namespace
 	out.SelfLink = in.SelfLink
 	out.UID = in.UID
@@ -1614,6 +1615,7 @@ func autoconvert_api_ObjectReference_To_v1_ObjectReference(in *api.ObjectReferen
 	}
 	out.Kind = in.Kind
 	out.Namespace = in.Namespace
+	out.Tenant = in.Tenant
 	out.Name = in.Name
 	out.UID = in.UID
 	out.APIVersion = in.APIVersion
@@ -2971,6 +2973,89 @@ func autoconvert_api_TCPSocketAction_To_v1_TCPSocketAction(in *api.TCPSocketActi
 
 func convert_api_TCPSocketAction_To_v1_TCPSocketAction(in *api.TCPSocketAction, out *TCPSocketAction, s conversion.Scope) error {
 	return autoconvert_api_TCPSocketAction_To_v1_TCPSocketAction(in, out, s)
+}
+
+func autoconvert_api_Tenant_To_v1_Tenant(in *api.Tenant, out *Tenant, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*api.Tenant))(in)
+	}
+	if err := s.Convert(&in.TypeMeta, &out.TypeMeta, 0); err != nil {
+		return err
+	}
+	if err := convert_api_ObjectMeta_To_v1_ObjectMeta(&in.ObjectMeta, &out.ObjectMeta, s); err != nil {
+		return err
+	}
+	if err := convert_api_TenantSpec_To_v1_TenantSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	if err := convert_api_TenantStatus_To_v1_TenantStatus(&in.Status, &out.Status, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+func convert_api_Tenant_To_v1_Tenant(in *api.Tenant, out *Tenant, s conversion.Scope) error {
+	return autoconvert_api_Tenant_To_v1_Tenant(in, out, s)
+}
+
+func autoconvert_api_TenantList_To_v1_TenantList(in *api.TenantList, out *TenantList, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*api.TenantList))(in)
+	}
+	if err := s.Convert(&in.TypeMeta, &out.TypeMeta, 0); err != nil {
+		return err
+	}
+	if err := s.Convert(&in.ListMeta, &out.ListMeta, 0); err != nil {
+		return err
+	}
+	if in.Items != nil {
+		out.Items = make([]Tenant, len(in.Items))
+		for i := range in.Items {
+			if err := convert_api_Tenant_To_v1_Tenant(&in.Items[i], &out.Items[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
+	return nil
+}
+
+func convert_api_TenantList_To_v1_TenantList(in *api.TenantList, out *TenantList, s conversion.Scope) error {
+	return autoconvert_api_TenantList_To_v1_TenantList(in, out, s)
+}
+
+func autoconvert_api_TenantSpec_To_v1_TenantSpec(in *api.TenantSpec, out *TenantSpec, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*api.TenantSpec))(in)
+	}
+	if in.Namespaces != nil {
+		out.Namespaces = make([]Namespace, len(in.Namespaces))
+		for i := range in.Namespaces {
+			if err := convert_api_Namespace_To_v1_Namespace(&in.Namespaces[i], &out.Namespaces[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Namespaces = nil
+	}
+	return nil
+}
+
+func convert_api_TenantSpec_To_v1_TenantSpec(in *api.TenantSpec, out *TenantSpec, s conversion.Scope) error {
+	return autoconvert_api_TenantSpec_To_v1_TenantSpec(in, out, s)
+}
+
+func autoconvert_api_TenantStatus_To_v1_TenantStatus(in *api.TenantStatus, out *TenantStatus, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*api.TenantStatus))(in)
+	}
+	out.Phase = TenantPhase(in.Phase)
+	return nil
+}
+
+func convert_api_TenantStatus_To_v1_TenantStatus(in *api.TenantStatus, out *TenantStatus, s conversion.Scope) error {
+	return autoconvert_api_TenantStatus_To_v1_TenantStatus(in, out, s)
 }
 
 func autoconvert_api_Volume_To_v1_Volume(in *api.Volume, out *Volume, s conversion.Scope) error {
@@ -4679,6 +4764,7 @@ func autoconvert_v1_ObjectMeta_To_api_ObjectMeta(in *ObjectMeta, out *api.Object
 	}
 	out.Name = in.Name
 	out.GenerateName = in.GenerateName
+	out.Tenant = in.Tenant
 	out.Namespace = in.Namespace
 	out.SelfLink = in.SelfLink
 	out.UID = in.UID
@@ -4729,6 +4815,7 @@ func autoconvert_v1_ObjectReference_To_api_ObjectReference(in *ObjectReference, 
 	}
 	out.Kind = in.Kind
 	out.Namespace = in.Namespace
+	out.Tenant = in.Tenant
 	out.Name = in.Name
 	out.UID = in.UID
 	out.APIVersion = in.APIVersion
@@ -6091,6 +6178,89 @@ func convert_v1_TCPSocketAction_To_api_TCPSocketAction(in *TCPSocketAction, out 
 	return autoconvert_v1_TCPSocketAction_To_api_TCPSocketAction(in, out, s)
 }
 
+func autoconvert_v1_Tenant_To_api_Tenant(in *Tenant, out *api.Tenant, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*Tenant))(in)
+	}
+	if err := s.Convert(&in.TypeMeta, &out.TypeMeta, 0); err != nil {
+		return err
+	}
+	if err := convert_v1_ObjectMeta_To_api_ObjectMeta(&in.ObjectMeta, &out.ObjectMeta, s); err != nil {
+		return err
+	}
+	if err := convert_v1_TenantSpec_To_api_TenantSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	if err := convert_v1_TenantStatus_To_api_TenantStatus(&in.Status, &out.Status, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+func convert_v1_Tenant_To_api_Tenant(in *Tenant, out *api.Tenant, s conversion.Scope) error {
+	return autoconvert_v1_Tenant_To_api_Tenant(in, out, s)
+}
+
+func autoconvert_v1_TenantList_To_api_TenantList(in *TenantList, out *api.TenantList, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*TenantList))(in)
+	}
+	if err := s.Convert(&in.TypeMeta, &out.TypeMeta, 0); err != nil {
+		return err
+	}
+	if err := s.Convert(&in.ListMeta, &out.ListMeta, 0); err != nil {
+		return err
+	}
+	if in.Items != nil {
+		out.Items = make([]api.Tenant, len(in.Items))
+		for i := range in.Items {
+			if err := convert_v1_Tenant_To_api_Tenant(&in.Items[i], &out.Items[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
+	return nil
+}
+
+func convert_v1_TenantList_To_api_TenantList(in *TenantList, out *api.TenantList, s conversion.Scope) error {
+	return autoconvert_v1_TenantList_To_api_TenantList(in, out, s)
+}
+
+func autoconvert_v1_TenantSpec_To_api_TenantSpec(in *TenantSpec, out *api.TenantSpec, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*TenantSpec))(in)
+	}
+	if in.Namespaces != nil {
+		out.Namespaces = make([]api.Namespace, len(in.Namespaces))
+		for i := range in.Namespaces {
+			if err := convert_v1_Namespace_To_api_Namespace(&in.Namespaces[i], &out.Namespaces[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Namespaces = nil
+	}
+	return nil
+}
+
+func convert_v1_TenantSpec_To_api_TenantSpec(in *TenantSpec, out *api.TenantSpec, s conversion.Scope) error {
+	return autoconvert_v1_TenantSpec_To_api_TenantSpec(in, out, s)
+}
+
+func autoconvert_v1_TenantStatus_To_api_TenantStatus(in *TenantStatus, out *api.TenantStatus, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*TenantStatus))(in)
+	}
+	out.Phase = api.TenantPhase(in.Phase)
+	return nil
+}
+
+func convert_v1_TenantStatus_To_api_TenantStatus(in *TenantStatus, out *api.TenantStatus, s conversion.Scope) error {
+	return autoconvert_v1_TenantStatus_To_api_TenantStatus(in, out, s)
+}
+
 func autoconvert_v1_Volume_To_api_Volume(in *Volume, out *api.Volume, s conversion.Scope) error {
 	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
 		defaulting.(func(*Volume))(in)
@@ -6381,6 +6551,10 @@ func init() {
 		autoconvert_api_Service_To_v1_Service,
 		autoconvert_api_Subnet_To_v1_Subnet,
 		autoconvert_api_TCPSocketAction_To_v1_TCPSocketAction,
+		autoconvert_api_TenantList_To_v1_TenantList,
+		autoconvert_api_TenantSpec_To_v1_TenantSpec,
+		autoconvert_api_TenantStatus_To_v1_TenantStatus,
+		autoconvert_api_Tenant_To_v1_Tenant,
 		autoconvert_api_VolumeMount_To_v1_VolumeMount,
 		autoconvert_api_VolumeSource_To_v1_VolumeSource,
 		autoconvert_api_Volume_To_v1_Volume,
@@ -6504,6 +6678,10 @@ func init() {
 		autoconvert_v1_Service_To_api_Service,
 		autoconvert_v1_Subnet_To_api_Subnet,
 		autoconvert_v1_TCPSocketAction_To_api_TCPSocketAction,
+		autoconvert_v1_TenantList_To_api_TenantList,
+		autoconvert_v1_TenantSpec_To_api_TenantSpec,
+		autoconvert_v1_TenantStatus_To_api_TenantStatus,
+		autoconvert_v1_Tenant_To_api_Tenant,
 		autoconvert_v1_VolumeMount_To_api_VolumeMount,
 		autoconvert_v1_VolumeSource_To_api_VolumeSource,
 		autoconvert_v1_Volume_To_api_Volume,

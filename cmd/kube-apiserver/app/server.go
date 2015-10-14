@@ -477,7 +477,7 @@ func (s *APIServer) Run(_ []string) error {
 	}
 
 	authorizationModeNames := strings.Split(s.AuthorizationMode, ",")
-	authorizer, err := apiserver.NewAuthorizerFromAuthorizationConfig(authorizationModeNames, s.AuthorizationPolicyFile)
+	authorizer, err := apiserver.NewAuthorizerFromAuthorizationConfig(authorizationModeNames, s.AuthorizationPolicyFile, client)
 	if err != nil {
 		glog.Fatalf("Invalid Authorization Config: %v", err)
 	}

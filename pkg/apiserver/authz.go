@@ -22,7 +22,9 @@ import (
 
 	"k8s.io/kubernetes/pkg/auth/authorizer"
 	"k8s.io/kubernetes/pkg/auth/authorizer/abac"
+	"k8s.io/kubernetes/pkg/auth/authorizer/keystone"
 	"k8s.io/kubernetes/pkg/auth/authorizer/union"
+	client "k8s.io/kubernetes/pkg/client/unversioned"
 )
 
 // Attributes implements authorizer.Attributes interface.
@@ -60,15 +62,16 @@ const (
 	ModeAlwaysAllow string = "AlwaysAllow"
 	ModeAlwaysDeny  string = "AlwaysDeny"
 	ModeABAC        string = "ABAC"
+	ModeKeystone    string = "Keystone"
 )
 
 // Keep this list in sync with constant list above.
-var AuthorizationModeChoices = []string{ModeAlwaysAllow, ModeAlwaysDeny, ModeABAC}
+var AuthorizationModeChoices = []string{ModeAlwaysAllow, ModeAlwaysDeny, ModeABAC, ModeKeystone}
 
 // NewAuthorizerFromAuthorizationConfig returns the right sort of union of multiple authorizer.Authorizer objects
 // based on the authorizationMode or an error.  authorizationMode should be a comma separated values
 // of AuthorizationModeChoices.
-func NewAuthorizerFromAuthorizationConfig(authorizationModes []string, authorizationPolicyFile string) (authorizer.Authorizer, error) {
+func NewAuthorizerFromAuthorizationConfig(authorizationModes []string, authorizationPolicyFile string, kubeClient client.Interface) (authorizer.Authorizer, error) {
 
 	if len(authorizationModes) == 0 {
 		return nil, errors.New("Atleast one authorization mode should be passed")
@@ -96,13 +99,19 @@ func NewAuthorizerFromAuthorizationConfig(authorizationModes []string, authoriza
 				return nil, err
 			}
 			authorizers = append(authorizers, abacAuthorizer)
+		case ModeKeystone:
+			keystoneAuthorizer, err := keystone.NewKeystoneAuthorizer(kubeClient)
+			if err != nil {
+				return nil, err
+			}
+			authorizers = append(authorizers, keystoneAuthorizer)
 		default:
 			return nil, fmt.Errorf("Unknown authorization mode %s specified", authorizationMode)
 		}
 		authorizerMap[authorizationMode] = true
 	}
 
-	if !authorizerMap[ModeABAC] && authorizationPolicyFile != "" {
+	if !authorizerMap[ModeABAC] && !authorizerMap[ModeKeystone] && authorizationPolicyFile != "" {
 		return nil, errors.New("Cannot specify --authorization-policy-file without mode ABAC")
 	}
 

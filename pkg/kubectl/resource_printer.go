@@ -399,7 +399,7 @@ var limitRangeColumns = []string{"NAME", "AGE"}
 var resourceQuotaColumns = []string{"NAME", "AGE"}
 var tenantColumns = []string{"NAME", "LABELS", "STATUS", "AGE"}
 var namespaceColumns = []string{"NAME", "LABELS", "STATUS", "AGE"}
-var networkColumns = []string{"NAME", "SUBNETS", "PROVIDERNETWORKID", "TENANTID", "LABELS", "STATUS"}
+var networkColumns = []string{"NAME", "SUBNETS", "PROVIDERNETWORKID", "TENANT", "LABELS", "STATUS"}
 var secretColumns = []string{"NAME", "TYPE", "DATA", "AGE"}
 var serviceAccountColumns = []string{"NAME", "SECRETS", "AGE"}
 var persistentVolumeColumns = []string{"NAME", "LABELS", "CAPACITY", "ACCESSMODES", "STATUS", "CLAIM", "REASON", "AGE"}
@@ -1034,7 +1034,7 @@ func printNetwork(item *api.Network, w io.Writer, withNamespace bool, wide bool,
 	for _, subnet := range item.Spec.Subnets {
 		subnets = append(subnets, subnet.CIDR)
 	}
-	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s", item.Name, strings.Join(subnets, ";"), item.Spec.ProviderNetworkID, item.Spec.TenantID, labels.FormatLabels(item.Labels), item.Status.Phase); err != nil {
+	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s", item.Name, strings.Join(subnets, ";"), item.Spec.ProviderNetworkID, item.Tenant, labels.FormatLabels(item.Labels), item.Status.Phase); err != nil {
 		return err
 	}
 	_, err := fmt.Fprint(w, appendLabels(item.Labels, columnLabels))

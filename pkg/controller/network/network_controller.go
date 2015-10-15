@@ -158,20 +158,20 @@ func (e *NetworkController) addNetwork(obj interface{}) {
 
 	glog.V(4).Infof("NetworkController: add network %s", net.Name)
 
-	// Check if tenant id exist
-	check, err := e.netProvider.CheckTenantID(net.Spec.TenantID)
+	/*// Check if tenant id exist
+	check, err := e.netProvider.CheckTenantID(net.Tenant)
 	if err != nil {
 		glog.Errorf("NetworkController: check tenantID failed: %v", err)
 	}
 	if !check {
-		glog.Warningf("NetworkController: tenantID %s doesn't exit in network provider", net.Spec.TenantID)
+		glog.Warningf("NetworkController: tenantID %s doesn't exit in network provider", net.Tenant)
 		newNetwork.Status = api.NetworkStatus{Phase: api.NetworkFailed}
 		_, err := e.client.Networks().Status(&newNetwork)
 		if err != nil {
 			glog.Errorf("NetworkController: failed to update network status: %v", err)
 		}
 		return
-	}
+	}*/
 
 	// Check if provider network id exist
 	if net.Spec.ProviderNetworkID != "" {
@@ -186,7 +186,7 @@ func (e *NetworkController) addNetwork(obj interface{}) {
 			newNetworkStatus = api.NetworkFailed
 		} else {
 			// Check if provider network has already created
-			networkName := networkprovider.BuildNetworkName(net.Name, net.Spec.TenantID)
+			networkName := networkprovider.BuildNetworkName(net.Name, net.Tenant)
 			_, err := e.netProvider.Networks().GetNetwork(networkName)
 			if err == nil {
 				glog.Infof("NetworkController: network %s has already created", networkName)
@@ -205,7 +205,7 @@ func (e *NetworkController) addNetwork(obj interface{}) {
 	}
 
 	newNetwork.Status = api.NetworkStatus{Phase: newNetworkStatus}
-	_, err = e.client.Networks().Status(&newNetwork)
+	_, err := e.client.Networks().Status(&newNetwork)
 	if err != nil {
 		glog.Errorf("NetworkController: failed to update network status: %v", err)
 	}
@@ -226,7 +226,7 @@ func (e *NetworkController) updateNetwork(old, cur interface{}) {
 		// If oldNetwork has created network, delete it
 		if oldNetwork.Spec.ProviderNetworkID == "" {
 			// delete old tenant network
-			networkName := networkprovider.BuildNetworkName(oldNetwork.Name, oldNetwork.Spec.TenantID)
+			networkName := networkprovider.BuildNetworkName(oldNetwork.Name, oldNetwork.Tenant)
 			err := e.netProvider.Networks().DeleteNetwork(networkName)
 			if err != nil {
 				glog.Errorf("NetworkController: delete old network %s from networkprovider failed: %v", oldNetwork.Name, err)
@@ -259,7 +259,7 @@ func (e *NetworkController) deleteNetwork(obj interface{}) {
 		glog.V(4).Infof("NetworkController: network %s deleted", net.Name)
 		// Only delete network created by networkprovider
 		if net.Spec.ProviderNetworkID == "" {
-			networkName := networkprovider.BuildNetworkName(net.Name, net.Spec.TenantID)
+			networkName := networkprovider.BuildNetworkName(net.Name, net.Tenant)
 			err := e.netProvider.Networks().DeleteNetwork(networkName)
 			if err != nil {
 				glog.Errorf("NetworkController: delete network %s failed in networkprovider: %v", networkName, err)
@@ -545,7 +545,7 @@ func (e *NetworkController) createLoadBalancer(service *api.Service) (*api.LoadB
 	if network.Spec.ProviderNetworkID != "" {
 		networkInfo, err = e.netProvider.Networks().GetNetworkByID(network.Spec.ProviderNetworkID)
 	} else {
-		networkName := networkprovider.BuildNetworkName(network.Name, network.Spec.TenantID)
+		networkName := networkprovider.BuildNetworkName(network.Name, network.Tenant)
 		networkInfo, err = e.netProvider.Networks().GetNetwork(networkName)
 	}
 	if err != nil {

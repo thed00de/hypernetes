@@ -1899,10 +1899,6 @@ func ValidateNetwork(network *api.Network) errs.ValidationErrorList {
 	allErrs := errs.ValidationErrorList{}
 	allErrs = append(allErrs, ValidateObjectMeta(&network.ObjectMeta, false, ValidateNetworkName).Prefix("metadata")...)
 
-	if network.Spec.TenantID == "" {
-		allErrs = append(allErrs, errs.NewFieldRequired("tenantID"))
-	}
-
 	if network.Spec.ProviderNetworkID == "" {
 		for _, subnet := range network.Spec.Subnets {
 			if validated, errMsg := ValidateSubnet(subnet.Gateway, subnet.CIDR); !validated {

@@ -1631,9 +1631,6 @@ type NetworkSpec struct {
 	// Network's ID of provider network
 	// ProviderNetworkID and Subnets must not be provided together
 	ProviderNetworkID string `json:"providerNetworkID,omitempty"`
-
-	// TenantID is the tenant ID of network provider
-	TenantID string `json:"tenantID"`
 }
 
 // Network describes a network

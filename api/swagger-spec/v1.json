@@ -12757,9 +12757,6 @@
    "v1.NetworkSpec": {
     "id": "v1.NetworkSpec",
     "description": "NetworkSpec is a description of a network",
-    "required": [
-     "tenantID"
-    ],
     "properties": {
      "subnets": {
       "type": "any",
@@ -12768,10 +12765,6 @@
      "providerNetworkID": {
       "type": "string",
       "description": "Network's ID of provider network ProviderNetworkID and Subnets must not be provided together"
-     },
-     "tenantID": {
-      "type": "string",
-      "description": "TenantID is the tenant ID of network provider"
      }
     }
    },

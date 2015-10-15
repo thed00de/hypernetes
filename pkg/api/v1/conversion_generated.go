@@ -1350,7 +1350,6 @@ func autoconvert_api_NetworkSpec_To_v1_NetworkSpec(in *api.NetworkSpec, out *Net
 		out.Subnets = nil
 	}
 	out.ProviderNetworkID = in.ProviderNetworkID
-	out.TenantID = in.TenantID
 	return nil
 }
 
@@ -4561,7 +4560,6 @@ func autoconvert_v1_NetworkSpec_To_api_NetworkSpec(in *NetworkSpec, out *api.Net
 		out.Subnets = nil
 	}
 	out.ProviderNetworkID = in.ProviderNetworkID
-	out.TenantID = in.TenantID
 	return nil
 }
 

@@ -189,8 +189,8 @@ func BuildLoadBalancerName(name, namespace string) string {
 
 func ApiNetworkToProviderNetwork(net *api.Network) *Network {
 	pdNetwork := Network{
-		Name:     BuildNetworkName(net.Name, net.Spec.TenantID),
-		TenantID: net.Spec.TenantID,
+		Name:     BuildNetworkName(net.Name, net.Tenant),
+		TenantID: net.Tenant,
 		Subnets:  make([]*Subnet, 0, 1),
 	}
 
@@ -198,8 +198,8 @@ func ApiNetworkToProviderNetwork(net *api.Network) *Network {
 		s := Subnet{
 			CIDR:     subnet.CIDR,
 			Gateway:  subnet.Gateway,
-			Name:     BuildNetworkName(key, net.Spec.TenantID),
-			TenantID: net.Spec.TenantID,
+			Name:     BuildNetworkName(key, net.Tenant),
+			TenantID: net.Tenant,
 		}
 		pdNetwork.Subnets = append(pdNetwork.Subnets, &s)
 	}

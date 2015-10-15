@@ -656,7 +656,6 @@ var map_NetworkSpec = map[string]string{
 	"":                  "NetworkSpec is a description of a network",
 	"subnets":           "There must be at least one subnet in a network Subnets and ProviderNetworkID must not be provided together",
 	"providerNetworkID": "Network's ID of provider network ProviderNetworkID and Subnets must not be provided together",
-	"tenantID":          "TenantID is the tenant ID of network provider",
 }
 
 func (NetworkSpec) SwaggerDoc() map[string]string {

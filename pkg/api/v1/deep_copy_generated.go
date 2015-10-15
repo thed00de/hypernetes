@@ -985,7 +985,6 @@ func deepCopy_v1_NetworkSpec(in NetworkSpec, out *NetworkSpec, c *conversion.Clo
 		out.Subnets = nil
 	}
 	out.ProviderNetworkID = in.ProviderNetworkID
-	out.TenantID = in.TenantID
 	return nil
 }
 

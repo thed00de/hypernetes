@@ -71,7 +71,7 @@ func (plugin *RemoteNetworkPlugin) getNetworkOfNamespace(nsName string) (*networ
 	if network.Spec.ProviderNetworkID != "" {
 		networkInfo, err = plugin.provider.Networks().GetNetworkByID(network.Spec.ProviderNetworkID)
 	} else {
-		networkName := networkprovider.BuildNetworkName(network.Name, network.Spec.TenantID)
+		networkName := networkprovider.BuildNetworkName(network.Name, network.Tenant)
 		networkInfo, err = plugin.provider.Networks().GetNetwork(networkName)
 	}
 	if err != nil {

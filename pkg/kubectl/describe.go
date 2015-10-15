@@ -164,7 +164,7 @@ func describeNetwork(network *api.Network) (string, error) {
 	}
 	return tabbedString(func(out io.Writer) error {
 		fmt.Fprintf(out, "Name:\t%s\n", network.Name)
-		fmt.Fprintf(out, "TenantID:\t%s\n", network.Spec.TenantID)
+		fmt.Fprintf(out, "Tenant:\t%s\n", network.Tenant)
 		fmt.Fprintf(out, "Subnets:\t%s\n", strings.Join(subnets, ";"))
 		fmt.Fprintf(out, "ProviderNetworkID:\t%s\n", network.Spec.ProviderNetworkID)
 		fmt.Fprintf(out, "Labels:\t%s\n", labels.FormatLabels(network.Labels))

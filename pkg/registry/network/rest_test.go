@@ -32,8 +32,7 @@ func TestNetworkStrategy(t *testing.T) {
 		ObjectMeta: api.ObjectMeta{Name: "foo", ResourceVersion: "10"},
 		Status:     api.NetworkStatus{Phase: api.NetworkTerminating},
 		Spec: api.NetworkSpec{
-			TenantID: "12345",
-			Subnets:  map[string]api.Subnet{"s1": {CIDR: "192.168.0.0/24", Gateway: "192.168.0.1"}}},
+			Subnets: map[string]api.Subnet{"s1": {CIDR: "192.168.0.0/24", Gateway: "192.168.0.1"}}},
 	}
 	Strategy.PrepareForCreate(network)
 	if network.Status.Phase != api.NetworkInitializing {
@@ -65,15 +64,13 @@ func TestNetworkStatusStrategy(t *testing.T) {
 	oldNetwork := &api.Network{
 		ObjectMeta: api.ObjectMeta{Name: "foo", ResourceVersion: "10"},
 		Spec: api.NetworkSpec{
-			TenantID: "12345",
-			Subnets:  map[string]api.Subnet{"s1": {CIDR: "192.168.0.0/24", Gateway: "192.168.0.1"}}},
+			Subnets: map[string]api.Subnet{"s1": {CIDR: "192.168.0.0/24", Gateway: "192.168.0.1"}}},
 		Status: api.NetworkStatus{Phase: api.NetworkActive},
 	}
 	network := &api.Network{
 		ObjectMeta: api.ObjectMeta{Name: "foo", ResourceVersion: "9", DeletionTimestamp: &now},
 		Spec: api.NetworkSpec{
-			TenantID: "12345",
-			Subnets:  map[string]api.Subnet{"s1": {CIDR: "192.168.0.0/24", Gateway: "192.168.0.1"}}},
+			Subnets: map[string]api.Subnet{"s1": {CIDR: "192.168.0.0/24", Gateway: "192.168.0.1"}}},
 		Status: api.NetworkStatus{Phase: api.NetworkTerminating},
 	}
 	StatusStrategy.PrepareForUpdate(network, oldNetwork)

@@ -41,7 +41,6 @@ func validNewNetwork() *api.Network {
 			Name: "foo",
 		},
 		Spec: api.NetworkSpec{
-			TenantID: "123",
 			Subnets: map[string]api.Subnet{
 				"subnet1": {
 					CIDR:    "192.168.0.0/24",
@@ -129,7 +128,6 @@ func TestDeleteNetwork(t *testing.T) {
 			DeletionTimestamp: &now,
 		},
 		Spec: api.NetworkSpec{
-			TenantID: "123",
 			Subnets: map[string]api.Subnet{
 				"subnet1": {
 					CIDR:    "192.168.0.0/24",

@@ -270,10 +270,6 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 
 	var kubepods []*kubecontainer.Pod
 	for _, podInfo := range podInfos {
-		if !all && podInfo.Status != "running" {
-			continue
-		}
-
 		var pod kubecontainer.Pod
 		var containers []*kubecontainer.Container
 
@@ -861,8 +857,33 @@ func (r *runtime) RemoveImage(image kubecontainer.ImageSpec) error {
 // stream the log. Set 'follow' to false and specify the number of lines (e.g.
 // "100" or "all") to tail the log.
 func (r *runtime) GetContainerLogs(pod *api.Pod, containerID kubecontainer.ContainerID, logOptions *api.PodLogOptions, stdout, stderr io.Writer) error {
-	// TODO: get container logs for hyper
-	return fmt.Errorf("Hyper: GetContainerLogs unimplemented")
+	glog.V(4).Infof("Hyper: running logs on container %s", containerID.ID)
+
+	args := append([]string{}, "logs")
+	if logOptions.Follow {
+		args = append(args, "--follow")
+	}
+	if *logOptions.SinceSeconds != 0 {
+		args = append(args, fmt.Sprintf("--since=%d", *logOptions.SinceSeconds))
+	}
+	if *logOptions.TailLines != 0 {
+		args = append(args, fmt.Sprintf("--tail=%d", *logOptions.TailLines))
+	}
+	if logOptions.Timestamps {
+		args = append(args, "--timestamps")
+	}
+
+	command := r.buildCommand(args...)
+	p, err := kubecontainer.StartPty(command)
+	if err != nil {
+		return err
+	}
+	defer p.Close()
+
+	if stdout != nil {
+		go io.Copy(stdout, p)
+	}
+	return command.Wait()
 }
 
 // Runs the command in the container of the specified pod
@@ -909,7 +930,6 @@ func (r *runtime) ExecInContainer(containerID kubecontainer.ContainerID, cmd []s
 		go io.Copy(stdout, p)
 	}
 	return command.Wait()
-
 }
 
 func (r *runtime) AttachContainer(containerID kubecontainer.ContainerID, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {

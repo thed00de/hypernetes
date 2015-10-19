@@ -83,6 +83,7 @@ if [ "x$GO_OUT" == "x" ]; then
         cmd/kube-controller-manager \
         cmd/kube-proxy \
         cmd/kubectl \
+        cmd/kubemark \
         cmd/kubelet \
         plugin/cmd/kube-scheduler
 else

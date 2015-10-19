@@ -41,7 +41,7 @@ const (
 	HYPER_PROTO       = "unix"
 	HYPER_ADDR        = "/var/run/hyper.sock"
 	HYPER_SCHEME      = "http"
-	HYPER_MINVERSION  = "0.3.0"
+	HYPER_MINVERSION  = "0.4.0"
 	DEFAULT_IMAGE_TAG = "latest"
 
 	KEY_ID             = "id"

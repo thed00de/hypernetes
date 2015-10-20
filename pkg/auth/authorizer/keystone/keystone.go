@@ -31,11 +31,6 @@ import (
 	"github.com/rackspace/gophercloud/pagination"
 )
 
-const (
-	ADMIN_URL = "http://127.0.0.1:35357/v2.0"
-	USER_URL  = "http://127.0.0.1:5000/v2.0"
-)
-
 type authConfig struct {
 	AuthUrl  string `json:"auth-url"`
 	Username string `json:"user-name"`
@@ -54,6 +49,7 @@ type OpenstackClient struct {
 type keystoneAuthorizer struct {
 	kubeClient client.Interface
 	osClient   OpenstackInterface
+	authUrl    string
 }
 
 func newOpenstackClient(config *authConfig) (*OpenstackClient, error) {
@@ -86,10 +82,11 @@ func newOpenstackClient(config *authConfig) (*OpenstackClient, error) {
 	}, nil
 }
 
-func NewKeystoneAuthorizer(kubeClient client.Interface) (*keystoneAuthorizer, error) {
+func NewKeystoneAuthorizer(kubeClient client.Interface, authUrl string) (*keystoneAuthorizer, error) {
 
 	ka := &keystoneAuthorizer{
 		kubeClient: kubeClient,
+		authUrl:    authUrl,
 	}
 	return ka, nil
 }
@@ -109,7 +106,7 @@ func (ka *keystoneAuthorizer) Authorize(a authorizer.Attributes) (string, error)
 	}
 
 	authConfig := &authConfig{
-		AuthUrl:  USER_URL,
+		AuthUrl:  ka.authUrl,
 		Username: a.GetUserName(),
 		Password: a.GetPassword(),
 	}

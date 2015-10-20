@@ -54,6 +54,9 @@ type Attributes interface {
 	// The namespace of the object, if a request is for a REST object.
 	GetNamespace() string
 
+	// The network
+	GetNetwork() string
+
 	// The kind of object, if a request is for a REST object.
 	GetResource() string
 
@@ -85,6 +88,7 @@ type AttributesRecord struct {
 	Verb      string
 	Tenant    string
 	Namespace string
+	Network   string
 	APIGroup  string
 	Resource  string
 }
@@ -119,6 +123,10 @@ func (a AttributesRecord) GetTenant() string {
 
 func (a AttributesRecord) GetNamespace() string {
 	return a.Namespace
+}
+
+func (a AttributesRecord) GetNetwork() string {
+	return a.Network
 }
 
 func (a AttributesRecord) GetResource() string {

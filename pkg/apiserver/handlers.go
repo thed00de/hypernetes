@@ -378,6 +378,8 @@ func (r *requestAttributeGetter) GetAttribs(req *http.Request) authorizer.Attrib
 
 	attribs.Tenant = apiRequestInfo.Tenant
 
+	attribs.Network = apiRequestInfo.Network
+
 	return &attribs
 }
 
@@ -411,6 +413,7 @@ type RequestInfo struct {
 	APIVersion string
 	Namespace  string
 	Tenant     string
+	Network    string
 	// Resource is the name of the resource being requested.  This is not the kind.  For example: pods
 	Resource string
 	// Subresource is the name of the subresource being requested.  This is a different resource, scoped to the parent resource, but it may have a different kind.
@@ -522,7 +525,8 @@ func (r *RequestInfoResolver) GetRequestInfo(req *http.Request) (RequestInfo, er
 	}
 
 	// URL forms: /namespaces/{namespace}/{kind}/*, where parts are adjusted to be relative to kind
-	if currentParts[0] == "namespaces" {
+	part0 := currentParts[0]
+	if part0 == "namespaces" {
 		if len(currentParts) > 1 {
 			requestInfo.Namespace = currentParts[1]
 
@@ -535,7 +539,20 @@ func (r *RequestInfoResolver) GetRequestInfo(req *http.Request) (RequestInfo, er
 	} else {
 		requestInfo.Namespace = api.NamespaceNone
 	}
-	if currentParts[0] == "tenants" {
+	if part0 == "networks" {
+		if len(currentParts) > 1 {
+			requestInfo.Network = currentParts[1]
+
+			// if there is another step after the network name and it is not a known network subresource
+			// move currentParts to include it as a resource in its own right
+			if len(currentParts) > 2 {
+				currentParts = currentParts[2:]
+			}
+		}
+	} else {
+		requestInfo.Network = api.NetworkNone
+	}
+	if part0 == "tenants" {
 		if len(currentParts) > 1 {
 			requestInfo.Tenant = currentParts[1]
 

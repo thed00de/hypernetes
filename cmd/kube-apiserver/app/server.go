@@ -503,7 +503,12 @@ func (s *APIServer) Run(_ []string) error {
 	}
 
 	authorizationModeNames := strings.Split(s.AuthorizationMode, ",")
-	authorizer, err := apiserver.NewAuthorizerFromAuthorizationConfig(authorizationModeNames, s.AuthorizationPolicyFile, client)
+	authorizer, err := apiserver.NewAuthorizerFromAuthorizationConfig(apiserver.AuthorizerConfig{
+		AuthorizationModes:      authorizationModeNames,
+		AuthorizationPolicyFile: s.AuthorizationPolicyFile,
+		KubeClient:              client,
+		KeystonAuthURL:          s.KeystoneURL,
+	})
 	if err != nil {
 		glog.Fatalf("Invalid Authorization Config: %v", err)
 	}

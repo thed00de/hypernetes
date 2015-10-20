@@ -100,12 +100,17 @@ func RunScale(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []stri
 	if err != nil {
 		return err
 	}
+	cmdTenant, enforceTenant, err := f.DefaultTenant()
+	if err != nil {
+		return err
+	}
 
 	mapper, typer := f.Object()
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		ContinueOnError().
 		NamespaceParam(cmdNamespace).DefaultNamespace().
-		FilenameParam(enforceNamespace, options.Filenames...).
+		TenantParam(cmdTenant).DefaultTenant().
+		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		ResourceTypeOrNameArgs(false, args...).
 		Flatten().
 		Do()

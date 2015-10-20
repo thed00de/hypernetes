@@ -160,6 +160,10 @@ func RunRollingUpdate(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, arg
 	if err != nil {
 		return err
 	}
+	cmdTenant, enforceTenant, err := f.DefaultTenant()
+	if err != nil {
+		return err
+	}
 
 	client, err := f.Client()
 	if err != nil {
@@ -195,7 +199,8 @@ func RunRollingUpdate(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, arg
 		request := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 			Schema(schema).
 			NamespaceParam(cmdNamespace).DefaultNamespace().
-			FilenameParam(enforceNamespace, filename).
+			TenantParam(cmdTenant).DefaultTenant().
+			FilenameParam(enforceTenant, enforceNamespace, filename).
 			Do()
 		obj, err := request.Object()
 		if err != nil {

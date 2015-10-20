@@ -149,7 +149,9 @@ func MatchNamespace(label labels.Selector, field fields.Selector) generic.Matche
 func NamespaceToSelectableFields(namespace *api.Namespace) labels.Set {
 	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(namespace.ObjectMeta, false)
 	specificFieldsSet := fields.Set{
-		"status.phase": string(namespace.Status.Phase),
+		"status.phase":    string(namespace.Status.Phase),
+		"metadata.name":   namespace.Name,
+		"metadata.tenant": namespace.Tenant,
 		// This is a bug, but we need to support it for backward compatibility.
 		"name": namespace.Name,
 	}

@@ -69,6 +69,7 @@ func (m *Mapper) InfoForData(data []byte, source string) (*Info, error) {
 
 	name, _ := mapping.MetadataAccessor.Name(obj)
 	namespace, _ := mapping.MetadataAccessor.Namespace(obj)
+	tenant, _ := mapping.MetadataAccessor.Tenant(obj)
 	resourceVersion, _ := mapping.MetadataAccessor.ResourceVersion(obj)
 
 	var versionedObject interface{}
@@ -80,6 +81,7 @@ func (m *Mapper) InfoForData(data []byte, source string) (*Info, error) {
 		Mapping:         mapping,
 		Client:          client,
 		Namespace:       namespace,
+		Tenant:          tenant,
 		Name:            name,
 		Source:          source,
 		VersionedObject: versionedObject,
@@ -89,7 +91,7 @@ func (m *Mapper) InfoForData(data []byte, source string) (*Info, error) {
 }
 
 // InfoForObject creates an Info object for the given Object. An error is returned
-// if the object cannot be introspected. Name and namespace will be set into Info
+// if the object cannot be introspected. Name, namespace and tenant will be set into Info
 // if the mapping's MetadataAccessor can retrieve them.
 func (m *Mapper) InfoForObject(obj runtime.Object) (*Info, error) {
 	version, kind, err := m.ObjectVersionAndKind(obj)
@@ -106,11 +108,13 @@ func (m *Mapper) InfoForObject(obj runtime.Object) (*Info, error) {
 	}
 	name, _ := mapping.MetadataAccessor.Name(obj)
 	namespace, _ := mapping.MetadataAccessor.Namespace(obj)
+	tenant, _ := mapping.MetadataAccessor.Tenant(obj)
 	resourceVersion, _ := mapping.MetadataAccessor.ResourceVersion(obj)
 	return &Info{
 		Mapping:   mapping,
 		Client:    client,
 		Namespace: namespace,
+		Tenant:    tenant,
 		Name:      name,
 
 		Object:          obj,

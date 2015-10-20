@@ -54,6 +54,8 @@ func ExtractFieldPathAsString(obj interface{}, fieldPath string) (string, error)
 		return accessor.Name(), nil
 	case "metadata.namespace":
 		return accessor.Namespace(), nil
+	case "metadata.tenant":
+		return accessor.Tenant(), nil
 	}
 
 	return "", fmt.Errorf("Unsupported fieldPath: %v", fieldPath)

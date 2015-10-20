@@ -742,7 +742,7 @@ func (m *Master) init(c *Config) {
 	m.InsecureHandler = handler
 
 	attributeGetter := apiserver.NewRequestAttributeGetter(m.requestContextMapper, m.newRequestInfoResolver())
-	handler = apiserver.WithAuthorizationCheck(handler, attributeGetter, m.authorizer)
+	handler = apiserver.WithAuthorizationCheck(handler, attributeGetter, m.authorizer, m.requestContextMapper)
 
 	// Install Authenticator
 	if c.Authenticator != nil {

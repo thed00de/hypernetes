@@ -179,7 +179,7 @@ func (v *testVisitor) Objects() []runtime.Object {
 
 func TestPathBuilder(t *testing.T) {
 	b := NewBuilder(testapi.Default.RESTMapper(), api.Scheme, fakeClient()).
-		FilenameParam(false, "../../../examples/guestbook/redis-master-controller.yaml")
+		FilenameParam(false, false, "../../../examples/guestbook/redis-master-controller.yaml")
 
 	test := &testVisitor{}
 	singular := false
@@ -229,8 +229,8 @@ func TestNodeBuilder(t *testing.T) {
 
 func TestPathBuilderWithMultiple(t *testing.T) {
 	b := NewBuilder(testapi.Default.RESTMapper(), api.Scheme, fakeClient()).
-		FilenameParam(false, "../../../examples/guestbook/redis-master-controller.yaml").
-		FilenameParam(false, "../../../examples/pod").
+		FilenameParam(false, false, "../../../examples/guestbook/redis-master-controller.yaml").
+		FilenameParam(false, false, "../../../examples/pod").
 		NamespaceParam("test").DefaultNamespace()
 
 	test := &testVisitor{}
@@ -253,7 +253,7 @@ func TestPathBuilderWithMultiple(t *testing.T) {
 
 func TestDirectoryBuilder(t *testing.T) {
 	b := NewBuilder(testapi.Default.RESTMapper(), api.Scheme, fakeClient()).
-		FilenameParam(false, "../../../examples/guestbook").
+		FilenameParam(false, false, "../../../examples/guestbook").
 		NamespaceParam("test").DefaultNamespace()
 
 	test := &testVisitor{}
@@ -283,7 +283,7 @@ func TestNamespaceOverride(t *testing.T) {
 	defer s.Close()
 
 	b := NewBuilder(testapi.Default.RESTMapper(), api.Scheme, fakeClient()).
-		FilenameParam(false, s.URL).
+		FilenameParam(false, false, s.URL).
 		NamespaceParam("test")
 
 	test := &testVisitor{}
@@ -294,7 +294,7 @@ func TestNamespaceOverride(t *testing.T) {
 	}
 
 	b = NewBuilder(testapi.Default.RESTMapper(), api.Scheme, fakeClient()).
-		FilenameParam(true, s.URL).
+		FilenameParam(false, true, s.URL).
 		NamespaceParam("test")
 
 	test = &testVisitor{}
@@ -313,7 +313,7 @@ func TestURLBuilder(t *testing.T) {
 	defer s.Close()
 
 	b := NewBuilder(testapi.Default.RESTMapper(), api.Scheme, fakeClient()).
-		FilenameParam(false, s.URL).
+		FilenameParam(false, false, s.URL).
 		NamespaceParam("test")
 
 	test := &testVisitor{}
@@ -337,7 +337,7 @@ func TestURLBuilderRequireNamespace(t *testing.T) {
 	defer s.Close()
 
 	b := NewBuilder(testapi.Default.RESTMapper(), api.Scheme, fakeClient()).
-		FilenameParam(false, s.URL).
+		FilenameParam(false, false, s.URL).
 		NamespaceParam("test").RequireNamespace()
 
 	test := &testVisitor{}
@@ -735,7 +735,7 @@ func TestContinueOnErrorVisitor(t *testing.T) {
 func TestSingularObject(t *testing.T) {
 	obj, err := NewBuilder(testapi.Default.RESTMapper(), api.Scheme, fakeClient()).
 		NamespaceParam("test").DefaultNamespace().
-		FilenameParam(false, "../../../examples/guestbook/redis-master-controller.yaml").
+		FilenameParam(false, false, "../../../examples/guestbook/redis-master-controller.yaml").
 		Flatten().
 		Do().Object()
 
@@ -755,7 +755,7 @@ func TestSingularObject(t *testing.T) {
 func TestSingularObjectNoExtension(t *testing.T) {
 	obj, err := NewBuilder(testapi.Default.RESTMapper(), api.Scheme, fakeClient()).
 		NamespaceParam("test").DefaultNamespace().
-		FilenameParam(false, "../../../examples/pod").
+		FilenameParam(false, false, "../../../examples/pod").
 		Flatten().
 		Do().Object()
 
@@ -866,7 +866,7 @@ func TestWatch(t *testing.T) {
 		}),
 	})).
 		NamespaceParam("test").DefaultNamespace().
-		FilenameParam(false, "../../../examples/guestbook/redis-master-service.yaml").Flatten().
+		FilenameParam(false, false, "../../../examples/guestbook/redis-master-service.yaml").Flatten().
 		Do().Watch("12")
 
 	if err != nil {
@@ -893,8 +893,8 @@ func TestWatch(t *testing.T) {
 func TestWatchMultipleError(t *testing.T) {
 	_, err := NewBuilder(testapi.Default.RESTMapper(), api.Scheme, fakeClient()).
 		NamespaceParam("test").DefaultNamespace().
-		FilenameParam(false, "../../../examples/guestbook/redis-master-controller.yaml").Flatten().
-		FilenameParam(false, "../../../examples/guestbook/redis-master-controller.yaml").Flatten().
+		FilenameParam(false, false, "../../../examples/guestbook/redis-master-controller.yaml").Flatten().
+		FilenameParam(false, false, "../../../examples/guestbook/redis-master-controller.yaml").Flatten().
 		Do().Watch("")
 
 	if err == nil {

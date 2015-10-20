@@ -106,12 +106,17 @@ func RunDelete(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []str
 	if err != nil {
 		return err
 	}
+	cmdTenant, enforceTenant, err := f.DefaultTenant()
+	if err != nil {
+		return err
+	}
 	deleteAll := cmdutil.GetFlagBool(cmd, "all")
 	mapper, typer := f.Object()
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		ContinueOnError().
 		NamespaceParam(cmdNamespace).DefaultNamespace().
-		FilenameParam(enforceNamespace, options.Filenames...).
+		TenantParam(cmdTenant).DefaultTenant().
+		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		SelectorParam(cmdutil.GetFlagString(cmd, "selector")).
 		SelectAllParam(deleteAll).
 		ResourceTypeOrNameArgs(false, args...).RequireObject(false).

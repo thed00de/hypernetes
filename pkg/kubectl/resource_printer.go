@@ -398,7 +398,7 @@ var eventColumns = []string{"FIRSTSEEN", "LASTSEEN", "COUNT", "NAME", "KIND", "S
 var limitRangeColumns = []string{"NAME", "AGE"}
 var resourceQuotaColumns = []string{"NAME", "AGE"}
 var tenantColumns = []string{"NAME", "LABELS", "STATUS", "AGE"}
-var namespaceColumns = []string{"NAME", "LABELS", "STATUS", "AGE"}
+var namespaceColumns = []string{"NAME", "LABELS", "TENANT", "STATUS", "AGE"}
 var networkColumns = []string{"NAME", "SUBNETS", "PROVIDERNETWORKID", "TENANT", "LABELS", "STATUS"}
 var secretColumns = []string{"NAME", "TYPE", "DATA", "AGE"}
 var serviceAccountColumns = []string{"NAME", "SECRETS", "AGE"}
@@ -1013,7 +1013,7 @@ func printNamespace(item *api.Namespace, w io.Writer, withNamespace bool, wide b
 		return fmt.Errorf("namespace is not namespaced")
 	}
 
-	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s", item.Name, labels.FormatLabels(item.Labels), item.ObjectMeta.Tenant, item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {
+	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s", item.Name, labels.FormatLabels(item.Labels), item.Tenant, item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {
 		return err
 	}
 	_, err := fmt.Fprint(w, appendLabels(item.Labels, columnLabels))

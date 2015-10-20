@@ -132,13 +132,13 @@ func (p policy) subjectMatches(a authorizer.Attributes) bool {
 }
 
 // Authorizer implements authorizer.Authorize
-func (pl policyList) Authorize(a authorizer.Attributes) error {
+func (pl policyList) Authorize(a authorizer.Attributes) (string, error) {
 	for _, p := range pl {
 		if p.matches(a) {
-			return nil
+			return "", nil
 		}
 	}
-	return errors.New("No policy matched.")
+	return "", errors.New("No policy matched.")
 	// TODO: Benchmark how much time policy matching takes with a medium size
 	// policy file, compared to other steps such as encoding/decoding.
 	// Then, add Caching only if needed.

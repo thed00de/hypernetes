@@ -133,6 +133,10 @@ type SelfLinker interface {
 	Name(obj Object) (string, error)
 	// Knowing Namespace is sometimes necessary to use a SelfLinker
 	Namespace(obj Object) (string, error)
+	// Knowing Tenant
+	Tenant(obj Object) (string, error)
+	// Set tenant of object
+	SetTenant(obj Object, tenant string) error
 }
 
 // All api types must support the Object interface. It's deliberately tiny so that this is not an onerous

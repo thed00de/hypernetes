@@ -20,6 +20,7 @@ import (
 	"errors"
 	"strings"
 
+	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/auth/authorizer"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
 
@@ -27,7 +28,6 @@ import (
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/identity/v2/tenants"
-	"github.com/rackspace/gophercloud/openstack/identity/v2/users"
 	"github.com/rackspace/gophercloud/pagination"
 )
 
@@ -37,6 +37,7 @@ type authConfig struct {
 	Password string `json:"password"`
 	TokenID  string `json:"token"`
 	Tenant   string `json:"tenant"`
+	TenantID string `json:"tenantID"`
 }
 
 type OpenstackClient struct {
@@ -48,6 +49,7 @@ type OpenstackClient struct {
 type keystoneAuthorizer struct {
 	kubeClient client.Interface
 	osClient   OpenstackInterface
+	authUrl    string
 }
 
 func newOpenstackClient(config *authConfig) (*OpenstackClient, error) {
@@ -62,8 +64,8 @@ func newOpenstackClient(config *authConfig) (*OpenstackClient, error) {
 		Username:         config.Username,
 		Password:         config.Password,
 		TenantName:       config.Tenant,
-		//TokenID:     config.TokenID,
-		AllowReauth: true,
+		TenantID:         config.TenantID,
+		AllowReauth:      false,
 	}
 
 	provider, err := openstack.AuthenticatedClient(opts)
@@ -80,91 +82,63 @@ func newOpenstackClient(config *authConfig) (*OpenstackClient, error) {
 	}, nil
 }
 
-func NewKeystoneAuthorizer(kubeClient client.Interface) (*keystoneAuthorizer, error) {
+func NewKeystoneAuthorizer(kubeClient client.Interface, authUrl string) (*keystoneAuthorizer, error) {
 
 	ka := &keystoneAuthorizer{
 		kubeClient: kubeClient,
+		authUrl:    authUrl,
 	}
 	return ka, nil
 }
 
 // Authorizer implements authorizer.Authorize
-func (ka *keystoneAuthorizer) Authorize(a authorizer.Attributes) error {
+func (ka *keystoneAuthorizer) Authorize(a authorizer.Attributes) (string, error) {
 
 	var (
-		tenantID string
-		userID   string
+		tenantName string
+		ns         *api.Namespace
 	)
 	if strings.HasPrefix(a.GetUserName(), "system:serviceaccount:") {
-		return nil
+		return "", nil
 	}
 	if isWhiteListedUser(a.GetUserName()) {
-		return nil
+		return "", nil
 	}
-	ns, err := ka.kubeClient.Namespaces().Get(a.GetNamespace())
-	if err != nil {
-		return err
-	}
+
 	authConfig := &authConfig{
-		AuthUrl:  "http://127.0.0.1:35357/v2.0",
+		AuthUrl:  ka.authUrl,
 		Username: a.GetUserName(),
 		Password: a.GetPassword(),
-		TokenID:  a.GetToken(),
-		Tenant:   ns.Tenant,
 	}
-	osClient, err1 := newOpenstackClient(authConfig)
-	if err1 != nil {
-		glog.Errorf("%v", err1)
-		return err1
-	}
-	tenantID, err = osClient.getTenantID(ns.Tenant)
+	osClient, err := newOpenstackClient(authConfig)
 	if err != nil {
 		glog.Errorf("%v", err)
-		return err
+		return "", err
 	}
-	userID, err = osClient.getUserID(a.GetUserName())
-	if err != nil {
-		glog.Errorf("%v", err)
-		return err
-	}
-	hasRole, err := osClient.roleCheck(userID, tenantID)
-	if err != nil {
-		glog.V(4).Infof("Keystone authorization failed: %v", err)
-		return errors.New("Keystone authorization failed")
-	}
-	if hasRole {
-		return nil
-	} else {
-		return errors.New("User not authorized through keystone for namespace")
-	}
-	return errors.New("Keystone authorization failed")
-}
-
-// Checks if a user has access to a tenant
-func (osClient *OpenstackClient) roleCheck(userID string, tenantID string) (bool, error) {
-	if userID == "" {
-		return false, errors.New("UserID null during authorization")
-	}
-	if tenantID == "" {
-		return false, errors.New("UserID null during authorization")
-	}
-	hasRole := false
-	pager := users.ListRoles(osClient.authClient, tenantID, userID)
-	err := pager.EachPage(func(page pagination.Page) (bool, error) {
-		roleList, err := users.ExtractRoles(page)
+	if a.GetNamespace() != "" {
+		ns, err = ka.kubeClient.Namespaces().Get(a.GetNamespace())
 		if err != nil {
-			return false, err
+			return "", err
 		}
-		if len(roleList) > 0 {
-			hasRole = true
+		tenantName = ns.Tenant
+	} else {
+		if a.GetTenant() != "" {
+			te, err := ka.kubeClient.Tenants().Get(a.GetTenant())
+			if err != nil {
+				return "", err
+			}
+			tenantName = te.Name
 		}
-		return true, nil
-	})
-
-	if err != nil {
-		return false, err
 	}
-	return hasRole, nil
+	tenant, err := osClient.getTenant()
+	if err != nil {
+		glog.Errorf("%v", err)
+		return "", err
+	}
+	if tenantName == "" || tenantName == tenant.Name {
+		return tenant.Name, nil
+	}
+	return "", errors.New("Keystone authorization failed")
 }
 
 func isWhiteListedUser(username string) bool {
@@ -179,7 +153,7 @@ func isWhiteListedUser(username string) bool {
 	return whiteList[username]
 }
 
-func (osClient *OpenstackClient) getTenantID(name string) (id string, err error) {
+func (osClient *OpenstackClient) getTenant() (tenant *tenants.Tenant, err error) {
 	tenantList := make([]tenants.Tenant, 0)
 	opts := tenants.ListOpts{}
 	pager := tenants.List(osClient.authClient, &opts)
@@ -191,33 +165,12 @@ func (osClient *OpenstackClient) getTenantID(name string) (id string, err error)
 		return true, nil
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	for _, t := range tenantList {
-		if name == t.Name {
-			return t.ID, nil
-		}
+	if len(tenantList) > 1 {
+		return nil, errors.New("too much tenants")
+	} else if len(tenantList) != 1 {
+		return nil, errors.New("no tenants")
 	}
-	return "", nil
-}
-
-func (osClient *OpenstackClient) getUserID(name string) (id string, err error) {
-	userList := make([]users.User, 0)
-	pager := users.List(osClient.authClient)
-	err = pager.EachPage(func(page pagination.Page) (bool, error) {
-		userList, err = users.ExtractUsers(page)
-		if err != nil {
-			return false, err
-		}
-		return true, nil
-	})
-	if err != nil {
-		return "", err
-	}
-	for _, u := range userList {
-		if name == u.Name {
-			return u.ID, nil
-		}
-	}
-	return "", nil
+	return &tenantList[0], nil
 }

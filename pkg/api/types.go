@@ -144,8 +144,14 @@ type ObjectMeta struct {
 }
 
 const (
+	// TenantAdmin
+	TenantAdmin string = "admin"
 	// TenantDefault
 	TenantDefault string = "default"
+	// TenantAll is the default argument to specify on a context when you want to list or filter resources across all tenants
+	TenantAll string = ""
+	// TenantNone is the argument for a context when there is no tenant.
+	TenantNone string = ""
 	// NamespaceDefault means the object is in the default namespace which is applied when not specified by clients
 	NamespaceDefault string = "default"
 	// NamespaceAll is the default argument to specify on a context when you want to list or filter resources across all namespaces
@@ -156,6 +162,8 @@ const (
 	NamespaceSystem string = "kube-system"
 	// TerminationMessagePathDefault means the default path to capture the application termination message running in a container
 	TerminationMessagePathDefault string = "/dev/termination-log"
+	// NetworkNone
+	NetworkNone string = ""
 )
 
 // Volume represents a named volume in a pod that may be accessed by any containers in the pod.

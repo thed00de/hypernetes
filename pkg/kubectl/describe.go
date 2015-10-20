@@ -136,6 +136,7 @@ func init() {
 		describeDaemonSet,
 		describeNode,
 		describeNamespace,
+		describeTenant,
 	)
 	if err != nil {
 		glog.Fatalf("Cannot register describers: %v", err)
@@ -237,6 +238,7 @@ func (d *NamespaceDescriber) Describe(namespace, name string) (string, error) {
 func describeNamespace(namespace *api.Namespace, resourceQuotaList *api.ResourceQuotaList, limitRangeList *api.LimitRangeList) (string, error) {
 	return tabbedString(func(out io.Writer) error {
 		fmt.Fprintf(out, "Name:\t%s\n", namespace.Name)
+		fmt.Fprintf(out, "Tenant:\t%s\n", namespace.Tenant)
 		fmt.Fprintf(out, "Network:\t%s\n", namespace.Spec.Network)
 		fmt.Fprintf(out, "Labels:\t%s\n", labels.FormatLabels(namespace.Labels))
 		fmt.Fprintf(out, "Status:\t%s\n", string(namespace.Status.Phase))

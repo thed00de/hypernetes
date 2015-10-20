@@ -37,8 +37,8 @@ type Attributes struct {
 // It is useful in tests and when using kubernetes in an open manner.
 type alwaysAllowAuthorizer struct{}
 
-func (alwaysAllowAuthorizer) Authorize(a authorizer.Attributes) (err error) {
-	return nil
+func (alwaysAllowAuthorizer) Authorize(a authorizer.Attributes) (tenant string, err error) {
+	return "", nil
 }
 
 func NewAlwaysAllowAuthorizer() authorizer.Authorizer {
@@ -50,8 +50,8 @@ func NewAlwaysAllowAuthorizer() authorizer.Authorizer {
 // It is useful in unit tests to force an operation to be forbidden.
 type alwaysDenyAuthorizer struct{}
 
-func (alwaysDenyAuthorizer) Authorize(a authorizer.Attributes) (err error) {
-	return errors.New("Everything is forbidden.")
+func (alwaysDenyAuthorizer) Authorize(a authorizer.Attributes) (tenant string, err error) {
+	return "", errors.New("Everything is forbidden.")
 }
 
 func NewAlwaysDenyAuthorizer() authorizer.Authorizer {
@@ -68,19 +68,26 @@ const (
 // Keep this list in sync with constant list above.
 var AuthorizationModeChoices = []string{ModeAlwaysAllow, ModeAlwaysDeny, ModeABAC, ModeKeystone}
 
+type AuthorizerConfig struct {
+	AuthorizationModes      []string
+	AuthorizationPolicyFile string
+	KubeClient              client.Interface
+	KeystonAuthURL          string
+}
+
 // NewAuthorizerFromAuthorizationConfig returns the right sort of union of multiple authorizer.Authorizer objects
 // based on the authorizationMode or an error.  authorizationMode should be a comma separated values
 // of AuthorizationModeChoices.
-func NewAuthorizerFromAuthorizationConfig(authorizationModes []string, authorizationPolicyFile string, kubeClient client.Interface) (authorizer.Authorizer, error) {
+func NewAuthorizerFromAuthorizationConfig(authzConfig AuthorizerConfig) (authorizer.Authorizer, error) {
 
-	if len(authorizationModes) == 0 {
+	if len(authzConfig.AuthorizationModes) == 0 {
 		return nil, errors.New("Atleast one authorization mode should be passed")
 	}
 
 	var authorizers []authorizer.Authorizer
 	authorizerMap := make(map[string]bool)
 
-	for _, authorizationMode := range authorizationModes {
+	for _, authorizationMode := range authzConfig.AuthorizationModes {
 		if authorizerMap[authorizationMode] {
 			return nil, fmt.Errorf("Authorization mode %s specified more than once", authorizationMode)
 		}
@@ -91,16 +98,19 @@ func NewAuthorizerFromAuthorizationConfig(authorizationModes []string, authoriza
 		case ModeAlwaysDeny:
 			authorizers = append(authorizers, NewAlwaysDenyAuthorizer())
 		case ModeABAC:
-			if authorizationPolicyFile == "" {
+			if authzConfig.AuthorizationPolicyFile == "" {
 				return nil, errors.New("ABAC's authorization policy file not passed")
 			}
-			abacAuthorizer, err := abac.NewFromFile(authorizationPolicyFile)
+			abacAuthorizer, err := abac.NewFromFile(authzConfig.AuthorizationPolicyFile)
 			if err != nil {
 				return nil, err
 			}
 			authorizers = append(authorizers, abacAuthorizer)
 		case ModeKeystone:
-			keystoneAuthorizer, err := keystone.NewKeystoneAuthorizer(kubeClient)
+			if authzConfig.KeystonAuthURL == "" {
+				return nil, errors.New("Cannot use mode Keystone without specifying --experimental-keystone-url")
+			}
+			keystoneAuthorizer, err := keystone.NewKeystoneAuthorizer(authzConfig.KubeClient, authzConfig.KeystonAuthURL)
 			if err != nil {
 				return nil, err
 			}
@@ -111,8 +121,11 @@ func NewAuthorizerFromAuthorizationConfig(authorizationModes []string, authoriza
 		authorizerMap[authorizationMode] = true
 	}
 
-	if !authorizerMap[ModeABAC] && !authorizerMap[ModeKeystone] && authorizationPolicyFile != "" {
+	if !authorizerMap[ModeABAC] && authzConfig.AuthorizationPolicyFile != "" {
 		return nil, errors.New("Cannot specify --authorization-policy-file without mode ABAC")
+	}
+	if !authorizerMap[ModeKeystone] && authzConfig.KeystonAuthURL != "" {
+		return nil, errors.New("Cannot specify --experimental-keystone-url without mode Keystone")
 	}
 
 	return union.New(authorizers...), nil

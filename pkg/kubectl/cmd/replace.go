@@ -157,6 +157,10 @@ func forceReplace(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []
 	if err != nil {
 		return err
 	}
+	cmdTenant, enforceTenant, err := f.DefaultTenant()
+	if err != nil {
+		return err
+	}
 
 	for i, filename := range options.Filenames {
 		if filename == "-" {
@@ -178,6 +182,7 @@ func forceReplace(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		ContinueOnError().
 		NamespaceParam(cmdNamespace).DefaultNamespace().
+		TenantParam(cmdTenant).DefaultTenant().
 		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		ResourceTypeOrNameArgs(false, args...).RequireObject(false).
 		Flatten().
@@ -203,6 +208,7 @@ func forceReplace(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []
 		Schema(schema).
 		ContinueOnError().
 		NamespaceParam(cmdNamespace).DefaultNamespace().
+		TenantParam(cmdTenant).DefaultTenant().
 		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		Flatten().
 		Do()

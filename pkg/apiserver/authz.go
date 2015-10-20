@@ -37,8 +37,8 @@ type Attributes struct {
 // It is useful in tests and when using kubernetes in an open manner.
 type alwaysAllowAuthorizer struct{}
 
-func (alwaysAllowAuthorizer) Authorize(a authorizer.Attributes) (err error) {
-	return nil
+func (alwaysAllowAuthorizer) Authorize(a authorizer.Attributes) (tenant string, err error) {
+	return "", nil
 }
 
 func NewAlwaysAllowAuthorizer() authorizer.Authorizer {
@@ -50,8 +50,8 @@ func NewAlwaysAllowAuthorizer() authorizer.Authorizer {
 // It is useful in unit tests to force an operation to be forbidden.
 type alwaysDenyAuthorizer struct{}
 
-func (alwaysDenyAuthorizer) Authorize(a authorizer.Attributes) (err error) {
-	return errors.New("Everything is forbidden.")
+func (alwaysDenyAuthorizer) Authorize(a authorizer.Attributes) (tenant string, err error) {
+	return "", errors.New("Everything is forbidden.")
 }
 
 func NewAlwaysDenyAuthorizer() authorizer.Authorizer {

@@ -269,8 +269,13 @@ func syncTenantAndNamespace(kubeClient client.Interface, namespace *api.Namespac
 	}
 	te.Spec.Namespaces = append(te.Spec.Namespaces, *namespace)
 
-	_, err = kubeClient.Tenants().Update(te)
-	return err
+	if _, err = kubeClient.Namespaces().Update(namespace); err != nil {
+		return err
+	}
+	if _, err = kubeClient.Tenants().Update(te); err != nil {
+		return err
+	}
+	return nil
 }
 
 // syncNamespace orchestrates deletion of a Namespace and its associated content.

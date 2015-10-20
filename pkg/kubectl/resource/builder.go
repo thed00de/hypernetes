@@ -98,7 +98,7 @@ func (b *Builder) Schema(schema validation.Schema) *Builder {
 // will cause an error.
 // If ContinueOnError() is set prior to this method, objects on the path that are not
 // recognized will be ignored (but logged at V(2)).
-func (b *Builder) FilenameParam(enforceNamespace bool, paths ...string) *Builder {
+func (b *Builder) FilenameParam(enforceTenant bool, enforceNamespace bool, paths ...string) *Builder {
 	for _, s := range paths {
 		switch {
 		case s == "-":
@@ -113,6 +113,10 @@ func (b *Builder) FilenameParam(enforceNamespace bool, paths ...string) *Builder
 		default:
 			b.Path(s)
 		}
+	}
+
+	if enforceTenant {
+		b.RequireTenant()
 	}
 
 	if enforceNamespace {
@@ -234,6 +238,37 @@ func (b *Builder) SelectorParam(s string) *Builder {
 // Selector accepts a selector directly, and if non nil will trigger a list action.
 func (b *Builder) Selector(selector labels.Selector) *Builder {
 	b.selector = selector
+	return b
+}
+
+// TenantParam accepts the tenant that these resources should be
+// considered under from - used by DefaultTenant() and RequireTenant()
+func (b *Builder) TenantParam(tenant string) *Builder {
+	b.tenant = tenant
+	return b
+}
+
+// DefaultTenant instructs the builder to set the tenant value for any object found
+// to TenantParam() if empty.
+func (b *Builder) DefaultTenant() *Builder {
+	b.defaultTenant = true
+	return b
+}
+
+// AllTenants instructs the builder to use TenantAll as a tenant to request resources
+// acroll all tenant. This overrides the tenant set by TenantParam().
+func (b *Builder) AllTenants(allTenant bool) *Builder {
+	if allTenant {
+		b.tenant = api.TenantAll
+	}
+	return b
+}
+
+// RequireTenant instructs the builder to set the tenant value for any object found
+// to TenantParam() if empty, and if the value on the resource does not match
+// TenantParam() an error will be returned.
+func (b *Builder) RequireTenant() *Builder {
+	b.requireTenant = true
 	return b
 }
 
@@ -730,6 +765,12 @@ func (b *Builder) Do() *Result {
 		helpers = append(helpers, RequireNamespace(b.namespace))
 	}
 	helpers = append(helpers, FilterNamespace)
+	if b.defaultTenant {
+		helpers = append(helpers, SetTenant(b.tenant))
+	}
+	if b.requireTenant {
+		helpers = append(helpers, RequireTenant(b.tenant))
+	}
 	if b.requireObject {
 		helpers = append(helpers, RetrieveLazy)
 	}

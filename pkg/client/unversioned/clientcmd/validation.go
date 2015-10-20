@@ -232,6 +232,10 @@ func validateContext(contextName string, context clientcmdapi.Context, config cl
 		validationErrors = append(validationErrors, fmt.Errorf("cluster %q was not found for context %q", context.Cluster, contextName))
 	}
 
+	if (len(context.Tenant) != 0) && !validation.IsDNS952Label(context.Tenant) {
+		validationErrors = append(validationErrors, fmt.Errorf("tenant %q for context %q does not conform to the kubernetes DNS952 rules", context.Tenant, contextName))
+	}
+
 	if (len(context.Namespace) != 0) && !validation.IsDNS952Label(context.Namespace) {
 		validationErrors = append(validationErrors, fmt.Errorf("namespace %q for context %q does not conform to the kubernetes DNS952 rules", context.Namespace, contextName))
 	}

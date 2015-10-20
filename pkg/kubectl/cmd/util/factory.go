@@ -86,6 +86,10 @@ type Factory struct {
 	// other namespace is specified and whether the namespace was
 	// overriden.
 	DefaultNamespace func() (string, bool, error)
+	// Returns the default tenant to use in cases where no
+	// other tenant is specified and whether the tenant was
+	// overriden.
+	DefaultTenant func() (string, bool, error)
 	// Returns the generator for the provided generator name
 	Generator func(name string) (kubectl.Generator, bool)
 	// Check whether the kind of resources could be exposed
@@ -245,6 +249,9 @@ func NewFactory(optionalClientConfig clientcmd.ClientConfig) *Factory {
 		},
 		DefaultNamespace: func() (string, bool, error) {
 			return clientConfig.Namespace()
+		},
+		DefaultTenant: func() (string, bool, error) {
+			return clientConfig.Tenant()
 		},
 		Generator: func(name string) (kubectl.Generator, bool) {
 			generator, ok := generators[name]

@@ -51,6 +51,9 @@ type ClientConfig interface {
 	// result of all overrides and a boolean indicating if it was
 	// overridden
 	Namespace() (string, bool, error)
+	// Tenant returns the tenant resulting from the merged
+	// result of all overrides and a boolean indicating if it was
+	// overridden
 	Tenant() (string, bool, error)
 }
 

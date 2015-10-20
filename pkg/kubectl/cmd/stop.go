@@ -81,13 +81,18 @@ func RunStop(f *cmdutil.Factory, cmd *cobra.Command, args []string, out io.Write
 	if err != nil {
 		return err
 	}
+	cmdTenant, enforceTenant, err := f.DefaultTenant()
+	if err != nil {
+		return err
+	}
 
 	mapper, typer := f.Object()
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		ContinueOnError().
 		NamespaceParam(cmdNamespace).DefaultNamespace().
+		TenantParam(cmdTenant).DefaultTenant().
 		ResourceTypeOrNameArgs(false, args...).
-		FilenameParam(enforceNamespace, options.Filenames...).
+		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		SelectorParam(cmdutil.GetFlagString(cmd, "selector")).
 		SelectAllParam(cmdutil.GetFlagBool(cmd, "all")).
 		Flatten().

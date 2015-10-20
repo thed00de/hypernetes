@@ -112,6 +112,10 @@ func RunEdit(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []strin
 	if err != nil {
 		return err
 	}
+	cmdTenant, enforceTenant, err := f.DefaultTenant()
+	if err != nil {
+		return err
+	}
 
 	mapper, typer := f.Object()
 	rmap := &resource.Mapper{
@@ -122,7 +126,8 @@ func RunEdit(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []strin
 
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		NamespaceParam(cmdNamespace).DefaultNamespace().
-		FilenameParam(enforceNamespace, filenames...).
+		TenantParam(cmdTenant).DefaultTenant().
+		FilenameParam(enforceTenant, enforceNamespace, filenames...).
 		ResourceTypeOrNameArgs(true, args...).
 		Latest().
 		Flatten().

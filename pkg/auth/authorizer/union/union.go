@@ -30,16 +30,16 @@ func New(authorizationHandlers ...authorizer.Authorizer) authorizer.Authorizer {
 }
 
 // Authorizes against a chain of authorizer.Authorizer objects and returns nil if successful and returns error if unsuccessful
-func (authzHandler unionAuthzHandler) Authorize(a authorizer.Attributes) error {
+func (authzHandler unionAuthzHandler) Authorize(a authorizer.Attributes) (string, error) {
 	var errlist []error
 	for _, currAuthzHandler := range authzHandler {
-		err := currAuthzHandler.Authorize(a)
+		tenant, err := currAuthzHandler.Authorize(a)
 		if err != nil {
 			errlist = append(errlist, err)
 			continue
 		}
-		return nil
+		return tenant, nil
 	}
 
-	return errors.NewAggregate(errlist)
+	return "", errors.NewAggregate(errlist)
 }

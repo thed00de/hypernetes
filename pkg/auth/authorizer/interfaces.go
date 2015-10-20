@@ -63,12 +63,12 @@ type Attributes interface {
 // zero or more calls to methods of the Attributes interface.  It returns nil when an action is
 // authorized, otherwise it returns an error.
 type Authorizer interface {
-	Authorize(a Attributes) (err error)
+	Authorize(a Attributes) (tenant string, err error)
 }
 
-type AuthorizerFunc func(a Attributes) error
+type AuthorizerFunc func(a Attributes) (string, error)
 
-func (f AuthorizerFunc) Authorize(a Attributes) error {
+func (f AuthorizerFunc) Authorize(a Attributes) (string, error) {
 	return f(a)
 }
 

@@ -162,6 +162,8 @@ const (
 	NamespaceSystem string = "kube-system"
 	// TerminationMessagePathDefault means the default path to capture the application termination message running in a container
 	TerminationMessagePathDefault string = "/dev/termination-log"
+	// NetworkNone
+	NetworkNone string = ""
 )
 
 // Volume represents a named volume in a pod that may be accessed by any containers in the pod.

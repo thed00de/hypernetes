@@ -657,6 +657,11 @@ func (n rootScopeNaming) ObjectTenant(obj runtime.Object) (tenant string, err er
 	return tenant, nil
 }
 
+// SetTenant sets the tenant on the object
+func (n rootScopeNaming) SetTenant(obj runtime.Object, tenant string) error {
+	return n.SelfLinker.SetTenant(obj, tenant)
+}
+
 // ObjectName returns the name set on the object, or an error if the
 // name cannot be returned. Namespace is empty
 // TODO: distinguish between objects with name/namespace and without via a specific error.
@@ -741,6 +746,11 @@ func (n scopeNaming) ObjectTenant(obj runtime.Object) (tenant string, err error)
 		return "", err
 	}
 	return tenant, nil
+}
+
+// SetTenant sets the tenant on the object
+func (n scopeNaming) SetTenant(obj runtime.Object, tenant string) error {
+	return n.SelfLinker.SetTenant(obj, tenant)
 }
 
 // ObjectName returns the name and namespace set on the object, or an error if the

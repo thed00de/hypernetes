@@ -57,6 +57,8 @@ type ScopeNamer interface {
 	// ObjectTenant returns the tenant from an object if they exist, or an error if the object
 	// does not support names.
 	ObjectTenant(obj runtime.Object) (tenant string, err error)
+	// SetTenant
+	SetTenant(obj runtime.Object, tenant string) error
 	// SetSelfLink sets the provided URL onto the object. The method should return nil if the object
 	// does not support selfLinks.
 	SetSelfLink(obj runtime.Object, url string) error
@@ -333,6 +335,12 @@ func createHandler(r rest.NamedCreater, scope RequestScope, typer runtime.Object
 			}
 		}
 
+		if objTenant, err := scope.Namer.ObjectTenant(obj); err == nil {
+			if objTenant == "" {
+				tenant := api.TenantValue(ctx)
+				scope.Namer.SetTenant(obj, tenant)
+			}
+		}
 		result, err := finishRequest(timeout, func() (runtime.Object, error) {
 			out, err := r.Create(ctx, name, obj)
 			if status, ok := out.(*unversioned.Status); ok && err == nil && status.Code == 0 {
@@ -839,7 +847,7 @@ func filterListInTenant(obj runtime.Object, tenant string, kind string, namer Sc
 			}
 		}
 	}
-	if kind == "Namespace" {
+	if kind == "Namespace" || kind == "Network" {
 		for i := range items {
 			if name, err := namer.ObjectTenant(items[i]); err == nil {
 				if tenant == name {

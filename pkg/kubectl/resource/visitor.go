@@ -69,6 +69,7 @@ type Info struct {
 	Client    RESTClient
 	Mapping   *meta.RESTMapping
 	Namespace string
+	Tenant    string
 	Name      string
 
 	// Optional, Source is the filename or URL to template file (.json or .yaml),
@@ -132,6 +133,14 @@ func (i *Info) Refresh(obj runtime.Object, ignoreError bool) error {
 		}
 	} else {
 		i.Namespace = namespace
+	}
+	tenant, err := i.Mapping.MetadataAccessor.Tenant(obj)
+	if err != nil {
+		if !ignoreError {
+			return err
+		}
+	} else {
+		i.Tenant = tenant
 	}
 	version, err := i.Mapping.MetadataAccessor.ResourceVersion(obj)
 	if err != nil {
@@ -553,6 +562,55 @@ func RequireNamespace(namespace string) VisitorFunc {
 		}
 		if info.Namespace != namespace {
 			return fmt.Errorf("the namespace from the provided object %q does not match the namespace %q. You must pass '--namespace=%s' to perform this operation.", info.Namespace, namespace, info.Namespace)
+		}
+		return nil
+	}
+}
+
+func UpdateObjectTenant(info *Info, err error) error {
+	if err != nil {
+		return err
+	}
+	if info.Object != nil {
+		return info.Mapping.MetadataAccessor.SetTenant(info.Object, info.Tenant)
+	}
+	return nil
+}
+
+// SetTenant ensures that every Info object visited will have a tenant
+// set. If info.Object is set, it will be mutated as well.
+func SetTenant(tenant string) VisitorFunc {
+	return func(info *Info, err error) error {
+		if err != nil {
+			return err
+		}
+		if len(info.Tenant) == 0 {
+			info.Tenant = tenant
+			UpdateObjectTenant(info, nil)
+		}
+		return nil
+	}
+}
+
+// RequireTenant will either set a tenant if none is provided on the
+// Info object, or if the tenant is set and does not match the provided
+// value, returns an error. This is intended to guard against administrators
+// accidentally operating on resources outside their tenants.
+func RequireTenant(tenant string) VisitorFunc {
+	return func(info *Info, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.Namespaced() {
+			return nil
+		}
+		if len(info.Tenant) == 0 {
+			info.Tenant = tenant
+			UpdateObjectTenant(info, nil)
+			return nil
+		}
+		if info.Tenant != tenant {
+			return fmt.Errorf("the tenant from the provided object %q does not match the tenant %q. You must pass '--tenant=%s' to perform this operation.", info.Tenant, tenant, info.Tenant)
 		}
 		return nil
 	}

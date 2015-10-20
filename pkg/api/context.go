@@ -37,7 +37,7 @@ const namespaceKey key = 0
 // userKey is the context key for the request user.
 const userKey key = 1
 
-// tenantKey
+// tenantKey is the context key for the request tenant.
 const tenantKey key = 2
 
 // NewContext instantiates a base context object for request flows.
@@ -57,6 +57,41 @@ func WithValue(parent Context, key interface{}, val interface{}) Context {
 		panic(stderrs.New("Invalid context type"))
 	}
 	return context.WithValue(internalCtx, key, val)
+}
+
+// WithTenant returns a copy of parent in which the tenant value is set
+func WithTenant(parent Context, tenant string) Context {
+	return WithValue(parent, tenantKey, tenant)
+}
+
+// TenantFrom returns the value of the tenant key on the ctx
+func TenantFrom(ctx Context) (string, bool) {
+	tenant, ok := ctx.Value(tenantKey).(string)
+	return tenant, ok
+}
+
+// TenantValue returns the value of the tenant key on the ctx, or the empty string if none
+func TenantValue(ctx Context) string {
+	tenant, _ := TenantFrom(ctx)
+	return tenant
+}
+
+// ValidTenant returns false if the tenant on the context differs from the resource.  If the resource has no tenant, it is set to the value in the context.
+func ValidTenant(ctx Context, resource *ObjectMeta) bool {
+	ns, ok := TenantFrom(ctx)
+	if len(resource.Tenant) == 0 {
+		resource.Tenant = ns
+	}
+	return ns == resource.Tenant && ok
+}
+
+// WithTenantDefaultIfNone returns a context whose tenant is the default if and only if the parent context has no tenant value
+func WithTenantDefaultIfNone(parent Context) Context {
+	tenant, ok := TenantFrom(parent)
+	if !ok || len(tenant) == 0 {
+		return WithTenant(parent, TenantDefault)
+	}
+	return parent
 }
 
 // WithNamespace returns a copy of parent in which the namespace value is set

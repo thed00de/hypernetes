@@ -376,14 +376,19 @@ func (r *requestAttributeGetter) GetAttribs(req *http.Request) authorizer.Attrib
 	// in empty (does not understand defaulting rules.)
 	attribs.Namespace = apiRequestInfo.Namespace
 
+	attribs.Tenant = apiRequestInfo.Tenant
+
 	return &attribs
 }
 
 // WithAuthorizationCheck passes all authorized requests on to handler, and returns a forbidden error otherwise.
-func WithAuthorizationCheck(handler http.Handler, getAttribs RequestAttributeGetter, a authorizer.Authorizer) http.Handler {
+func WithAuthorizationCheck(handler http.Handler, getAttribs RequestAttributeGetter, a authorizer.Authorizer, mapper api.RequestContextMapper) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		err := a.Authorize(getAttribs.GetAttribs(req))
+		tenant, err := a.Authorize(getAttribs.GetAttribs(req))
 		if err == nil {
+			if ctx, ok := mapper.Get(req); ok {
+				mapper.Update(req, api.WithTenant(ctx, tenant))
+			}
 			handler.ServeHTTP(w, req)
 			return
 		}
@@ -399,6 +404,7 @@ type APIRequestInfo struct {
 	APIGroup   string
 	APIVersion string
 	Namespace  string
+	Tenant     string
 	// Resource is the name of the resource being requested.  This is not the kind.  For example: pods
 	Resource string
 	// Subresource is the name of the subresource being requested.  This is a different resource, scoped to the parent resource, but it may have a different kind.
@@ -507,6 +513,19 @@ func (r *APIRequestInfoResolver) GetAPIRequestInfo(req *http.Request) (APIReques
 		}
 	} else {
 		requestInfo.Namespace = api.NamespaceNone
+	}
+	if currentParts[0] == "tenants" {
+		if len(currentParts) > 1 {
+			requestInfo.Tenant = currentParts[1]
+
+			// if there is another step after the namespace name and it is not a known namespace subresource
+			// move currentParts to include it as a resource in its own right
+			if len(currentParts) > 2 {
+				currentParts = currentParts[2:]
+			}
+		}
+	} else {
+		requestInfo.Tenant = api.TenantNone
 	}
 
 	// parsing successful, so we now know the proper value for .Parts

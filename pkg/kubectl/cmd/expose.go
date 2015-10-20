@@ -99,12 +99,17 @@ func RunExpose(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []str
 	if err != nil {
 		return err
 	}
+	tenant, enforceTenant, err := f.DefaultTenant()
+	if err != nil {
+		return err
+	}
 
 	mapper, typer := f.Object()
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		ContinueOnError().
 		NamespaceParam(namespace).DefaultNamespace().
-		FilenameParam(enforceNamespace, options.Filenames...).
+		TenantParam(tenant).DefaultTenant().
+		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		ResourceTypeOrNameArgs(false, args...).
 		Flatten().
 		Do()

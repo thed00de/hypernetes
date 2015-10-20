@@ -54,6 +54,9 @@ type ScopeNamer interface {
 	// ObjectName returns the namespace and name from an object if they exist, or an error if the object
 	// does not support names.
 	ObjectName(obj runtime.Object) (namespace, name string, err error)
+	// ObjectTenant returns the tenant from an object if they exist, or an error if the object
+	// does not support names.
+	ObjectTenant(obj runtime.Object) (tenant string, err error)
 	// SetSelfLink sets the provided URL onto the object. The method should return nil if the object
 	// does not support selfLinks.
 	SetSelfLink(obj runtime.Object, url string) error
@@ -271,6 +274,11 @@ func ListResource(r rest.Lister, rw rest.Watcher, scope RequestScope, forceWatch
 			return
 		}
 		if err := setListSelfLink(result, req, scope.Namer); err != nil {
+			errorJSON(err, scope.Codec, w)
+			return
+		}
+		tenant := api.TenantValue(ctx)
+		if err := filterListInTenant(result, tenant, scope.Kind, scope.Namer); err != nil {
 			errorJSON(err, scope.Codec, w)
 			return
 		}
@@ -803,7 +811,45 @@ func setListSelfLink(obj runtime.Object, req *restful.Request, namer ScopeNamer)
 		}
 	}
 	return runtime.SetList(obj, items)
+}
 
+func filterListInTenant(obj runtime.Object, tenant string, kind string, namer ScopeNamer) error {
+
+	var (
+		result = []runtime.Object{}
+	)
+	if !runtime.IsListType(obj) {
+		return nil
+	}
+	if tenant == api.TenantAdmin {
+		return nil
+	}
+
+	// Set self-link of objects in the list.
+	items, err := runtime.ExtractList(obj)
+	if err != nil {
+		return err
+	}
+	if kind == "Tenant" {
+		for i := range items {
+			if _, name, err := namer.ObjectName(items[i]); err == nil {
+				if tenant == name {
+					result = append(result, items[i])
+				}
+			}
+		}
+	}
+	if kind == "Namespace" {
+		for i := range items {
+			if name, err := namer.ObjectTenant(items[i]); err == nil {
+				if tenant == name {
+					result = append(result, items[i])
+				}
+			}
+		}
+	}
+
+	return runtime.SetList(obj, result)
 }
 
 func getPatchedJS(patchType api.PatchType, originalJS, patchJS []byte, obj runtime.Object) ([]byte, error) {

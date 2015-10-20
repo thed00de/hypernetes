@@ -110,6 +110,10 @@ func (o *AnnotateOptions) Complete(f *cmdutil.Factory, args []string) (err error
 	if err != nil {
 		return err
 	}
+	tenant, enforceTenant, errT := f.DefaultTenant()
+	if errT != nil {
+		return errT
+	}
 
 	// retrieves resource and annotation args from args
 	// also checks args to verify that all resources are specified before annotations
@@ -144,7 +148,8 @@ func (o *AnnotateOptions) Complete(f *cmdutil.Factory, args []string) (err error
 	o.builder = resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		ContinueOnError().
 		NamespaceParam(namespace).DefaultNamespace().
-		FilenameParam(enforceNamespace, o.filenames...).
+		TenantParam(tenant).DefaultTenant().
+		FilenameParam(enforceTenant, enforceNamespace, o.filenames...).
 		ResourceTypeOrNameArgs(o.all, o.resources...).
 		Flatten().
 		Latest()

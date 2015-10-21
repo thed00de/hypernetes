@@ -872,6 +872,7 @@ func (r *runtime) GetContainerLogs(pod *api.Pod, containerID kubecontainer.Conta
 	if logOptions.Timestamps {
 		args = append(args, "--timestamps")
 	}
+	args = append(args, containerID.ID)
 
 	command := r.buildCommand(args...)
 	p, err := kubecontainer.StartPty(command)

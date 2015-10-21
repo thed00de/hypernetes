@@ -143,6 +143,7 @@ func (ka *keystoneAuthorizer) Authorize(a authorizer.Attributes) (string, error)
 
 func isWhiteListedUser(username string) bool {
 	whiteList := map[string]bool{
+		api.UserAdmin:               true,
 		"kubelet":                   true,
 		"kube_proxy":                true,
 		"system:scheduler":          true,

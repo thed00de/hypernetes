@@ -144,8 +144,8 @@ type ObjectMeta struct {
 }
 
 const (
-	// TenantAdmin
-	TenantAdmin string = "admin"
+	// UserAdmin the username of the administrator
+	UserAdmin string = "admin"
 	// TenantDefault
 	TenantDefault string = "default"
 	// TenantAll is the default argument to specify on a context when you want to list or filter resources across all tenants

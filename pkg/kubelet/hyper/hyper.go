@@ -863,10 +863,10 @@ func (r *runtime) GetContainerLogs(pod *api.Pod, containerID kubecontainer.Conta
 	if logOptions.Follow {
 		args = append(args, "--follow")
 	}
-	if *logOptions.SinceSeconds != 0 {
+	if logOptions.SinceSeconds != nil && *logOptions.SinceSeconds != 0 {
 		args = append(args, fmt.Sprintf("--since=%d", *logOptions.SinceSeconds))
 	}
-	if *logOptions.TailLines != 0 {
+	if logOptions.TailLines != nil && *logOptions.TailLines != 0 {
 		args = append(args, fmt.Sprintf("--tail=%d", *logOptions.TailLines))
 	}
 	if logOptions.Timestamps {

@@ -279,10 +279,14 @@ func ListResource(r rest.Lister, rw rest.Watcher, scope RequestScope, forceWatch
 			errorJSON(err, scope.Codec, w)
 			return
 		}
-		tenant := api.TenantValue(ctx)
-		if err := filterListInTenant(result, tenant, scope.Kind, scope.Namer); err != nil {
-			errorJSON(err, scope.Codec, w)
-			return
+		//
+		url := req.Request.URL.String()
+		if strings.Index(url, "https://") == 0 {
+			tenant := api.TenantValue(ctx)
+			if err := filterListInTenant(result, tenant, scope.Kind, scope.Namer); err != nil {
+				errorJSON(err, scope.Codec, w)
+				return
+			}
 		}
 		write(http.StatusOK, scope.APIVersion, scope.Codec, result, w, req.Request)
 	}
@@ -846,8 +850,7 @@ func filterListInTenant(obj runtime.Object, tenant string, kind string, namer Sc
 				}
 			}
 		}
-	}
-	if kind == "Namespace" || kind == "Network" {
+	} else if kind == "Namespace" || kind == "Network" {
 		for i := range items {
 			if name, err := namer.ObjectTenant(items[i]); err == nil {
 				if tenant == name {
@@ -855,6 +858,8 @@ func filterListInTenant(obj runtime.Object, tenant string, kind string, namer Sc
 				}
 			}
 		}
+	} else {
+		result = items
 	}
 
 	return runtime.SetList(obj, result)

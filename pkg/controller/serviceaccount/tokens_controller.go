@@ -305,6 +305,7 @@ func (e *TokensController) createSecret(serviceAccount *api.ServiceAccount) erro
 		ObjectMeta: api.ObjectMeta{
 			Name:      secret.Strategy.GenerateName(fmt.Sprintf("%s-token-", serviceAccount.Name)),
 			Namespace: serviceAccount.Namespace,
+			Tenant:    serviceAccount.Tenant,
 			Annotations: map[string]string{
 				api.ServiceAccountNameKey: serviceAccount.Name,
 				api.ServiceAccountUIDKey:  string(serviceAccount.UID),

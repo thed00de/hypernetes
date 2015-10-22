@@ -281,7 +281,8 @@ func ListResource(r rest.Lister, rw rest.Watcher, scope RequestScope, forceWatch
 		}
 		//
 		url := req.Request.URL.String()
-		if strings.Index(url, "https://") == 0 {
+		userinfo, _ := api.UserFrom(ctx)
+		if strings.Index(url, "https://") == 0 && userinfo.GetName() != api.UserAdmin {
 			tenant := api.TenantValue(ctx)
 			if err := filterListInTenant(result, tenant, scope.Kind, scope.Namer); err != nil {
 				errorJSON(err, scope.Codec, w)
@@ -831,9 +832,6 @@ func filterListInTenant(obj runtime.Object, tenant string, kind string, namer Sc
 		result = []runtime.Object{}
 	)
 	if !runtime.IsListType(obj) {
-		return nil
-	}
-	if tenant == api.TenantAdmin {
 		return nil
 	}
 

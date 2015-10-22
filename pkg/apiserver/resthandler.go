@@ -30,6 +30,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/api/rest"
 	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/kubernetes/pkg/auth/authorizer"
 	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util"
@@ -280,9 +281,8 @@ func ListResource(r rest.Lister, rw rest.Watcher, scope RequestScope, forceWatch
 			return
 		}
 		//
-		url := req.Request.URL.String()
-		userinfo, _ := api.UserFrom(ctx)
-		if strings.Index(url, "https://") == 0 && userinfo.GetName() != api.UserAdmin {
+		userinfo, ok := api.UserFrom(ctx)
+		if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
 			tenant := api.TenantValue(ctx)
 			if err := filterListInTenant(result, tenant, scope.Kind, scope.Namer); err != nil {
 				errorJSON(err, scope.Codec, w)
@@ -848,7 +848,7 @@ func filterListInTenant(obj runtime.Object, tenant string, kind string, namer Sc
 				}
 			}
 		}
-	} else if kind == "Namespace" || kind == "Network" {
+	} else if kind == "Namespace" || kind == "Network" || kind == "Pod" || kind == "Serviceaccount" || kind == "Secret" {
 		for i := range items {
 			if name, err := namer.ObjectTenant(items[i]); err == nil {
 				if tenant == name {

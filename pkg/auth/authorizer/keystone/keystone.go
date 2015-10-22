@@ -18,7 +18,6 @@ package keystone
 
 import (
 	"errors"
-	"strings"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/auth/authorizer"
@@ -97,24 +96,8 @@ func (ka *keystoneAuthorizer) Authorize(a authorizer.Attributes) (string, error)
 	var (
 		tenantName string
 		ns         *api.Namespace
+		err        error
 	)
-	if strings.HasPrefix(a.GetUserName(), "system:serviceaccount:") {
-		return "", nil
-	}
-	if isWhiteListedUser(a.GetUserName()) {
-		return "", nil
-	}
-
-	authConfig := &authConfig{
-		AuthUrl:  ka.authUrl,
-		Username: a.GetUserName(),
-		Password: a.GetPassword(),
-	}
-	osClient, err := newOpenstackClient(authConfig)
-	if err != nil {
-		glog.Errorf("%v", err)
-		return "", err
-	}
 	if a.GetNamespace() != "" {
 		ns, err = ka.kubeClient.Namespaces().Get(a.GetNamespace())
 		if err != nil {
@@ -130,6 +113,25 @@ func (ka *keystoneAuthorizer) Authorize(a authorizer.Attributes) (string, error)
 			tenantName = te.Name
 		}
 	}
+	if authorizer.IsWhiteListedUser(a.GetUserName()) {
+		return tenantName, nil
+	} else {
+		if !a.IsReadOnly() && a.GetResource() == "tenants" {
+			return "", errors.New("only admin can write tenant")
+		}
+	}
+
+	authConfig := &authConfig{
+		AuthUrl:  ka.authUrl,
+		Username: a.GetUserName(),
+		Password: a.GetPassword(),
+	}
+	osClient, err := newOpenstackClient(authConfig)
+	if err != nil {
+		glog.Errorf("%v", err)
+		return "", err
+	}
+
 	tenant, err := osClient.getTenant()
 	if err != nil {
 		glog.Errorf("%v", err)
@@ -139,19 +141,6 @@ func (ka *keystoneAuthorizer) Authorize(a authorizer.Attributes) (string, error)
 		return tenant.Name, nil
 	}
 	return "", errors.New("Keystone authorization failed")
-}
-
-func isWhiteListedUser(username string) bool {
-	whiteList := map[string]bool{
-		api.UserAdmin:               true,
-		"kubelet":                   true,
-		"kube_proxy":                true,
-		"system:scheduler":          true,
-		"system:controller_manager": true,
-		"system:logging":            true,
-		"system:monitoring":         true,
-	}
-	return whiteList[username]
 }
 
 func (osClient *OpenstackClient) getTenant() (tenant *tenants.Tenant, err error) {

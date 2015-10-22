@@ -211,6 +211,12 @@ func (e *ServiceAccountsController) createServiceAccount(name, namespace string)
 	serviceAccount := &api.ServiceAccount{}
 	serviceAccount.Name = name
 	serviceAccount.Namespace = namespace
+	ns, err := e.getNamespace(namespace)
+	if err != nil {
+		glog.Error(err)
+		return
+	}
+	serviceAccount.Tenant = ns.Tenant
 	if _, err := e.client.ServiceAccounts(namespace).Create(serviceAccount); err != nil {
 		glog.Error(err)
 	}

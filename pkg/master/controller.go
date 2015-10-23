@@ -236,6 +236,7 @@ func (c *Controller) CreateOrUpdateMasterServiceIfNeeded(serviceName string, ser
 		ObjectMeta: api.ObjectMeta{
 			Name:      serviceName,
 			Namespace: api.NamespaceDefault,
+			Tenant:    api.TenantDefault,
 			Labels:    map[string]string{"provider": "kubernetes", "component": "apiserver"},
 		},
 		Spec: api.ServiceSpec{
@@ -279,6 +280,7 @@ func (c *Controller) ReconcileEndpoints(serviceName string, ip net.IP, endpointP
 			ObjectMeta: api.ObjectMeta{
 				Name:      serviceName,
 				Namespace: api.NamespaceDefault,
+				Tenant:    api.TenantDefault,
 			},
 		}
 	}

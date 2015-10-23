@@ -59,7 +59,7 @@ func (c *networks) List(opts api.ListOptions) (*api.NetworkList, error) {
 	result := &api.NetworkList{}
 	err := c.r.Get().
 		Resource("networks").
-		VersionedParams(&opts, api.Scheme).
+		VersionedParams(&opts, api.ParameterCodec).
 		Do().Into(result)
 	return result, err
 }
@@ -103,6 +103,6 @@ func (c *networks) Watch(opts api.ListOptions) (watch.Interface, error) {
 	return c.r.Get().
 		Prefix("watch").
 		Resource("networks").
-		VersionedParams(&opts, api.Scheme).
+		VersionedParams(&opts, api.ParameterCodec).
 		Watch()
 }

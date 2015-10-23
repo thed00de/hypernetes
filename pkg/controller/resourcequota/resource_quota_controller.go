@@ -117,6 +117,7 @@ func (rm *ResourceQuotaController) syncResourceQuota(quota api.ResourceQuota) (e
 		ObjectMeta: api.ObjectMeta{
 			Name:            quota.Name,
 			Namespace:       quota.Namespace,
+			Tenant:          quota.Tenant,
 			ResourceVersion: quota.ResourceVersion,
 			Labels:          quota.Labels,
 			Annotations:     quota.Annotations},

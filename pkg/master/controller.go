@@ -208,6 +208,7 @@ func (c *Controller) CreateMasterServiceIfNeeded(serviceName string, serviceIP n
 		ObjectMeta: api.ObjectMeta{
 			Name:      serviceName,
 			Namespace: api.NamespaceDefault,
+			Tenant:    api.TenantDefault,
 			Labels:    map[string]string{"provider": "kubernetes", "component": "apiserver"},
 		},
 		Spec: api.ServiceSpec{
@@ -251,6 +252,7 @@ func (c *Controller) SetEndpoints(serviceName string, ip net.IP, port int) error
 			ObjectMeta: api.ObjectMeta{
 				Name:      serviceName,
 				Namespace: api.NamespaceDefault,
+				Tenant:    api.TenantDefault,
 			},
 		}
 	}

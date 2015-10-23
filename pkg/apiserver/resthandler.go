@@ -848,16 +848,18 @@ func filterListInTenant(obj runtime.Object, tenant string, kind string, namer Sc
 				}
 			}
 		}
-	} else if kind == "Namespace" || kind == "Network" || kind == "Pod" || kind == "Serviceaccount" || kind == "Secret" {
+	} else {
 		for i := range items {
 			if name, err := namer.ObjectTenant(items[i]); err == nil {
 				if tenant == name {
 					result = append(result, items[i])
+					continue
+				}
+				if name == "" {
+					result = append(result, items[i])
 				}
 			}
 		}
-	} else {
-		result = items
 	}
 
 	return runtime.SetList(obj, result)

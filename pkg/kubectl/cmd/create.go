@@ -87,16 +87,18 @@ func RunCreate(f *cmdutil.Factory, cmd *cobra.Command, out io.Writer, options *C
 	if err != nil {
 		return err
 	}
+
 	cmdTenant, enforceTenant, err := f.DefaultTenant()
 	if err != nil {
 		return err
 	}
+	fmt.Printf("tenant input is %s\n", cmdTenant)
 	mapper, typer := f.Object()
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		Schema(schema).
 		ContinueOnError().
-		NamespaceParam(cmdNamespace).DefaultNamespace().
-		TenantParam(cmdTenant).DefaultTenant().
+		NamespaceParam(cmdNamespace).
+		TenantParam(cmdTenant).
 		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		Flatten().
 		Do()

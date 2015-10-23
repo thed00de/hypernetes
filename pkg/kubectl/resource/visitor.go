@@ -601,9 +601,6 @@ func RequireTenant(tenant string) VisitorFunc {
 		if err != nil {
 			return err
 		}
-		if !info.Namespaced() {
-			return nil
-		}
 		if len(info.Tenant) == 0 {
 			info.Tenant = tenant
 			UpdateObjectTenant(info, nil)

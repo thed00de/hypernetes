@@ -134,7 +134,7 @@ func RunGet(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []string
 	isWatch, isWatchOnly := cmdutil.GetFlagBool(cmd, "watch"), cmdutil.GetFlagBool(cmd, "watch-only")
 	if isWatch || isWatchOnly {
 		r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
-			NamespaceParam(cmdNamespace).DefaultNamespace().AllNamespaces(allNamespaces).
+			NamespaceParam(cmdNamespace).DefaultNamespace().AllNamespaces(true).
 			TenantParam(cmdTenant).DefaultTenant().
 			FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 			SelectorParam(selector).
@@ -189,7 +189,7 @@ func RunGet(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []string
 	}
 
 	b := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
-		NamespaceParam(cmdNamespace).DefaultNamespace().AllNamespaces(allNamespaces).
+		NamespaceParam(cmdNamespace).DefaultNamespace().AllNamespaces(true).
 		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		SelectorParam(selector).
 		ResourceTypeOrNameArgs(true, args...).

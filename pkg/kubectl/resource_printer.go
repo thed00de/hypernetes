@@ -1052,7 +1052,7 @@ func printNetworkList(list *api.NetworkList, w io.Writer, withNamespace bool, wi
 
 func printTenant(item *api.Tenant, w io.Writer, withNamespace bool, wide bool, showAll bool, columnLabels []string) error {
 	if withNamespace {
-		return fmt.Errorf("namespace is not namespaced")
+		return fmt.Errorf("tenant is not namespaced")
 	}
 
 	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s", item.Name, labels.FormatLabels(item.Labels), item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {

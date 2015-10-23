@@ -535,7 +535,7 @@ func (r *APIRequestInfoResolver) GetAPIRequestInfo(req *http.Request) (APIReques
 		if len(currentParts) > 1 {
 			requestInfo.Tenant = currentParts[1]
 
-			// if there is another step after the namespace name and it is not a known namespace subresource
+			// if there is another step after the tenant name and it is not a known tenant subresource
 			// move currentParts to include it as a resource in its own right
 			if len(currentParts) > 2 {
 				currentParts = currentParts[2:]

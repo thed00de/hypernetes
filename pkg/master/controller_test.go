@@ -28,7 +28,7 @@ import (
 func TestSetEndpoints(t *testing.T) {
 	ns := api.NamespaceDefault
 	om := func(name string) api.ObjectMeta {
-		return api.ObjectMeta{Namespace: ns, Name: name}
+		return api.ObjectMeta{Namespace: ns, Tenant: api.TenantDefault, Name: name}
 	}
 	tests := []struct {
 		testName          string

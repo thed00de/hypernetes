@@ -86,6 +86,8 @@ func validateObject(obj runtime.Object) (errors []error) {
 		errors = validation.ValidateEndpoints(t)
 	case *api.Namespace:
 		errors = validation.ValidateNamespace(t)
+	case *api.Tenant:
+		errors = validation.ValidateTenant(t)
 	case *api.Secret:
 		if t.Namespace == "" {
 			t.Namespace = api.NamespaceDefault
@@ -219,6 +221,8 @@ func TestExampleObjectSchemas(t *testing.T) {
 		},
 		"../docs/user-guide": {
 			"multi-pod":   nil,
+			"ns":          &api.Namespace{},
+			"te":          &api.Tenant{},
 			"pod":         &api.Pod{},
 			"replication": &api.ReplicationController{},
 			"job":         &experimental.Job{},

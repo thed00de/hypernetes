@@ -138,6 +138,7 @@ type testFactory struct {
 	Printer      kubectl.ResourcePrinter
 	Validator    validation.Schema
 	Namespace    string
+	Tenant       string
 	ClientConfig *client.Config
 	Err          error
 }
@@ -167,6 +168,9 @@ func NewTestFactory() (*cmdutil.Factory, *testFactory, runtime.Codec) {
 		},
 		DefaultNamespace: func() (string, bool, error) {
 			return t.Namespace, false, t.Err
+		},
+		DefaultTenant: func() (string, bool, error) {
+			return t.Tenant, false, t.Err
 		},
 		ClientConfig: func() (*client.Config, error) {
 			return t.ClientConfig, t.Err
@@ -224,6 +228,9 @@ func NewAPIFactory() (*cmdutil.Factory, *testFactory, runtime.Codec) {
 		},
 		DefaultNamespace: func() (string, bool, error) {
 			return t.Namespace, false, t.Err
+		},
+		DefaultTenant: func() (string, bool, error) {
+			return t.Tenant, false, t.Err
 		},
 		ClientConfig: func() (*client.Config, error) {
 			return t.ClientConfig, t.Err

@@ -92,7 +92,7 @@ func (s *KubeletExecutorServer) runExecutor(execUpdates chan<- kubetypes.PodUpda
 			defer s.kletLock.Unlock()
 
 			if s.klet == nil {
-				return nil, fmt.Errorf("PodStatucFunc called before kubelet is initialized")
+				return nil, fmt.Errorf("PodStatucFunc called before kubelet is initialized.")
 			}
 
 			status, err := s.klet.GetRuntime().GetPodStatus(pod)

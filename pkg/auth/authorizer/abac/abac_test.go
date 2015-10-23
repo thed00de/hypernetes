@@ -122,7 +122,7 @@ func TestNotAuthorized(t *testing.T) {
 			Namespace: tc.NS,
 		}
 		t.Logf("tc: %v -> attr %v", tc, attr)
-		err := a.Authorize(attr)
+		_, err := a.Authorize(attr)
 		actualAllow := bool(err == nil)
 		if tc.ExpectAllow != actualAllow {
 			t.Errorf("%d: Expected allowed=%v but actually allowed=%v\n\t%v",

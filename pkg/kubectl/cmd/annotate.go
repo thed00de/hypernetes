@@ -110,9 +110,9 @@ func (o *AnnotateOptions) Complete(f *cmdutil.Factory, args []string) (err error
 	if err != nil {
 		return err
 	}
-	tenant, enforceTenant, errT := f.DefaultTenant()
-	if errT != nil {
-		return errT
+	tenant, enforceTenant, err := f.DefaultTenant()
+	if err != nil {
+		return err
 	}
 
 	// retrieves resource and annotation args from args

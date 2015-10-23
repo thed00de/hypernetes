@@ -28,6 +28,7 @@ func TestGenericTypeMeta(t *testing.T) {
 	type TypeMeta struct {
 		Kind              string            `json:"kind,omitempty"`
 		Namespace         string            `json:"namespace,omitempty"`
+		Tenant            string            `json:"tenant,omitempty"`
 		Name              string            `json:"name,omitempty"`
 		GenerateName      string            `json:"generateName,omitempty"`
 		UID               string            `json:"uid,omitempty"`
@@ -44,6 +45,7 @@ func TestGenericTypeMeta(t *testing.T) {
 	j := Object{
 		TypeMeta{
 			Namespace:       "bar",
+			Tenant:          "hah",
 			Name:            "foo",
 			GenerateName:    "prefix",
 			UID:             "uid",
@@ -60,6 +62,9 @@ func TestGenericTypeMeta(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if e, a := "bar", accessor.Namespace(); e != a {
+		t.Errorf("expected %v, got %v", e, a)
+	}
+	if e, a := "hah", accessor.Tenant(); e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 	if e, a := "foo", accessor.Name(); e != a {
@@ -96,6 +101,7 @@ func TestGenericTypeMeta(t *testing.T) {
 	}
 
 	accessor.SetNamespace("baz")
+	accessor.SetTenant("uau")
 	accessor.SetName("bar")
 	accessor.SetGenerateName("generate")
 	accessor.SetUID("other")
@@ -106,6 +112,9 @@ func TestGenericTypeMeta(t *testing.T) {
 
 	// Prove that accessor changes the original object.
 	if e, a := "baz", j.Namespace; e != a {
+		t.Errorf("expected %v, got %v", e, a)
+	}
+	if e, a := "uau", j.Tenant; e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 	if e, a := "bar", j.Name; e != a {
@@ -143,6 +152,7 @@ func TestGenericTypeMeta(t *testing.T) {
 type InternalTypeMeta struct {
 	Kind              string            `json:"kind,omitempty"`
 	Namespace         string            `json:"namespace,omitempty"`
+	Tenant            string            `json:"tenant,omitempty"`
 	Name              string            `json:"name,omitempty"`
 	GenerateName      string            `json:"generateName,omitempty"`
 	UID               string            `json:"uid,omitempty"`
@@ -163,6 +173,7 @@ func TestGenericTypeMetaAccessor(t *testing.T) {
 	j := &InternalObject{
 		InternalTypeMeta{
 			Namespace:       "bar",
+			Tenant:          "hah",
 			Name:            "foo",
 			GenerateName:    "prefix",
 			UID:             "uid",
@@ -180,6 +191,13 @@ func TestGenericTypeMetaAccessor(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 	if e, a := "bar", namespace; e != a {
+		t.Errorf("expected %v, got %v", e, a)
+	}
+	tenant, err := accessor.Tenant(j)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if e, a := "hah", tenant; e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 	name, err := accessor.Name(j)
@@ -249,6 +267,9 @@ func TestGenericTypeMetaAccessor(t *testing.T) {
 	if err := accessor.SetNamespace(j, "baz"); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+	if err := accessor.SetTenant(j, "uau"); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 	if err := accessor.SetName(j, "bar"); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -280,6 +301,9 @@ func TestGenericTypeMetaAccessor(t *testing.T) {
 
 	// Prove that accessor changes the original object.
 	if e, a := "baz", j.TypeMeta.Namespace; e != a {
+		t.Errorf("expected %v, got %v", e, a)
+	}
+	if e, a := "uau", j.TypeMeta.Tenant; e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 	if e, a := "bar", j.TypeMeta.Name; e != a {
@@ -318,6 +342,7 @@ func TestGenericObjectMeta(t *testing.T) {
 	}
 	type ObjectMeta struct {
 		Namespace         string            `json:"namespace,omitempty"`
+		Tenant            string            `json:"tenant,omitempty"`
 		Name              string            `json:"name,omitempty"`
 		GenerateName      string            `json:"generateName,omitempty"`
 		UID               string            `json:"uid,omitempty"`
@@ -338,6 +363,7 @@ func TestGenericObjectMeta(t *testing.T) {
 		},
 		ObjectMeta{
 			Namespace:       "bar",
+			Tenant:          "hah",
 			Name:            "foo",
 			GenerateName:    "prefix",
 			UID:             "uid",
@@ -352,6 +378,9 @@ func TestGenericObjectMeta(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if e, a := "bar", accessor.Namespace(); e != a {
+		t.Errorf("expected %v, got %v", e, a)
+	}
+	if e, a := "hah", accessor.Tenant(); e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 	if e, a := "foo", accessor.Name(); e != a {
@@ -383,6 +412,7 @@ func TestGenericObjectMeta(t *testing.T) {
 	}
 
 	accessor.SetNamespace("baz")
+	accessor.SetTenant("uau")
 	accessor.SetName("bar")
 	accessor.SetGenerateName("generate")
 	accessor.SetUID("other")
@@ -395,6 +425,9 @@ func TestGenericObjectMeta(t *testing.T) {
 
 	// Prove that accessor changes the original object.
 	if e, a := "baz", j.Namespace; e != a {
+		t.Errorf("expected %v, got %v", e, a)
+	}
+	if e, a := "uau", j.Tenant; e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 	if e, a := "bar", j.Name; e != a {

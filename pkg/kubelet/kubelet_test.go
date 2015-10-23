@@ -498,6 +498,10 @@ func (f *stubVolume) GetPath() string {
 	return f.path
 }
 
+func (f *stubVolume) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 func TestMakeVolumeMounts(t *testing.T) {
 	container := api.Container{
 		VolumeMounts: []api.VolumeMount{

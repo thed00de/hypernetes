@@ -99,7 +99,7 @@ func TestValidateAnnotationOverwrites(t *testing.T) {
 
 func TestParseAnnotations(t *testing.T) {
 	testURL := "https://test.com/index.htm?id=123#u=user-name"
-	testJSON := `'{"kind":"SerializedReference","apiVersion":"v1","reference":{"kind":"ReplicationController","namespace":"default","name":"my-nginx","uid":"c544ee78-2665-11e5-8051-42010af0c213","apiVersion":"v1","resourceVersion":"61368"}}'`
+	testJSON := `'{"kind":"SerializedReference","apiVersion":"v1","reference":{"kind":"ReplicationController","namespace":"default","tenant":"default", "name":"my-nginx","uid":"c544ee78-2665-11e5-8051-42010af0c213","apiVersion":"v1","resourceVersion":"61368"}}'`
 	tests := []struct {
 		annotations    []string
 		expected       map[string]string
@@ -392,6 +392,7 @@ func TestAnnotateErrors(t *testing.T) {
 		f, tf, _ := NewAPIFactory()
 		tf.Printer = &testPrinter{}
 		tf.Namespace = "test"
+		tf.Tenant = "test"
 		tf.ClientConfig = &client.Config{Version: testapi.Default.Version()}
 
 		buf := bytes.NewBuffer([]byte{})

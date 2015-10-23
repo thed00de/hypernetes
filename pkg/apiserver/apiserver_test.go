@@ -2250,13 +2250,19 @@ type setTestSelfLinker struct {
 	expectedSet string
 	name        string
 	namespace   string
+	tenant      string
 	called      bool
 	err         error
 }
 
 func (s *setTestSelfLinker) Namespace(runtime.Object) (string, error) { return s.namespace, s.err }
-func (s *setTestSelfLinker) Name(runtime.Object) (string, error)      { return s.name, s.err }
-func (s *setTestSelfLinker) SelfLink(runtime.Object) (string, error)  { return "", s.err }
+func (s *setTestSelfLinker) Tenant(runtime.Object) (string, error)    { return s.tenant, s.err }
+func (s *setTestSelfLinker) SetTenant(obj runtime.Object, tenant string) error {
+	s.tenant = tenant
+	return s.err
+}
+func (s *setTestSelfLinker) Name(runtime.Object) (string, error)     { return s.name, s.err }
+func (s *setTestSelfLinker) SelfLink(runtime.Object) (string, error) { return "", s.err }
 func (s *setTestSelfLinker) SetSelfLink(obj runtime.Object, selfLink string) error {
 	if e, a := s.expectedSet, selfLink; e != a {
 		s.t.Errorf("expected '%v', got '%v'", e, a)

@@ -234,7 +234,7 @@ func (s *KubeletExecutorServer) Run(hks hyperkube.Interface, _ []string) error {
 		MaxPods:                   s.MaxPods,
 		MinimumGCAge:              s.MinimumGCAge,
 		Mounter:                   mounter,
-		NetworkPluginName:         s.NetworkPluginName,
+		NetworkPluginName:         networkPluginName,
 		NetworkPlugins:            app.ProbeNetworkPlugins(s.NetworkPluginDir),
 		NodeStatusUpdateFrequency: s.NodeStatusUpdateFrequency,
 		OOMAdjuster:               oomAdjuster,

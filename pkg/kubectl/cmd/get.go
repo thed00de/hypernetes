@@ -113,6 +113,7 @@ func RunGet(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []string
 	selector := cmdutil.GetFlagString(cmd, "selector")
 	allNamespaces := cmdutil.GetFlagBool(cmd, "all-namespaces")
 	mapper, typer := f.Object()
+	var all bool = allNamespaces
 
 	cmdNamespace, enforceNamespace, err := f.DefaultNamespace()
 	if err != nil {
@@ -129,12 +130,16 @@ func RunGet(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []string
 `)
 		return cmdutil.UsageError(cmd, "Required resource not specified.")
 	}
+	userNamespace := cmdutil.GetFlagString(cmd, "namespace")
+	if userNamespace == "" {
+		all = true
+	}
 
 	// handle watch separately since we cannot watch multiple resource types
 	isWatch, isWatchOnly := cmdutil.GetFlagBool(cmd, "watch"), cmdutil.GetFlagBool(cmd, "watch-only")
 	if isWatch || isWatchOnly {
 		r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
-			NamespaceParam(cmdNamespace).DefaultNamespace().AllNamespaces(true).
+			NamespaceParam(cmdNamespace).DefaultNamespace().AllNamespaces(all).
 			TenantParam(cmdTenant).DefaultTenant().
 			FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 			SelectorParam(selector).
@@ -189,7 +194,7 @@ func RunGet(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []string
 	}
 
 	b := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
-		NamespaceParam(cmdNamespace).DefaultNamespace().AllNamespaces(true).
+		NamespaceParam(cmdNamespace).DefaultNamespace().AllNamespaces(all).
 		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		SelectorParam(selector).
 		ResourceTypeOrNameArgs(true, args...).

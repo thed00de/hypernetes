@@ -92,7 +92,6 @@ func RunCreate(f *cmdutil.Factory, cmd *cobra.Command, out io.Writer, options *C
 	if err != nil {
 		return err
 	}
-	fmt.Printf("tenant input is %s\n", cmdTenant)
 	mapper, typer := f.Object()
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		Schema(schema).

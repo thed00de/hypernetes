@@ -366,6 +366,12 @@ func (e *EndpointController) syncService(key string) {
 	newEndpoints := currentEndpoints
 	newEndpoints.Subsets = subsets
 	newEndpoints.Labels = service.Labels
+	ns, err := e.client.Namespaces().Get(service.Namespace)
+	if err != nil {
+		glog.Error(err)
+		return
+	}
+	newEndpoints.Tenant = ns.Tenant
 
 	if len(currentEndpoints.ResourceVersion) == 0 {
 		// No previous endpoints, create them

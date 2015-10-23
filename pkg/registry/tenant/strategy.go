@@ -56,6 +56,7 @@ func (tenantStrategy) PrepareForCreate(obj runtime.Object) {
 func (tenantStrategy) PrepareForUpdate(obj, old runtime.Object) {
 	newTenant := obj.(*api.Tenant)
 	oldTenant := old.(*api.Tenant)
+	newTenant.Spec.Namespaces = oldTenant.Spec.Namespaces
 	newTenant.Status = oldTenant.Status
 }
 

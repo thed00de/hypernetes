@@ -159,7 +159,7 @@ func TestEventf(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   1,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
 			expectUpdate: false,
 		},
 		{
@@ -184,7 +184,7 @@ func TestEventf(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   1,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:""}): reason: 'Killed' some other verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:""}): reason: 'Killed' some other verbose message: 1`,
 			expectUpdate: false,
 		},
 		{
@@ -210,7 +210,7 @@ func TestEventf(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   2,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
 			expectUpdate: true,
 		},
 		{
@@ -236,7 +236,7 @@ func TestEventf(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   1,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Started' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Started' some verbose message: 1`,
 			expectUpdate: false,
 		},
 		{
@@ -262,7 +262,7 @@ func TestEventf(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   3,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
 			expectUpdate: true,
 		},
 		{
@@ -288,7 +288,7 @@ func TestEventf(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   1,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Stopped' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Stopped' some verbose message: 1`,
 			expectUpdate: false,
 		},
 		{
@@ -314,7 +314,7 @@ func TestEventf(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   2,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Stopped' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Stopped' some verbose message: 1`,
 			expectUpdate: true,
 		},
 	}
@@ -581,7 +581,7 @@ func TestEventfNoNamespace(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   1,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"", Tenant:"", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
 			expectUpdate: false,
 		},
 	}
@@ -687,7 +687,7 @@ func TestMultiSinkCache(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   1,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
 			expectUpdate: false,
 		},
 		{
@@ -712,7 +712,7 @@ func TestMultiSinkCache(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   1,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:""}): reason: 'Killed' some other verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:""}): reason: 'Killed' some other verbose message: 1`,
 			expectUpdate: false,
 		},
 		{
@@ -738,7 +738,7 @@ func TestMultiSinkCache(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   2,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
 			expectUpdate: true,
 		},
 		{
@@ -764,7 +764,7 @@ func TestMultiSinkCache(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   1,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Started' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Started' some verbose message: 1`,
 			expectUpdate: false,
 		},
 		{
@@ -790,7 +790,7 @@ func TestMultiSinkCache(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   3,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"bar", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[2]"}): reason: 'Started' some verbose message: 1`,
 			expectUpdate: true,
 		},
 		{
@@ -816,7 +816,7 @@ func TestMultiSinkCache(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   1,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Stopped' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Stopped' some verbose message: 1`,
 			expectUpdate: false,
 		},
 		{
@@ -842,7 +842,7 @@ func TestMultiSinkCache(t *testing.T) {
 				Source:  api.EventSource{Component: "eventTest"},
 				Count:   2,
 			},
-			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Stopped' some verbose message: 1`,
+			expectLog:    `Event(api.ObjectReference{Kind:"Pod", Namespace:"baz", Tenant:"", Name:"foo", UID:"differentUid", APIVersion:"version", ResourceVersion:"", FieldPath:"spec.containers[3]"}): reason: 'Stopped' some verbose message: 1`,
 			expectUpdate: true,
 		},
 	}

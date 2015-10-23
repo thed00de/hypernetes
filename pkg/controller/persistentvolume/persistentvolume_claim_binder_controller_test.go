@@ -406,6 +406,10 @@ func (r *mockRecycler) GetPath() string {
 	return r.path
 }
 
+func (r *mockRecycler) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 func (r *mockRecycler) Recycle() error {
 	// return nil means recycle passed
 	return nil

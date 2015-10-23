@@ -533,6 +533,10 @@ func (f *stubVolume) SupportsOwnershipManagement() bool {
 	return false
 }
 
+func (f *stubVolume) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 func TestMakeVolumeMounts(t *testing.T) {
 	container := api.Container{
 		VolumeMounts: []api.VolumeMount{

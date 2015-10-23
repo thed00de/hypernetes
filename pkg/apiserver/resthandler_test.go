@@ -96,6 +96,7 @@ func (p *testPatcher) Get(ctx api.Context, name string) (runtime.Object, error) 
 type testNamer struct {
 	namespace string
 	name      string
+	tenant    string
 }
 
 func (p *testNamer) Namespace(req *restful.Request) (namespace string, err error) {
@@ -112,6 +113,15 @@ func (p *testNamer) Name(req *restful.Request) (namespace, name string, err erro
 // does not support names.
 func (p *testNamer) ObjectName(obj runtime.Object) (namespace, name string, err error) {
 	return p.namespace, p.name, nil
+}
+
+func (p *testNamer) ObjectTenant(obj runtime.Object) (tenant string, err error) {
+	return p.tenant, nil
+}
+
+func (p *testNamer) SetTenant(obj runtime.Object, tenant string) (err error) {
+	p.tenant = tenant
+	return nil
 }
 
 // SetSelfLink sets the provided URL onto the object. The method should return nil if the object
@@ -151,6 +161,7 @@ func (tc *patchTestCase) Run(t *testing.T) {
 
 	namespace := tc.startingPod.Namespace
 	name := tc.startingPod.Name
+	tenant := tc.startingPod.Tenant
 
 	codec := latest.GroupOrDie("").Codec
 
@@ -161,7 +172,7 @@ func (tc *patchTestCase) Run(t *testing.T) {
 	ctx := api.NewDefaultContext()
 	ctx = api.WithNamespace(ctx, namespace)
 
-	namer := &testNamer{namespace, name}
+	namer := &testNamer{namespace, name, tenant}
 
 	versionedObj, err := api.Scheme.ConvertToVersion(&api.Pod{}, "v1")
 	if err != nil {

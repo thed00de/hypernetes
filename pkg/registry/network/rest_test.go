@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/util"
+	"k8s.io/kubernetes/pkg/api/unversioned"
 )
 
 func TestNetworkStrategy(t *testing.T) {
@@ -60,7 +60,7 @@ func TestNetworkStatusStrategy(t *testing.T) {
 	if StatusStrategy.AllowCreateOnUpdate() {
 		t.Errorf("Networks should not allow create on update")
 	}
-	now := util.Now()
+	now := unversioned.Now()
 	oldNetwork := &api.Network{
 		ObjectMeta: api.ObjectMeta{Name: "foo", ResourceVersion: "10"},
 		Spec: api.NetworkSpec{

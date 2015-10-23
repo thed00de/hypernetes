@@ -30,7 +30,7 @@ import (
 func TestReconcileEndpoints(t *testing.T) {
 	ns := api.NamespaceDefault
 	om := func(name string) api.ObjectMeta {
-		return api.ObjectMeta{Namespace: ns, Name: name}
+		return api.ObjectMeta{Namespace: ns, Tenant: api.TenantDefault, Name: name}
 	}
 	reconcile_tests := []struct {
 		testName          string

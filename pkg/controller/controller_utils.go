@@ -283,12 +283,22 @@ func (r RealPodControl) createPods(nodeName, namespace string, template *api.Pod
 		return fmt.Errorf("object does not have ObjectMeta, %v", err)
 	}
 	prefix := getPodsPrefix(meta.Name)
+	tenant := meta.Tenant
+	if tenant == "" {
+		ns, err := r.KubeClient.Namespaces().Get(namespace)
+		if err != nil {
+			glog.Error(err)
+			return err
+		}
+		tenant = ns.Tenant
+	}
 
 	pod := &api.Pod{
 		ObjectMeta: api.ObjectMeta{
 			Labels:       desiredLabels,
 			Annotations:  desiredAnnotations,
 			GenerateName: prefix,
+			Tenant:       tenant,
 		},
 	}
 	if err := api.Scheme.Convert(&template.Spec, &pod.Spec); err != nil {

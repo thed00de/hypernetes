@@ -95,6 +95,10 @@ func NewCmdDescribe(f *cmdutil.Factory, out io.Writer) *cobra.Command {
 
 func RunDescribe(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []string, options *DescribeOptions) error {
 	selector := cmdutil.GetFlagString(cmd, "selector")
+	var all bool = true
+	if cmdutil.GetFlagString(cmd, "namespace") != "" {
+		all = false
+	}
 	cmdNamespace, enforceNamespace, err := f.DefaultNamespace()
 	if err != nil {
 		return err
@@ -111,7 +115,7 @@ func RunDescribe(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []s
 	mapper, typer := f.Object()
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		ContinueOnError().
-		NamespaceParam(cmdNamespace).DefaultNamespace().
+		NamespaceParam(cmdNamespace).DefaultNamespace().AllNamespaces(all).
 		TenantParam(cmdTenant).DefaultTenant().
 		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		SelectorParam(selector).

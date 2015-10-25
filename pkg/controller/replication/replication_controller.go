@@ -428,6 +428,12 @@ func (rm *ReplicationManager) syncReplicationController(key string) error {
 		rm.enqueueController(&rc)
 		return nil
 	}
+	ns, err := rm.kubeClient.Namespaces().Get(rc.Namespace)
+	if err != nil {
+		glog.Error(err)
+		return err
+	}
+	rc.Tenant = ns.Tenant
 
 	// Check the expectations of the rc before counting active pods, otherwise a new pod can sneak in
 	// and update the expectations after we've retrieved active pods from the store. If a new pod enters

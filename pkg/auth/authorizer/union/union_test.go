@@ -28,14 +28,14 @@ type mockAuthzHandler struct {
 	err          error
 }
 
-func (mock *mockAuthzHandler) Authorize(a authorizer.Attributes) error {
+func (mock *mockAuthzHandler) Authorize(a authorizer.Attributes) (string, error) {
 	if mock.err != nil {
-		return mock.err
+		return "", mock.err
 	}
 	if !mock.isAuthorized {
-		return errors.New("Request unauthorized")
+		return "", errors.New("Request unauthorized")
 	} else {
-		return nil
+		return "", nil
 	}
 }
 
@@ -44,7 +44,7 @@ func TestAuthorizationSecondPasses(t *testing.T) {
 	handler2 := &mockAuthzHandler{isAuthorized: true}
 	authzHandler := New(handler1, handler2)
 
-	err := authzHandler.Authorize(nil)
+	_, err := authzHandler.Authorize(nil)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestAuthorizationFirstPasses(t *testing.T) {
 	handler2 := &mockAuthzHandler{isAuthorized: false}
 	authzHandler := New(handler1, handler2)
 
-	err := authzHandler.Authorize(nil)
+	_, err := authzHandler.Authorize(nil)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestAuthorizationNonePasses(t *testing.T) {
 	handler2 := &mockAuthzHandler{isAuthorized: false}
 	authzHandler := New(handler1, handler2)
 
-	err := authzHandler.Authorize(nil)
+	_, err := authzHandler.Authorize(nil)
 	if err == nil {
 		t.Errorf("Expected error: %v", err)
 	}

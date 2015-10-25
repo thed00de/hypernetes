@@ -72,7 +72,7 @@ func TestHTTPProbeChecker(t *testing.T) {
 			probe.Failure,
 			[]string{
 				"use of closed network connection",
-				"request canceled (Client.Timeout exceeded while awaiting headers)",
+				"Client.Timeout exceeded while awaiting headers",
 			},
 		},
 	}

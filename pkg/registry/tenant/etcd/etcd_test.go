@@ -32,7 +32,7 @@ import (
 
 func newStorage(t *testing.T) (*REST, *tools.FakeEtcdClient) {
 	etcdStorage, fakeClient := registrytest.NewEtcdStorage(t, "")
-	storage, _, _ := NewREST(etcdStorage)
+	storage, _ := NewREST(etcdStorage)
 	return storage, fakeClient
 }
 
@@ -125,7 +125,7 @@ func TestWatch(t *testing.T) {
 	)
 }
 
-func TestDeleteTenantWithIncompleteFinalizers(t *testing.T) {
+func TestDeleteTenant(t *testing.T) {
 	storage, fakeClient := newStorage(t)
 	key := etcdtest.AddPrefix("tenants/foo")
 	ctx := api.NewContext()
@@ -135,32 +135,7 @@ func TestDeleteTenantWithIncompleteFinalizers(t *testing.T) {
 			Name:              "foo",
 			DeletionTimestamp: &now,
 		},
-		Spec: api.TenantSpec{
-			Finalizers: []api.FinalizerName{api.FinalizerKubernetes},
-		},
-		Status: api.TenantStatus{Phase: api.TenantActive},
-	}
-	if _, err := fakeClient.Set(key, runtime.EncodeOrDie(testapi.Default.Codec(), tenant), 0); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if _, err := storage.Delete(ctx, "foo", nil); err == nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-}
-
-func TestDeleteTenantWithCompleteFinalizers(t *testing.T) {
-	storage, fakeClient := newStorage(t)
-	key := etcdtest.AddPrefix("tenants/foo")
-	ctx := api.NewContext()
-	now := unversioned.Now()
-	tenant := &api.Tenant{
-		ObjectMeta: api.ObjectMeta{
-			Name:              "foo",
-			DeletionTimestamp: &now,
-		},
-		Spec: api.TenantSpec{
-			Finalizers: []api.FinalizerName{},
-		},
+		Spec:   api.TenantSpec{},
 		Status: api.TenantStatus{Phase: api.TenantActive},
 	}
 	if _, err := fakeClient.Set(key, runtime.EncodeOrDie(testapi.Default.Codec(), tenant), 0); err != nil {

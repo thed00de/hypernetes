@@ -21,12 +21,12 @@ import (
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/testapi"
+	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/registry/network"
 	"k8s.io/kubernetes/pkg/registry/registrytest"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/tools"
 	"k8s.io/kubernetes/pkg/tools/etcdtest"
-	"k8s.io/kubernetes/pkg/util"
 )
 
 func newStorage(t *testing.T) (*REST, *tools.FakeEtcdClient) {
@@ -121,7 +121,7 @@ func TestDeleteNetwork(t *testing.T) {
 	storage, fakeClient := newStorage(t)
 	key := etcdtest.AddPrefix("networks/foo")
 	ctx := api.NewContext()
-	now := util.Now()
+	now := unversioned.Now()
 	net := &api.Network{
 		ObjectMeta: api.ObjectMeta{
 			Name:              "foo",

@@ -68,9 +68,15 @@ func TestServiceAccountAutoCreate(t *testing.T) {
 	defer stopFunc()
 
 	ns := "test-service-account-creation"
+	te := "test-service-account-creation"
 
+	// Create tenant
+	_, err := c.Tenants().Create(&api.Tenant{ObjectMeta: api.ObjectMeta{Name: te}})
+	if err != nil {
+		t.Fatalf("could not create tenant: %v", err)
+	}
 	// Create namespace
-	_, err := c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns}})
+	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns, Tenant: te}})
 	if err != nil {
 		t.Fatalf("could not create namespace: %v", err)
 	}
@@ -101,11 +107,17 @@ func TestServiceAccountTokenAutoCreate(t *testing.T) {
 	c, _, stopFunc := startServiceAccountTestServer(t)
 	defer stopFunc()
 
+	te := "test-service-account-token-creation"
 	ns := "test-service-account-token-creation"
 	name := "my-service-account"
 
+	// Create tenant
+	_, err := c.Tenants().Create(&api.Tenant{ObjectMeta: api.ObjectMeta{Name: te}})
+	if err != nil {
+		t.Fatalf("could not create tenant: %v", err)
+	}
 	// Create namespace
-	_, err := c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns}})
+	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns, Tenant: te}})
 	if err != nil {
 		t.Fatalf("could not create namespace: %v", err)
 	}
@@ -196,10 +208,16 @@ func TestServiceAccountTokenAutoMount(t *testing.T) {
 	c, _, stopFunc := startServiceAccountTestServer(t)
 	defer stopFunc()
 
+	te := "auto-mount-te"
 	ns := "auto-mount-ns"
 
+	// Create "my" tenant
+	_, err := c.Tenants().Create(&api.Tenant{ObjectMeta: api.ObjectMeta{Name: te}})
+	if err != nil && !errors.IsAlreadyExists(err) {
+		t.Fatalf("could not create tenant: %v", err)
+	}
 	// Create "my" namespace
-	_, err := c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns}})
+	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns, Tenant: te}})
 	if err != nil && !errors.IsAlreadyExists(err) {
 		t.Fatalf("could not create namespace: %v", err)
 	}
@@ -273,17 +291,29 @@ func TestServiceAccountTokenAuthentication(t *testing.T) {
 	c, config, stopFunc := startServiceAccountTestServer(t)
 	defer stopFunc()
 
+	myte := "auth-te"
 	myns := "auth-ns"
+	otherte := "other-te"
 	otherns := "other-ns"
 
+	// Create "my" tenant
+	_, err := c.Tenants().Create(&api.Tenant{ObjectMeta: api.ObjectMeta{Name: myte}})
+	if err != nil && !errors.IsAlreadyExists(err) {
+		t.Fatalf("could not create tenant: %v", err)
+	}
 	// Create "my" namespace
-	_, err := c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: myns}})
+	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: myns, Tenant: myte}})
 	if err != nil && !errors.IsAlreadyExists(err) {
 		t.Fatalf("could not create namespace: %v", err)
 	}
 
+	// Create "other" tenant
+	_, err = c.Tenants().Create(&api.Tenant{ObjectMeta: api.ObjectMeta{Name: otherte}})
+	if err != nil && !errors.IsAlreadyExists(err) {
+		t.Fatalf("could not create tenant: %v", err)
+	}
 	// Create "other" namespace
-	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: otherns}})
+	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: otherns, Tenant: otherte}})
 	if err != nil && !errors.IsAlreadyExists(err) {
 		t.Fatalf("could not create namespace: %v", err)
 	}
@@ -364,7 +394,7 @@ func startServiceAccountTestServer(t *testing.T) (*client.Client, client.Config,
 	// 2. A ServiceAccountToken authenticator that validates ServiceAccount tokens
 	rootTokenAuth := authenticator.TokenFunc(func(token string) (user.Info, bool, error) {
 		if token == rootToken {
-			return &user.DefaultInfo{rootUserName, "", []string{}}, true, nil
+			return &user.DefaultInfo{rootUserName, "", "", "", []string{}, ""}, true, nil
 		}
 		return nil, false, nil
 	})
@@ -380,14 +410,14 @@ func startServiceAccountTestServer(t *testing.T) (*client.Client, client.Config,
 	// 1. The "root" user is allowed to do anything
 	// 2. ServiceAccounts named "ro" are allowed read-only operations in their namespace
 	// 3. ServiceAccounts named "rw" are allowed any operation in their namespace
-	authorizer := authorizer.AuthorizerFunc(func(attrs authorizer.Attributes) error {
+	authorizer := authorizer.AuthorizerFunc(func(attrs authorizer.Attributes) (string, error) {
 		username := attrs.GetUserName()
 		ns := attrs.GetNamespace()
 
 		// If the user is "root"...
 		if username == rootUserName {
 			// allow them to do anything
-			return nil
+			return "", nil
 		}
 
 		// If the user is a service account...
@@ -397,15 +427,15 @@ func startServiceAccountTestServer(t *testing.T) (*client.Client, client.Config,
 				switch serviceAccountName {
 				case readOnlyServiceAccountName:
 					if attrs.IsReadOnly() {
-						return nil
+						return "", nil
 					}
 				case readWriteServiceAccountName:
-					return nil
+					return "", nil
 				}
 			}
 		}
 
-		return fmt.Errorf("User %s is denied (ns=%s, readonly=%v, resource=%s)", username, ns, attrs.IsReadOnly(), attrs.GetResource())
+		return "", fmt.Errorf("User %s is denied (ns=%s, readonly=%v, resource=%s)", username, ns, attrs.IsReadOnly(), attrs.GetResource())
 	})
 
 	// Set up admission plugin to auto-assign serviceaccounts to pods

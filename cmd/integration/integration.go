@@ -453,6 +453,8 @@ func runReplicationControllerTest(c *client.Client) {
 	}
 
 	glog.Infof("Creating replication controllers")
+	c.Tenants().Create(&api.Tenant{ObjectMeta: api.ObjectMeta{Name: "test"}})
+	c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: "test", Tenant: "test"}})
 	updated, err := c.ReplicationControllers("test").Create(&controller)
 	if err != nil {
 		glog.Fatalf("Unexpected error: %v", err)
@@ -839,6 +841,8 @@ func runServiceTest(client *client.Client) {
 			SessionAffinity: "None",
 		},
 	}
+	client.Tenants().Create(&api.Tenant{ObjectMeta: api.ObjectMeta{Name: "other"}})
+	client.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: "other", Tenant: "other"}})
 	svc3, err = client.Services("other").Create(svc3)
 	if err != nil {
 		glog.Fatalf("Failed to create service: %v, %v", svc3, err)

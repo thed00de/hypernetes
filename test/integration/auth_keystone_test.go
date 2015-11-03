@@ -136,6 +136,10 @@ func splitPath(url string) []string {
 	return strings.Split(url, "/")
 }
 
+type allowTestAuthorizer struct {
+	kubeClient client.Interface
+}
+
 func (ka *allowTestAuthorizer) Authorize(a authorizer.Attributes) (string, error) {
 	var (
 		tenantName string

@@ -157,6 +157,7 @@ func TestExtractPodsFromHTTP(t *testing.T) {
 						Namespace:   "mynamespace",
 						Annotations: map[string]string{kubetypes.ConfigHashAnnotationKey: "111"},
 						SelfLink:    getSelfLink("foo-"+hostname, "mynamespace"),
+						Tenant:      "default",
 					},
 					Spec: api.PodSpec{
 						NodeName:                      hostname,
@@ -215,6 +216,7 @@ func TestExtractPodsFromHTTP(t *testing.T) {
 						Namespace:   "default",
 						Annotations: map[string]string{kubetypes.ConfigHashAnnotationKey: "111"},
 						SelfLink:    getSelfLink("foo-"+hostname, kubetypes.NamespaceDefault),
+						Tenant:      "default",
 					},
 					Spec: api.PodSpec{
 						NodeName:                      hostname,
@@ -238,6 +240,7 @@ func TestExtractPodsFromHTTP(t *testing.T) {
 						Namespace:   "default",
 						Annotations: map[string]string{kubetypes.ConfigHashAnnotationKey: "222"},
 						SelfLink:    getSelfLink("bar-"+hostname, kubetypes.NamespaceDefault),
+						Tenant:      "default",
 					},
 					Spec: api.PodSpec{
 						NodeName:                      hostname,

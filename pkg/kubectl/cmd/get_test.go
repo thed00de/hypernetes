@@ -126,6 +126,8 @@ func TestGetUnknownSchemaObject(t *testing.T) {
 
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Run(cmd, []string{"type", "foo"})
 
 	expected := &internalType{Name: "foo"}
@@ -197,6 +199,8 @@ func TestGetUnknownSchemaObjectListGeneric(t *testing.T) {
 		buf := bytes.NewBuffer([]byte{})
 		cmd := NewCmdGet(f, buf)
 		cmd.SetOutput(buf)
+		cmd.Flags().StringP("namespace", "", "", "namespace")
+		cmd.Flags().Set("namespace", "test")
 		cmd.Flags().Set("output", "json")
 		cmd.Flags().Set("output-version", test.outputVersion)
 		err := RunGet(f, buf, cmd, []string{"type/foo", "replicationcontrollers/foo"}, &GetOptions{})
@@ -238,6 +242,8 @@ func TestGetSchemaObject(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 
 	cmd := NewCmdGet(f, buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Run(cmd, []string{"replicationcontrollers", "foo"})
 
 	if !strings.Contains(buf.String(), "\"foo\"") {
@@ -259,6 +265,8 @@ func TestGetObjects(t *testing.T) {
 
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Run(cmd, []string{"pods", "foo"})
 
 	expected := []runtime.Object{&pods.Items[0]}
@@ -285,6 +293,8 @@ func TestGetObjectsIdentifiedByFile(t *testing.T) {
 
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Flags().Set("filename", "../../../examples/cassandra/cassandra.yaml")
 	cmd.Run(cmd, []string{})
 
@@ -312,6 +322,8 @@ func TestGetListObjects(t *testing.T) {
 
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Run(cmd, []string{"pods"})
 
 	expected, err := extractResourceList([]runtime.Object{pods})
@@ -355,6 +367,8 @@ func TestGetAllListObjects(t *testing.T) {
 
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Flags().Set("show-all", "true")
 	cmd.Run(cmd, []string{"pods"})
 
@@ -385,6 +399,8 @@ func TestGetListComponentStatus(t *testing.T) {
 
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Run(cmd, []string{"componentstatuses"})
 
 	expected, err := extractResourceList([]runtime.Object{statuses})
@@ -424,6 +440,8 @@ func TestGetMultipleTypeObjects(t *testing.T) {
 
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Run(cmd, []string{"pods,services"})
 
 	expected, err := extractResourceList([]runtime.Object{pods, svc})
@@ -465,6 +483,8 @@ func TestGetMultipleTypeObjectsAsList(t *testing.T) {
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
 
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Flags().Set("output", "json")
 	cmd.Run(cmd, []string{"pods,services"})
 
@@ -527,6 +547,8 @@ func TestGetMultipleTypeObjectsWithSelector(t *testing.T) {
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
 
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Flags().Set("selector", "a=b")
 	cmd.Run(cmd, []string{"pods,services"})
 
@@ -576,6 +598,8 @@ func TestGetMultipleTypeObjectsWithDirectReference(t *testing.T) {
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
 
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Run(cmd, []string{"services/bar", "node/foo"})
 
 	expected := []runtime.Object{&svc.Items[0], node}
@@ -653,6 +677,8 @@ func TestWatchSelector(t *testing.T) {
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
 
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Flags().Set("watch", "true")
 	cmd.Flags().Set("selector", "a=b")
 	cmd.Run(cmd, []string{"pods"})
@@ -692,6 +718,8 @@ func TestWatchResource(t *testing.T) {
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
 
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Flags().Set("watch", "true")
 	cmd.Run(cmd, []string{"pods", "foo"})
 
@@ -729,6 +757,8 @@ func TestWatchResourceIdentifiedByFile(t *testing.T) {
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
 
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Flags().Set("watch", "true")
 	cmd.Flags().Set("filename", "../../../examples/cassandra/cassandra.yaml")
 	cmd.Run(cmd, []string{})
@@ -769,6 +799,8 @@ func TestWatchOnlyResource(t *testing.T) {
 	cmd := NewCmdGet(f, buf)
 	cmd.SetOutput(buf)
 
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Flags().Set("watch-only", "true")
 	cmd.Run(cmd, []string{"pods", "foo"})
 

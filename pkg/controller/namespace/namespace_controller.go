@@ -295,12 +295,11 @@ func syncTenantAndNamespace(kubeClient client.Interface, namespace *api.Namespac
 
 // syncNamespace orchestrates deletion of a Namespace and its associated content.
 func syncNamespace(kubeClient client.Interface, versions *unversioned.APIVersions, namespace *api.Namespace) (err error) {
-	if err = syncTenantAndNamespace(kubeClient, namespace); err != nil {
-		return
-	}
 	if namespace.DeletionTimestamp == nil {
+		if err = syncTenantAndNamespace(kubeClient, namespace); err != nil {
+			return
+		}
 		if namespace.Spec.Network != "" {
-
 			net, err := kubeClient.Networks().Get(namespace.Spec.Network)
 			if err != nil || net == nil {
 				glog.Warningf("Network %s cann't be found", namespace.Spec.Network)

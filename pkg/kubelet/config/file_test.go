@@ -101,6 +101,7 @@ func TestReadPodsFromFile(t *testing.T) {
 					Namespace:   "mynamespace",
 					Annotations: map[string]string{kubetypes.ConfigHashAnnotationKey: "12345"},
 					SelfLink:    getSelfLink("test-"+hostname, "mynamespace"),
+					Tenant:      "default",
 				},
 				Spec: api.PodSpec{
 					NodeName:                      hostname,

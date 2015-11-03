@@ -55,6 +55,7 @@ func newReplicationController(replicas int) *api.ReplicationController {
 			UID:             util.NewUUID(),
 			Name:            "foobar",
 			Namespace:       api.NamespaceDefault,
+			Tenant:          api.TenantDefault,
 			ResourceVersion: "18",
 		},
 		Spec: api.ReplicationControllerSpec{

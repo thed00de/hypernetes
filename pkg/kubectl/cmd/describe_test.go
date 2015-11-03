@@ -38,6 +38,8 @@ func TestDescribeUnknownSchemaObject(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 
 	cmd := NewCmdDescribe(f, buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "non-default")
 	cmd.Run(cmd, []string{"type", "foo"})
 
 	if d.Name != "foo" || d.Namespace != "non-default" {
@@ -71,6 +73,8 @@ func TestDescribeObject(t *testing.T) {
 
 	cmd := NewCmdDescribe(f, buf)
 	cmd.Flags().Set("filename", "../../../examples/guestbook/redis-master-controller.yaml")
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Run(cmd, []string{})
 
 	if d.Name != "redis-master" || d.Namespace != "test" {
@@ -95,6 +99,8 @@ func TestDescribeListObjects(t *testing.T) {
 	tf.Namespace = "test"
 	buf := bytes.NewBuffer([]byte{})
 	cmd := NewCmdDescribe(f, buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
+	cmd.Flags().Set("namespace", tf.Namespace)
 	cmd.Run(cmd, []string{"pods"})
 	if buf.String() != fmt.Sprintf("%s\n\n%s\n\n", d.Output, d.Output) {
 		t.Errorf("unexpected output: %s", buf.String())

@@ -99,6 +99,7 @@ func TestReadPodsFromFile(t *testing.T) {
 					Name:      "test-" + hostname,
 					UID:       "12345",
 					Namespace: "mynamespace",
+					Tenant:    "default",
 					SelfLink:  getSelfLink("test-"+hostname, "mynamespace"),
 				},
 				Spec: api.PodSpec{

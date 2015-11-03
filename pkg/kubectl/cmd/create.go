@@ -96,8 +96,8 @@ func RunCreate(f *cmdutil.Factory, cmd *cobra.Command, out io.Writer, options *C
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		Schema(schema).
 		ContinueOnError().
-		NamespaceParam(cmdNamespace).
-		TenantParam(cmdTenant).
+		NamespaceParam(cmdNamespace).DefaultNamespace().
+		TenantParam(cmdTenant).DefaultTenant().
 		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		Flatten().
 		Do()

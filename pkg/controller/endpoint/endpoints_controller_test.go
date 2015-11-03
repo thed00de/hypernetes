@@ -157,14 +157,22 @@ type serverResponse struct {
 	obj        interface{}
 }
 
-func makeTestServer(t *testing.T, namespace string, endpointsResponse serverResponse) (*httptest.Server, *util.FakeHandler) {
+func makeTestServer(t *testing.T, namespace, tenant string, endpointsResponse serverResponse) (*httptest.Server, *util.FakeHandler) {
 	fakeEndpointsHandler := util.FakeHandler{
 		StatusCode:   endpointsResponse.statusCode,
 		ResponseBody: runtime.EncodeOrDie(testapi.Default.Codec(), endpointsResponse.obj.(runtime.Object)),
 	}
+
 	mux := http.NewServeMux()
 	mux.Handle(testapi.Default.ResourcePath("endpoints", namespace, ""), &fakeEndpointsHandler)
 	mux.Handle(testapi.Default.ResourcePath("endpoints/", namespace, ""), &fakeEndpointsHandler)
+	if namespace != api.NamespaceDefault && namespace != api.NamespaceAll {
+		fakeNsHandler := util.FakeHandler{
+			StatusCode:   200,
+			ResponseBody: runtime.EncodeOrDie(testapi.Default.Codec(), &api.Namespace{ObjectMeta: api.ObjectMeta{Name: namespace, Tenant: tenant}}),
+		}
+		mux.Handle(testapi.Default.ResourcePath("", namespace, ""), &fakeNsHandler)
+	}
 	mux.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
 		t.Errorf("unexpected request: %v", req.RequestURI)
 		res.WriteHeader(http.StatusNotFound)
@@ -174,11 +182,13 @@ func makeTestServer(t *testing.T, namespace string, endpointsResponse serverResp
 
 func TestSyncEndpointsItemsPreserveNoSelector(t *testing.T) {
 	ns := api.NamespaceDefault
-	testServer, endpointsHandler := makeTestServer(t, ns,
+	te := api.TenantDefault
+	testServer, endpointsHandler := makeTestServer(t, ns, te,
 		serverResponse{http.StatusOK, &api.Endpoints{
 			ObjectMeta: api.ObjectMeta{
 				Name:            "foo",
 				Namespace:       ns,
+				Tenant:          te,
 				ResourceVersion: "1",
 			},
 			Subsets: []api.EndpointSubset{{
@@ -190,7 +200,7 @@ func TestSyncEndpointsItemsPreserveNoSelector(t *testing.T) {
 	client := client.NewOrDie(&client.Config{Host: testServer.URL, Version: testapi.Default.Version()})
 	endpoints := NewEndpointController(client)
 	endpoints.serviceStore.Store.Add(&api.Service{
-		ObjectMeta: api.ObjectMeta{Name: "foo", Namespace: ns},
+		ObjectMeta: api.ObjectMeta{Name: "foo", Namespace: ns, Tenant: te},
 		Spec:       api.ServiceSpec{Ports: []api.ServicePort{{Port: 80}}},
 	})
 	endpoints.syncService(ns + "/foo")
@@ -199,9 +209,10 @@ func TestSyncEndpointsItemsPreserveNoSelector(t *testing.T) {
 
 func TestCheckLeftoverEndpoints(t *testing.T) {
 	ns := api.NamespaceDefault
+	te := api.TenantDefault
 	// Note that this requests *all* endpoints, therefore the NamespaceAll
 	// below.
-	testServer, _ := makeTestServer(t, api.NamespaceAll,
+	testServer, _ := makeTestServer(t, api.NamespaceAll, api.TenantAll,
 		serverResponse{http.StatusOK, &api.EndpointsList{
 			ListMeta: unversioned.ListMeta{
 				ResourceVersion: "1",
@@ -210,6 +221,7 @@ func TestCheckLeftoverEndpoints(t *testing.T) {
 				ObjectMeta: api.ObjectMeta{
 					Name:            "foo",
 					Namespace:       ns,
+					Tenant:          te,
 					ResourceVersion: "1",
 				},
 				Subsets: []api.EndpointSubset{{
@@ -234,11 +246,13 @@ func TestCheckLeftoverEndpoints(t *testing.T) {
 
 func TestSyncEndpointsProtocolTCP(t *testing.T) {
 	ns := "other"
-	testServer, endpointsHandler := makeTestServer(t, ns,
+	te := "other"
+	testServer, endpointsHandler := makeTestServer(t, ns, te,
 		serverResponse{http.StatusOK, &api.Endpoints{
 			ObjectMeta: api.ObjectMeta{
 				Name:            "foo",
 				Namespace:       ns,
+				Tenant:          te,
 				ResourceVersion: "1",
 			},
 			Subsets: []api.EndpointSubset{{
@@ -250,7 +264,7 @@ func TestSyncEndpointsProtocolTCP(t *testing.T) {
 	client := client.NewOrDie(&client.Config{Host: testServer.URL, Version: testapi.Default.Version()})
 	endpoints := NewEndpointController(client)
 	endpoints.serviceStore.Store.Add(&api.Service{
-		ObjectMeta: api.ObjectMeta{Name: "foo", Namespace: ns},
+		ObjectMeta: api.ObjectMeta{Name: "foo", Namespace: ns, Tenant: te},
 		Spec: api.ServiceSpec{
 			Selector: map[string]string{},
 			Ports:    []api.ServicePort{{Port: 80}},
@@ -262,7 +276,8 @@ func TestSyncEndpointsProtocolTCP(t *testing.T) {
 
 func TestSyncEndpointsProtocolUDP(t *testing.T) {
 	ns := "other"
-	testServer, endpointsHandler := makeTestServer(t, ns,
+	te := "other"
+	testServer, endpointsHandler := makeTestServer(t, ns, te,
 		serverResponse{http.StatusOK, &api.Endpoints{
 			ObjectMeta: api.ObjectMeta{
 				Name:            "foo",
@@ -290,11 +305,13 @@ func TestSyncEndpointsProtocolUDP(t *testing.T) {
 
 func TestSyncEndpointsItemsEmptySelectorSelectsAll(t *testing.T) {
 	ns := "other"
-	testServer, endpointsHandler := makeTestServer(t, ns,
+	te := "other"
+	testServer, endpointsHandler := makeTestServer(t, ns, te,
 		serverResponse{http.StatusOK, &api.Endpoints{
 			ObjectMeta: api.ObjectMeta{
 				Name:            "foo",
 				Namespace:       ns,
+				Tenant:          te,
 				ResourceVersion: "1",
 			},
 			Subsets: []api.EndpointSubset{},
@@ -315,6 +332,7 @@ func TestSyncEndpointsItemsEmptySelectorSelectsAll(t *testing.T) {
 		ObjectMeta: api.ObjectMeta{
 			Name:            "foo",
 			Namespace:       ns,
+			Tenant:          te,
 			ResourceVersion: "1",
 		},
 		Subsets: []api.EndpointSubset{{
@@ -327,11 +345,13 @@ func TestSyncEndpointsItemsEmptySelectorSelectsAll(t *testing.T) {
 
 func TestSyncEndpointsItemsEmptySelectorSelectsAllNotReady(t *testing.T) {
 	ns := "other"
-	testServer, endpointsHandler := makeTestServer(t, ns,
+	te := "other"
+	testServer, endpointsHandler := makeTestServer(t, ns, te,
 		serverResponse{http.StatusOK, &api.Endpoints{
 			ObjectMeta: api.ObjectMeta{
 				Name:            "foo",
 				Namespace:       ns,
+				Tenant:          te,
 				ResourceVersion: "1",
 			},
 			Subsets: []api.EndpointSubset{},
@@ -352,6 +372,7 @@ func TestSyncEndpointsItemsEmptySelectorSelectsAllNotReady(t *testing.T) {
 		ObjectMeta: api.ObjectMeta{
 			Name:            "foo",
 			Namespace:       ns,
+			Tenant:          te,
 			ResourceVersion: "1",
 		},
 		Subsets: []api.EndpointSubset{{
@@ -364,11 +385,13 @@ func TestSyncEndpointsItemsEmptySelectorSelectsAllNotReady(t *testing.T) {
 
 func TestSyncEndpointsItemsEmptySelectorSelectsAllMixed(t *testing.T) {
 	ns := "other"
-	testServer, endpointsHandler := makeTestServer(t, ns,
+	te := "other"
+	testServer, endpointsHandler := makeTestServer(t, ns, te,
 		serverResponse{http.StatusOK, &api.Endpoints{
 			ObjectMeta: api.ObjectMeta{
 				Name:            "foo",
 				Namespace:       ns,
+				Tenant:          te,
 				ResourceVersion: "1",
 			},
 			Subsets: []api.EndpointSubset{},
@@ -389,6 +412,7 @@ func TestSyncEndpointsItemsEmptySelectorSelectsAllMixed(t *testing.T) {
 		ObjectMeta: api.ObjectMeta{
 			Name:            "foo",
 			Namespace:       ns,
+			Tenant:          te,
 			ResourceVersion: "1",
 		},
 		Subsets: []api.EndpointSubset{{
@@ -402,11 +426,13 @@ func TestSyncEndpointsItemsEmptySelectorSelectsAllMixed(t *testing.T) {
 
 func TestSyncEndpointsItemsPreexisting(t *testing.T) {
 	ns := "bar"
-	testServer, endpointsHandler := makeTestServer(t, ns,
+	te := "bar"
+	testServer, endpointsHandler := makeTestServer(t, ns, te,
 		serverResponse{http.StatusOK, &api.Endpoints{
 			ObjectMeta: api.ObjectMeta{
 				Name:            "foo",
 				Namespace:       ns,
+				Tenant:          te,
 				ResourceVersion: "1",
 			},
 			Subsets: []api.EndpointSubset{{
@@ -430,6 +456,7 @@ func TestSyncEndpointsItemsPreexisting(t *testing.T) {
 		ObjectMeta: api.ObjectMeta{
 			Name:            "foo",
 			Namespace:       ns,
+			Tenant:          te,
 			ResourceVersion: "1",
 		},
 		Subsets: []api.EndpointSubset{{
@@ -442,12 +469,14 @@ func TestSyncEndpointsItemsPreexisting(t *testing.T) {
 
 func TestSyncEndpointsItemsPreexistingIdentical(t *testing.T) {
 	ns := api.NamespaceDefault
-	testServer, endpointsHandler := makeTestServer(t, api.NamespaceDefault,
+	te := api.TenantDefault
+	testServer, endpointsHandler := makeTestServer(t, api.NamespaceDefault, te,
 		serverResponse{http.StatusOK, &api.Endpoints{
 			ObjectMeta: api.ObjectMeta{
 				ResourceVersion: "1",
 				Name:            "foo",
 				Namespace:       ns,
+				Tenant:          te,
 			},
 			Subsets: []api.EndpointSubset{{
 				Addresses: []api.EndpointAddress{{IP: "1.2.3.4", TargetRef: &api.ObjectReference{Kind: "Pod", Name: "pod0", Namespace: ns}}},
@@ -471,7 +500,8 @@ func TestSyncEndpointsItemsPreexistingIdentical(t *testing.T) {
 
 func TestSyncEndpointsItems(t *testing.T) {
 	ns := "other"
-	testServer, endpointsHandler := makeTestServer(t, ns,
+	te := "other"
+	testServer, endpointsHandler := makeTestServer(t, ns, te,
 		serverResponse{http.StatusOK, &api.Endpoints{}})
 	defer testServer.Close()
 	client := client.NewOrDie(&client.Config{Host: testServer.URL, Version: testapi.Default.Version()})
@@ -479,7 +509,7 @@ func TestSyncEndpointsItems(t *testing.T) {
 	addPods(endpoints.podStore.Store, ns, 3, 2, 0)
 	addPods(endpoints.podStore.Store, "blah", 5, 2, 0) // make sure these aren't found!
 	endpoints.serviceStore.Store.Add(&api.Service{
-		ObjectMeta: api.ObjectMeta{Name: "foo", Namespace: ns},
+		ObjectMeta: api.ObjectMeta{Name: "foo", Namespace: ns, Tenant: te},
 		Spec: api.ServiceSpec{
 			Selector: map[string]string{"foo": "bar"},
 			Ports: []api.ServicePort{
@@ -502,6 +532,7 @@ func TestSyncEndpointsItems(t *testing.T) {
 	}}
 	data := runtime.EncodeOrDie(testapi.Default.Codec(), &api.Endpoints{
 		ObjectMeta: api.ObjectMeta{
+			Tenant:          te,
 			ResourceVersion: "",
 		},
 		Subsets: endptspkg.SortSubsets(expectedSubsets),
@@ -513,7 +544,8 @@ func TestSyncEndpointsItems(t *testing.T) {
 
 func TestSyncEndpointsItemsWithLabels(t *testing.T) {
 	ns := "other"
-	testServer, endpointsHandler := makeTestServer(t, ns,
+	te := "other"
+	testServer, endpointsHandler := makeTestServer(t, ns, te,
 		serverResponse{http.StatusOK, &api.Endpoints{}})
 	defer testServer.Close()
 	client := client.NewOrDie(&client.Config{Host: testServer.URL, Version: testapi.Default.Version()})
@@ -524,6 +556,7 @@ func TestSyncEndpointsItemsWithLabels(t *testing.T) {
 		ObjectMeta: api.ObjectMeta{
 			Name:      "foo",
 			Namespace: ns,
+			Tenant:    te,
 			Labels:    serviceLabels,
 		},
 		Spec: api.ServiceSpec{
@@ -549,6 +582,7 @@ func TestSyncEndpointsItemsWithLabels(t *testing.T) {
 	data := runtime.EncodeOrDie(testapi.Default.Codec(), &api.Endpoints{
 		ObjectMeta: api.ObjectMeta{
 			ResourceVersion: "",
+			Tenant:          te,
 			Labels:          serviceLabels,
 		},
 		Subsets: endptspkg.SortSubsets(expectedSubsets),
@@ -560,11 +594,13 @@ func TestSyncEndpointsItemsWithLabels(t *testing.T) {
 
 func TestSyncEndpointsItemsPreexistingLabelsChange(t *testing.T) {
 	ns := "bar"
-	testServer, endpointsHandler := makeTestServer(t, ns,
+	te := "bar"
+	testServer, endpointsHandler := makeTestServer(t, ns, te,
 		serverResponse{http.StatusOK, &api.Endpoints{
 			ObjectMeta: api.ObjectMeta{
 				Name:            "foo",
 				Namespace:       ns,
+				Tenant:          te,
 				ResourceVersion: "1",
 				Labels: map[string]string{
 					"foo": "bar",
@@ -584,6 +620,7 @@ func TestSyncEndpointsItemsPreexistingLabelsChange(t *testing.T) {
 		ObjectMeta: api.ObjectMeta{
 			Name:      "foo",
 			Namespace: ns,
+			Tenant:    te,
 			Labels:    serviceLabels,
 		},
 		Spec: api.ServiceSpec{
@@ -596,6 +633,7 @@ func TestSyncEndpointsItemsPreexistingLabelsChange(t *testing.T) {
 		ObjectMeta: api.ObjectMeta{
 			Name:            "foo",
 			Namespace:       ns,
+			Tenant:          te,
 			ResourceVersion: "1",
 			Labels:          serviceLabels,
 		},

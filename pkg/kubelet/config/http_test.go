@@ -155,6 +155,7 @@ func TestExtractPodsFromHTTP(t *testing.T) {
 						UID:       "111",
 						Name:      "foo" + "-" + hostname,
 						Namespace: "mynamespace",
+						Tenant:    "default",
 
 						SelfLink: getSelfLink("foo-"+hostname, "mynamespace"),
 					},
@@ -213,6 +214,7 @@ func TestExtractPodsFromHTTP(t *testing.T) {
 						UID:       "111",
 						Name:      "foo" + "-" + hostname,
 						Namespace: "default",
+						Tenant:    "default",
 
 						SelfLink: getSelfLink("foo-"+hostname, kubelet.NamespaceDefault),
 					},
@@ -236,6 +238,7 @@ func TestExtractPodsFromHTTP(t *testing.T) {
 						UID:       "222",
 						Name:      "bar" + "-" + hostname,
 						Namespace: "default",
+						Tenant:    "default",
 
 						SelfLink: getSelfLink("bar-"+hostname, kubelet.NamespaceDefault),
 					},

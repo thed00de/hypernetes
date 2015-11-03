@@ -60,6 +60,7 @@ func TestCreateObject(t *testing.T) {
 	cmd := NewCmdCreate(f, buf)
 	cmd.Flags().Set("filename", "../../../examples/guestbook/redis-master-controller.yaml")
 	cmd.Flags().Set("output", "name")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Run(cmd, []string{})
 
 	// uses the name from the file, not the response
@@ -94,6 +95,7 @@ func TestCreateMultipleObject(t *testing.T) {
 	cmd.Flags().Set("filename", "../../../examples/guestbook/redis-master-controller.yaml")
 	cmd.Flags().Set("filename", "../../../examples/guestbook/frontend-service.yaml")
 	cmd.Flags().Set("output", "name")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Run(cmd, []string{})
 
 	// Names should come from the REST response, NOT the files
@@ -128,6 +130,7 @@ func TestCreateDirectory(t *testing.T) {
 	cmd := NewCmdCreate(f, buf)
 	cmd.Flags().Set("filename", "../../../examples/guestbook")
 	cmd.Flags().Set("output", "name")
+	cmd.Flags().Set("namespace", "test")
 	cmd.Run(cmd, []string{})
 
 	if buf.String() != "replicationcontroller/name\nservice/baz\nreplicationcontroller/name\nservice/baz\nreplicationcontroller/name\nservice/baz\n" {

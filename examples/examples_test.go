@@ -85,7 +85,7 @@ func validateObject(obj runtime.Object) (errors []error) {
 		}
 		errors = validation.ValidateEndpoints(t)
 	case *api.Namespace:
-		errors = validation.ValidateNamespace(t)
+		errors = validation.ValidateNamespace(t, true)
 	case *api.Tenant:
 		errors = validation.ValidateTenant(t)
 	case *api.Secret:

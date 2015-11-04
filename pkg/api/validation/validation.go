@@ -1807,7 +1807,6 @@ func ValidateTenant(tenant *api.Tenant) errs.ValidationErrorList {
 func ValidateTenantUpdate(newTenant *api.Tenant, oldTenant *api.Tenant) errs.ValidationErrorList {
 	allErrs := errs.ValidationErrorList{}
 	allErrs = append(allErrs, ValidateObjectMetaUpdate(&newTenant.ObjectMeta, &oldTenant.ObjectMeta).Prefix("metadata")...)
-	newTenant.Spec = oldTenant.Spec
 	newTenant.Status = oldTenant.Status
 	return allErrs
 }
@@ -1815,7 +1814,6 @@ func ValidateTenantUpdate(newTenant *api.Tenant, oldTenant *api.Tenant) errs.Val
 func ValidateTenantStatusUpdate(newTenant, oldTenant *api.Tenant) errs.ValidationErrorList {
 	allErrs := errs.ValidationErrorList{}
 	allErrs = append(allErrs, ValidateObjectMetaUpdate(&newTenant.ObjectMeta, &oldTenant.ObjectMeta).Prefix("metadata")...)
-	newTenant.Spec = oldTenant.Spec
 	if newTenant.DeletionTimestamp.IsZero() {
 		if newTenant.Status.Phase != api.TenantActive {
 			allErrs = append(allErrs, errs.NewFieldInvalid("Status.Phase", newTenant.Status.Phase, "A tenant may only be in active status if it does not have a deletion timestamp."))

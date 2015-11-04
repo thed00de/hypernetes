@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/validation"
+	"k8s.io/kubernetes/pkg/auth/authorizer"
 	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/registry/generic"
@@ -81,8 +82,13 @@ func (namespaceStrategy) PrepareForUpdate(obj, old runtime.Object) {
 
 // Validate validates a new namespace.
 func (namespaceStrategy) Validate(ctx api.Context, obj runtime.Object) fielderrors.ValidationErrorList {
+	var admin bool = true
+	userinfo, ok := api.UserFrom(ctx)
+	if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
+		admin = false
+	}
 	namespace := obj.(*api.Namespace)
-	return validation.ValidateNamespace(namespace)
+	return validation.ValidateNamespace(namespace, admin)
 }
 
 // AllowCreateOnUpdate is false for namespaces.
@@ -92,7 +98,12 @@ func (namespaceStrategy) AllowCreateOnUpdate() bool {
 
 // ValidateUpdate is the default update validation for an end user.
 func (namespaceStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) fielderrors.ValidationErrorList {
-	errorList := validation.ValidateNamespace(obj.(*api.Namespace))
+	var admin bool = true
+	userinfo, ok := api.UserFrom(ctx)
+	if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
+		admin = false
+	}
+	errorList := validation.ValidateNamespace(obj.(*api.Namespace), admin)
 	return append(errorList, validation.ValidateNamespaceUpdate(obj.(*api.Namespace), old.(*api.Namespace))...)
 }
 

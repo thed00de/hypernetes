@@ -1829,12 +1829,16 @@ func ValidateTenantStatusUpdate(newTenant, oldTenant *api.Tenant) errs.Validatio
 }
 
 // ValidateNamespace tests if required fields are set.
-func ValidateNamespace(namespace *api.Namespace) errs.ValidationErrorList {
+func ValidateNamespace(namespace *api.Namespace, admin bool) errs.ValidationErrorList {
 	allErrs := errs.ValidationErrorList{}
 	allErrs = append(allErrs, ValidateObjectMeta(&namespace.ObjectMeta, false, ValidateNamespaceName).Prefix("metadata")...)
 
 	for i := range namespace.Spec.Finalizers {
 		allErrs = append(allErrs, validateFinalizerName(string(namespace.Spec.Finalizers[i]))...)
+	}
+
+	if !admin && namespace.Spec.Network == "" {
+		allErrs = append(allErrs, errs.NewFieldInvalid("spec.network", "", fmt.Sprintf("non-admin users can not create/update namespace without network")))
 	}
 	return allErrs
 }

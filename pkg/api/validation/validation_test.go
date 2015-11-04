@@ -3355,11 +3355,21 @@ func TestValidateNamespace(t *testing.T) {
 				Finalizers: []api.FinalizerName{"example.com/something", "example.com/other"},
 			},
 		},
+		{
+			ObjectMeta: api.ObjectMeta{Name: "abc-123"},
+			Spec: api.NamespaceSpec{
+				Finalizers: []api.FinalizerName{"example.com/something", "example.com/other"},
+				Network:    "test",
+			},
+		},
 	}
 	for _, successCase := range successCases {
-		if errs := ValidateNamespace(&successCase); len(errs) != 0 {
+		if errs := ValidateNamespace(&successCase, true); len(errs) != 0 {
 			t.Errorf("expected success: %v", errs)
 		}
+	}
+	if errs := ValidateNamespace(&successCases[2], false); len(errs) != 0 {
+		t.Errorf("expected success: %v", errs)
 	}
 	errorCases := map[string]struct {
 		R api.Namespace
@@ -3379,10 +3389,19 @@ func TestValidateNamespace(t *testing.T) {
 		},
 	}
 	for k, v := range errorCases {
-		errs := ValidateNamespace(&v.R)
+		errs := ValidateNamespace(&v.R, true)
 		if len(errs) == 0 {
 			t.Errorf("expected failure for %s", k)
 		}
+	}
+	v := api.Namespace{
+		ObjectMeta: api.ObjectMeta{Name: "abc-123"},
+		Spec: api.NamespaceSpec{
+			Finalizers: []api.FinalizerName{"example.com/something", "example.com/other"},
+		},
+	}
+	if errs := ValidateNamespace(&v, false); len(errs) == 0 {
+		t.Errorf("expected failure for invalid network")
 	}
 }
 

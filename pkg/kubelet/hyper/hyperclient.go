@@ -50,7 +50,6 @@ const (
 	KEY_ITEM           = "item"
 	KEY_DNS            = "dns"
 	KEY_MEMORY         = "memory"
-	KEY_POD_ARGS       = "podArgs"
 	KEY_POD_ID         = "podId"
 	KEY_POD_NAME       = "podName"
 	KEY_RESOURCE       = "resource"
@@ -145,14 +144,10 @@ var (
 	ErrConnectionRefused = errors.New("Cannot connect to the Hyper daemon. Is 'hyperd' running on this host?")
 )
 
-func (cli *HyperClient) encodeData(data interface{}) (*bytes.Buffer, error) {
+func (cli *HyperClient) encodeData(data string) (*bytes.Buffer, error) {
 	params := bytes.NewBuffer(nil)
-	if data != nil {
-		buf, err := json.Marshal(data)
-		if err != nil {
-			return nil, err
-		}
-		if _, err := params.Write(buf); err != nil {
+	if data != "" {
+		if _, err := params.Write([]byte(data)); err != nil {
 			return nil, err
 		}
 	}
@@ -228,13 +223,13 @@ func (cli *HyperClient) clientRequest(method, path string, in io.Reader, headers
 	return resp.Body, resp.Header.Get("Content-Type"), statusCode, &dial, clientconn, nil
 }
 
-func (cli *HyperClient) call(method, path string, data interface{}, headers map[string][]string) ([]byte, int, error) {
+func (cli *HyperClient) call(method, path string, data string, headers map[string][]string) ([]byte, int, error) {
 	params, err := cli.encodeData(data)
 	if err != nil {
 		return nil, -1, err
 	}
 
-	if data != nil {
+	if data != "" {
 		if headers == nil {
 			headers = make(map[string][]string)
 		}
@@ -301,7 +296,7 @@ func MatchesContentType(contentType, expectedType string) bool {
 }
 
 func (client *HyperClient) Version() (string, error) {
-	body, _, err := client.call("GET", "/version", nil, nil)
+	body, _, err := client.call("GET", "/version", "", nil)
 	if err != nil {
 		return "", err
 	}
@@ -323,7 +318,7 @@ func (client *HyperClient) Version() (string, error) {
 func (client *HyperClient) ListPods() ([]HyperPod, error) {
 	v := url.Values{}
 	v.Set(KEY_ITEM, TYPE_POD)
-	body, _, err := client.call("GET", "/list?"+v.Encode(), nil, nil)
+	body, _, err := client.call("GET", "/list?"+v.Encode(), "", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +340,7 @@ func (client *HyperClient) ListPods() ([]HyperPod, error) {
 
 		values := url.Values{}
 		values.Set(KEY_POD_NAME, hyperPod.PodID)
-		body, _, err = client.call("GET", "/pod/info?"+values.Encode(), nil, nil)
+		body, _, err = client.call("GET", "/pod/info?"+values.Encode(), "", nil)
 		if err != nil {
 			return nil, err
 		}
@@ -364,7 +359,7 @@ func (client *HyperClient) ListPods() ([]HyperPod, error) {
 func (client *HyperClient) ListContainers() ([]HyperContainer, error) {
 	v := url.Values{}
 	v.Set(KEY_ITEM, TYPE_CONTAINER)
-	body, _, err := client.call("GET", "/list?"+v.Encode(), nil, nil)
+	body, _, err := client.call("GET", "/list?"+v.Encode(), "", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -394,7 +389,7 @@ func (client *HyperClient) ListContainers() ([]HyperContainer, error) {
 }
 
 func (client *HyperClient) Info() (map[string]interface{}, error) {
-	body, _, err := client.call("GET", "/info", nil, nil)
+	body, _, err := client.call("GET", "/info", "", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +406,7 @@ func (client *HyperClient) Info() (map[string]interface{}, error) {
 func (client *HyperClient) ListImages() ([]HyperImage, error) {
 	v := url.Values{}
 	v.Set("all", "no")
-	body, _, err := client.call("GET", "/images/get?"+v.Encode(), nil, nil)
+	body, _, err := client.call("GET", "/images/get?"+v.Encode(), "", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -456,7 +451,7 @@ func (client *HyperClient) ListImages() ([]HyperImage, error) {
 func (client *HyperClient) RemoveImage(imageID string) error {
 	v := url.Values{}
 	v.Set(KEY_IMAGEID, imageID)
-	_, _, err := client.call("POST", "/images/remove?"+v.Encode(), nil, nil)
+	_, _, err := client.call("DELETE", "/images?"+v.Encode(), "", nil)
 	if err != nil {
 		return err
 	}
@@ -467,7 +462,7 @@ func (client *HyperClient) RemoveImage(imageID string) error {
 func (client *HyperClient) RemovePod(podID string) error {
 	v := url.Values{}
 	v.Set(KEY_POD_ID, podID)
-	_, _, err := client.call("POST", "/pod/remove?"+v.Encode(), nil, nil)
+	_, _, err := client.call("DELETE", "/pod?"+v.Encode(), "", nil)
 	if err != nil {
 		return err
 	}
@@ -478,7 +473,7 @@ func (client *HyperClient) RemovePod(podID string) error {
 func (client *HyperClient) StartPod(podID string) error {
 	v := url.Values{}
 	v.Set(KEY_POD_ID, podID)
-	_, _, err := client.call("POST", "/pod/start?"+v.Encode(), nil, nil)
+	_, _, err := client.call("POST", "/pod/start?"+v.Encode(), "", nil)
 	if err != nil {
 		return err
 	}
@@ -490,7 +485,7 @@ func (client *HyperClient) StopPod(podID string) error {
 	v := url.Values{}
 	v.Set(KEY_POD_ID, podID)
 	v.Set("stopVM", "yes")
-	_, _, err := client.call("POST", "/pod/stop?"+v.Encode(), nil, nil)
+	_, _, err := client.call("POST", "/pod/stop?"+v.Encode(), "", nil)
 	if err != nil {
 		return err
 	}
@@ -517,9 +512,7 @@ func (client *HyperClient) PullImage(image string, credential string) error {
 
 func (client *HyperClient) CreatePod(podArgs string) (map[string]interface{}, error) {
 	glog.V(5).Infof("Hyper: starting to create pod %s", podArgs)
-	v := url.Values{}
-	v.Set(KEY_POD_ARGS, podArgs)
-	body, _, err := client.call("POST", "/pod/create?"+v.Encode(), nil, nil)
+	body, _, err := client.call("POST", "/pod/create", podArgs, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -639,7 +632,7 @@ func (client *HyperClient) IsImagePresent(repo, tag string) (bool, error) {
 func (client *HyperClient) ListServices(podId string) ([]HyperService, error) {
 	v := url.Values{}
 	v.Set("podId", podId)
-	body, _, err := client.call("GET", "/service/list?"+v.Encode(), nil, nil)
+	body, _, err := client.call("GET", "/service/list?"+v.Encode(), "", nil)
 	if err != nil {
 		if strings.Contains(err.Error(), "doesn't have services discovery") {
 			return nil, nil
@@ -666,7 +659,7 @@ func (client *HyperClient) UpdateServices(podId string, services []HyperService)
 		return err
 	}
 	v.Set("services", string(serviceData))
-	_, _, err = client.call("POST", "/service/update?"+v.Encode(), nil, nil)
+	_, _, err = client.call("POST", "/service/update?"+v.Encode(), "", nil)
 	if err != nil {
 		return err
 	}

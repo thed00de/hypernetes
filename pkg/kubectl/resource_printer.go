@@ -407,8 +407,8 @@ var daemonSetColumns = []string{"NAME", "DESIRED", "CURRENT", "NODE-SELECTOR", "
 var eventColumns = []string{"FIRSTSEEN", "LASTSEEN", "COUNT", "NAME", "KIND", "SUBOBJECT", "TYPE", "REASON", "SOURCE", "MESSAGE"}
 var limitRangeColumns = []string{"NAME", "AGE"}
 var resourceQuotaColumns = []string{"NAME", "AGE"}
-var namespaceColumns = []string{"NAME", "STATUS", "AGE"}
-var networkColumns = []string{"NAME", "SUBNETS", "PROVIDERNETWORKID", "TENANTID", "LABELS", "STATUS"}
+var namespaceColumns = []string{"NAME", "NETWORK", "STATUS", "AGE"}
+var networkColumns = []string{"NAME", "SUBNETS", "PROVIDERNETWORKID", "LABELS", "STATUS"}
 var secretColumns = []string{"NAME", "TYPE", "DATA", "AGE"}
 var serviceAccountColumns = []string{"NAME", "SECRETS", "AGE"}
 var persistentVolumeColumns = []string{"NAME", "CAPACITY", "ACCESSMODES", "STATUS", "CLAIM", "REASON", "AGE"}
@@ -1087,7 +1087,7 @@ func printNamespace(item *api.Namespace, w io.Writer, options PrintOptions) erro
 		return fmt.Errorf("namespace is not namespaced")
 	}
 
-	if _, err := fmt.Fprintf(w, "%s\t%s\t%s", item.Name, item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {
+	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s", item.Name, item.Spec.Network, item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {
 		return err
 	}
 	if _, err := fmt.Fprint(w, appendLabels(item.Labels, options.ColumnLabels)); err != nil {
@@ -1111,7 +1111,7 @@ func printNetwork(item *api.Network, w io.Writer, options printOptions) error {
 	for _, subnet := range item.Spec.Subnets {
 		subnets = append(subnets, subnet.CIDR)
 	}
-	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s", item.Name, strings.Join(subnets, ";"), item.Spec.ProviderNetworkID, item.Spec.TenantID, labels.FormatLabels(item.Labels), item.Status.Phase); err != nil {
+	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s", item.Name, strings.Join(subnets, ";"), item.Spec.ProviderNetworkID, labels.FormatLabels(item.Labels), item.Status.Phase); err != nil {
 		return err
 	}
 	_, err := fmt.Fprint(w, appendLabels(item.Labels, options.columnLabels))

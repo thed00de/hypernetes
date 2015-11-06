@@ -82,6 +82,9 @@ var testNamespace string = `
   "metadata": {
     "name": "` + NamespaceTest + `",
 	"tenant": "` + TenantTest + `"%s
+  },
+  "spec": {
+	"network": "test"
   }
 }
 `

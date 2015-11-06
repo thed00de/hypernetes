@@ -75,7 +75,7 @@ func TestServiceAccountAutoCreate(t *testing.T) {
 		t.Fatalf("could not create tenant: %v", err)
 	}
 	// Create namespace
-	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns, Tenant: te}})
+	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns, Tenant: te}, Spec: api.NamespaceSpec{Network: "test"}})
 	if err != nil {
 		t.Fatalf("could not create namespace: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestServiceAccountTokenAutoCreate(t *testing.T) {
 		t.Fatalf("could not create tenant: %v", err)
 	}
 	// Create namespace
-	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns, Tenant: te}})
+	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns, Tenant: te}, Spec: api.NamespaceSpec{Network: "test"}})
 	if err != nil {
 		t.Fatalf("could not create namespace: %v", err)
 	}
@@ -216,7 +216,7 @@ func TestServiceAccountTokenAutoMount(t *testing.T) {
 		t.Fatalf("could not create tenant: %v", err)
 	}
 	// Create "my" namespace
-	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns, Tenant: te}})
+	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: ns, Tenant: te}, Spec: api.NamespaceSpec{Network: "test"}})
 	if err != nil && !errors.IsAlreadyExists(err) {
 		t.Fatalf("could not create namespace: %v", err)
 	}
@@ -301,7 +301,7 @@ func TestServiceAccountTokenAuthentication(t *testing.T) {
 		t.Fatalf("could not create tenant: %v", err)
 	}
 	// Create "my" namespace
-	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: myns, Tenant: myte}})
+	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: myns, Tenant: myte}, Spec: api.NamespaceSpec{Network: "test"}})
 	if err != nil && !errors.IsAlreadyExists(err) {
 		t.Fatalf("could not create namespace: %v", err)
 	}
@@ -312,7 +312,7 @@ func TestServiceAccountTokenAuthentication(t *testing.T) {
 		t.Fatalf("could not create tenant: %v", err)
 	}
 	// Create "other" namespace
-	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: otherns, Tenant: otherte}})
+	_, err = c.Namespaces().Create(&api.Namespace{ObjectMeta: api.ObjectMeta{Name: otherns, Tenant: otherte}, Spec: api.NamespaceSpec{Network: "test"}})
 	if err != nil && !errors.IsAlreadyExists(err) {
 		t.Fatalf("could not create namespace: %v", err)
 	}

@@ -96,9 +96,13 @@ func NewCmdDescribe(f *cmdutil.Factory, out io.Writer) *cobra.Command {
 
 func RunDescribe(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []string, options *DescribeOptions) error {
 	selector := cmdutil.GetFlagString(cmd, "selector")
-	var all bool = true
-	if cmdutil.GetFlagString(cmd, "namespace") != "" {
-		all = false
+	var all bool = false
+	client, err := f.ClientConfig()
+	if err != nil {
+		return err
+	}
+	if cmdutil.GetFlagString(cmd, "namespace") == "" && strings.Index(client.Host, "https://") == 0 {
+		all = true
 	}
 	cmdNamespace, enforceNamespace, err := f.DefaultNamespace()
 	if err != nil {

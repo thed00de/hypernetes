@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/kubernetes/pkg/api/meta"
@@ -129,8 +130,12 @@ func RunGet(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []string
 `)
 		return cmdutil.UsageError(cmd, "Required resource not specified.")
 	}
+	client, err := f.ClientConfig()
+	if err != nil {
+		return err
+	}
 	userNamespace := cmdutil.GetFlagString(cmd, "namespace")
-	if userNamespace == "" {
+	if userNamespace == "" && strings.Index(client.Host, "https://") == 0 {
 		all = true
 	}
 

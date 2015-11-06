@@ -34,7 +34,7 @@ before_install:
   - if [[ $SHIPPABLE_GO_VERSION =~ [0-9].[0-9] ]]; then gvm install go$SHIPPABLE_GO_VERSION; gvm use go$SHIPPABLE_GO_VERSION; fi
   - ./hack/install-etcd.sh
   - export GOPATH=$SHIPPABLE_GOPATH
-  - mkdir -p /root/workspace/src/k8s.io; mv /root/workspace/src/github.com/kubernetes/kubernetes /root/workspace/src/k8s.io/kubernetes
+  - mkdir -p /root/workspace/src/k8s.io; mv /root/workspace/src/github.com/hyperhq/hypernetes /root/workspace/src/k8s.io/kubernetes
   - export PATH=$GOPATH/bin:./third_party/etcd:$PATH
 
 install:
@@ -49,7 +49,7 @@ install:
   - ./hack/verify-boilerplate.sh
   - ./hack/verify-description.sh
   - ./hack/verify-flags-underscore.py
-  - ./hack/verify-godeps.sh ${BASE_BRANCH}
+  # - ./hack/verify-godeps.sh ${BASE_BRANCH}
   - ./hack/travis/install-std-race.sh
   - ./hack/verify-generated-conversions.sh
   - ./hack/verify-generated-deep-copies.sh

@@ -39,11 +39,16 @@ type StatusREST struct {
 }
 
 // NewREST returns a RESTStorage object that will work against networks.
-func NewREST(s storage.Interface) (*REST, *StatusREST) {
+func NewREST(s storage.Interface, storageFactory storage.StorageFactory) (*REST, *StatusREST) {
 	prefix := "/networks"
+
+	newListFunc := func() runtime.Object { return &api.NetworkList{} }
+	storageInterface := storageFactory(
+		s, 100, nil, &api.Network{}, prefix, true, newListFunc)
+
 	store := &etcdgeneric.Etcd{
 		NewFunc:     func() runtime.Object { return &api.Network{} },
-		NewListFunc: func() runtime.Object { return &api.NetworkList{} },
+		NewListFunc: newListFunc,
 		KeyRootFunc: func(ctx api.Context) string {
 			return prefix
 		},
@@ -62,7 +67,7 @@ func NewREST(s storage.Interface) (*REST, *StatusREST) {
 		UpdateStrategy:      network.Strategy,
 		ReturnDeletedObject: true,
 
-		Storage: s,
+		Storage: storageInterface,
 	}
 
 	statusStore := *store

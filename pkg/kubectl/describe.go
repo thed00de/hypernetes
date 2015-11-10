@@ -185,11 +185,11 @@ func (d *TenantDescriber) Describe(tenant, name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	resourceQuotaList, err := d.ResourceQuotas(name).List(labels.Everything())
+	resourceQuotaList, err := d.ResourceQuotas(name).List(labels.Everything(), fields.Everything())
 	if err != nil {
 		return "", err
 	}
-	limitRangeList, err := d.LimitRanges(name).List(labels.Everything())
+	limitRangeList, err := d.LimitRanges(name).List(labels.Everything(), fields.Everything())
 	if err != nil {
 		return "", err
 	}

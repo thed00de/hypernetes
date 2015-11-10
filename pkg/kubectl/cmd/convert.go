@@ -112,13 +112,13 @@ func (o *ConvertOptions) Complete(f *cmdutil.Factory, out io.Writer, cmd *cobra.
 		}
 		o.builder = o.builder.Schema(schema)
 	}
-	cmdNamespace, _, err := f.DefaultNamespace()
+	cmdNamespace, enforceNamespace, err := f.DefaultNamespace()
 	if err != nil {
 		return err
 	}
 	o.builder = o.builder.NamespaceParam(cmdNamespace).
 		ContinueOnError().
-		FilenameParam(false, o.filenames...).
+		FilenameParam(false, enforceNamespace, o.filenames...).
 		Flatten()
 
 	// build the printer

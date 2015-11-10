@@ -569,7 +569,7 @@ func (m *Master) init(c *Config) {
 	namespaceStorage, namespaceStatusStorage, namespaceFinalizeStorage := namespaceetcd.NewREST(dbClient("namespaces"), storageFactory)
 	m.namespaceRegistry = namespace.NewRegistry(namespaceStorage)
 
-	networkStorage, networkStatusStorage := networketcd.NewREST(dbClient("networks"))
+	networkStorage, networkStatusStorage := networketcd.NewREST(dbClient("networks"), storageFactory)
 	m.networkRegistry = network.NewRegistry(networkStorage)
 
 	endpointsStorage := endpointsetcd.NewREST(dbClient("endpoints"), storageFactory)

@@ -59,7 +59,7 @@ func applyDefaults(pod *api.Pod, source string, isFile bool, nodeName string) er
 		pod.Namespace = kubetypes.NamespaceDefault
 	}
 	if pod.Tenant == "" {
-		pod.Tenant = kubelet.TenantDefault
+		pod.Tenant = kubetypes.TenantDefault
 	}
 	glog.V(5).Infof("Using namespace %q for pod %q from %s", pod.Namespace, pod.Name, source)
 

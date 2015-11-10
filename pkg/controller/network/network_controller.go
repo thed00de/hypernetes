@@ -93,10 +93,10 @@ func NewNetworkController(client *client.Client, provider networkprovider.Interf
 	e.serviceStore.Store, e.serviceController = framework.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func() (runtime.Object, error) {
-				return e.client.Services(api.NamespaceAll).List(labels.Everything())
+				return e.client.Services(api.NamespaceAll).List(labels.Everything(), fields.Everything())
 			},
-			WatchFunc: func(rv string) (watch.Interface, error) {
-				return e.client.Services(api.NamespaceAll).Watch(labels.Everything(), fields.Everything(), rv)
+			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
+				return e.client.Services(api.NamespaceAll).Watch(labels.Everything(), fields.Everything(), options)
 			},
 		},
 		&api.Service{},
@@ -115,8 +115,8 @@ func NewNetworkController(client *client.Client, provider networkprovider.Interf
 			ListFunc: func() (runtime.Object, error) {
 				return e.client.Networks().List(labels.Everything(), fields.Everything())
 			},
-			WatchFunc: func(rv string) (watch.Interface, error) {
-				return e.client.Networks().Watch(labels.Everything(), fields.Everything(), rv)
+			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
+				return e.client.Networks().Watch(labels.Everything(), fields.Everything(), options)
 			},
 		},
 		&api.Network{},
@@ -131,10 +131,10 @@ func NewNetworkController(client *client.Client, provider networkprovider.Interf
 	e.endpointStore.Store, e.endpointController = framework.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func() (runtime.Object, error) {
-				return e.client.Endpoints(api.NamespaceAll).List(labels.Everything())
+				return e.client.Endpoints(api.NamespaceAll).List(labels.Everything(), fields.Everything())
 			},
-			WatchFunc: func(rv string) (watch.Interface, error) {
-				return e.client.Endpoints(api.NamespaceAll).Watch(labels.Everything(), fields.Everything(), rv)
+			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
+				return e.client.Endpoints(api.NamespaceAll).Watch(labels.Everything(), fields.Everything(), options)
 			},
 		},
 		&api.Endpoints{},
@@ -580,7 +580,7 @@ func (e *NetworkController) createLoadBalancer(service *api.Service) (*api.LoadB
 
 // In order to process services deleted while controller is down, fill the queue on startup
 func (e *NetworkController) startUp() {
-	svcList, err := e.client.Services(api.NamespaceAll).List(labels.Everything())
+	svcList, err := e.client.Services(api.NamespaceAll).List(labels.Everything(), fields.Everything())
 	if err != nil {
 		glog.Errorf("Unable to list services: %v", err)
 		return
@@ -597,7 +597,7 @@ func (e *NetworkController) startUp() {
 		}
 	}
 
-	endpointList, err := e.client.Endpoints(api.NamespaceAll).List(labels.Everything())
+	endpointList, err := e.client.Endpoints(api.NamespaceAll).List(labels.Everything(), fields.Everything())
 	if err != nil {
 		glog.Errorf("Unable to list endpoints: %v", err)
 		return

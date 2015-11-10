@@ -40,5 +40,5 @@ func (authzHandler unionAuthzHandler) Authorize(a authorizer.Attributes) (string
 		}
 		return tenant, nil
 	}
-	return "", errors.NewAggregate(errlist)
+	return "", utilerrors.NewAggregate(errlist)
 }

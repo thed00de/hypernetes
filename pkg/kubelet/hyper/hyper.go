@@ -37,11 +37,11 @@ import (
 	"k8s.io/kubernetes/pkg/client/record"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/credentialprovider"
+	"k8s.io/kubernetes/pkg/fields"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/network"
-	"k8s.io/kubernetes/pkg/kubelet/prober"
+	proberesults "k8s.io/kubernetes/pkg/kubelet/prober/results"
 	"k8s.io/kubernetes/pkg/labels"
-	"k8s.io/kubernetes/pkg/probe"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util"
 )
@@ -64,7 +64,7 @@ type runtime struct {
 	containerRefManager *kubecontainer.RefManager
 	generator           kubecontainer.RunContainerOptionsGenerator
 	recorder            record.EventRecorder
-	prober              prober.Prober
+	livenessManager     proberesults.Manager
 	networkPlugin       network.NetworkPlugin
 	volumeGetter        volumeGetter
 	hyperClient         *HyperClient
@@ -83,9 +83,11 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 	recorder record.EventRecorder,
 	networkPlugin network.NetworkPlugin,
 	containerRefManager *kubecontainer.RefManager,
-	prober prober.Prober,
+	livenessManager proberesults.Manager,
 	volumeGetter volumeGetter,
-	kubeClient client.Interface) (kubecontainer.Runtime, error) {
+	kubeClient client.Interface,
+	imageBackOff *util.Backoff,
+	serializeImagePulls bool) (kubecontainer.Runtime, error) {
 
 	// check hyper has already installed
 	hyperBinAbsPath, err := exec.LookPath(hyperBinName)
@@ -99,14 +101,19 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 		dockerKeyring:       credentialprovider.NewDockerKeyring(),
 		containerRefManager: containerRefManager,
 		generator:           generator,
-		prober:              prober,
+		livenessManager:     livenessManager,
 		recorder:            recorder,
 		networkPlugin:       networkPlugin,
 		volumeGetter:        volumeGetter,
 		hyperClient:         NewHyperClient(),
 		kubeClient:          kubeClient,
 	}
-	hyper.imagePuller = kubecontainer.NewImagePuller(recorder, hyper)
+
+	if serializeImagePulls {
+		hyper.imagePuller = kubecontainer.NewSerializedImagePuller(recorder, hyper, imageBackOff)
+	} else {
+		hyper.imagePuller = kubecontainer.NewImagePuller(recorder, hyper, imageBackOff)
+	}
 
 	return hyper, nil
 }
@@ -144,8 +151,8 @@ func (r *runtime) Version() (kubecontainer.Version, error) {
 	return parseVersion(version)
 }
 
-// Name returns the name of the container runtime
-func (r *runtime) Name() string {
+// Type returns the name of the container runtime
+func (r *runtime) Type() string {
 	return "hyper"
 }
 
@@ -320,7 +327,7 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 }
 
 func (r *runtime) buildHyperPodServices(pod *api.Pod) []HyperService {
-	items, err := r.kubeClient.Services(pod.Namespace).List(labels.Everything())
+	items, err := r.kubeClient.Services(pod.Namespace).List(labels.Everything(), fields.Everything())
 	if err != nil {
 		glog.Warningf("Get services failed: %v", err)
 		return nil
@@ -356,7 +363,7 @@ func (r *runtime) buildHyperPodServices(pod *api.Pod) []HyperService {
 func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte, error) {
 	// check and pull image
 	for _, c := range pod.Spec.Containers {
-		if err := r.imagePuller.PullImage(pod, &c, pullSecrets); err != nil {
+		if err, _ := r.imagePuller.PullImage(pod, &c, pullSecrets); err != nil {
 			return nil, err
 		}
 	}
@@ -370,12 +377,12 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 
 	volumes := make([]map[string]interface{}, 0, 1)
 	for name, volume := range volumeMap {
-		glog.V(4).Infof("Hyper: volume %s, path %s, meta %s", name, volume.GetPath(), volume.GetMetaData())
+		glog.V(4).Infof("Hyper: volume %s, path %s, meta %s", name, volume.Builder.GetPath(), volume.Builder.GetMetaData())
 		v := make(map[string]interface{})
 		v[KEY_NAME] = name
 
 		// Process rbd volume
-		metadata := volume.GetMetaData()
+		metadata := volume.Builder.GetMetaData()
 		if metadata != nil && metadata["volume_type"].(string) == "rbd" {
 			v[KEY_VOLUME_DRIVE] = metadata["volume_type"]
 			v["source"] = "rbd:" + metadata["name"].(string)
@@ -391,10 +398,10 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 				"mointors": monitors,
 			}
 		} else {
-			glog.V(4).Infof("Hyper: volume %s %s", name, volume.GetPath())
+			glog.V(4).Infof("Hyper: volume %s %s", name, volume.Builder.GetPath())
 
 			v[KEY_VOLUME_DRIVE] = VOLUME_TYPE_VFS
-			v[KEY_VOLUME_SOURCE] = volume.GetPath()
+			v[KEY_VOLUME_SOURCE] = volume.Builder.GetPath()
 		}
 
 		volumes = append(volumes, v)
@@ -645,16 +652,11 @@ func (r *runtime) SyncPod(pod *api.Pod, runningPod kubecontainer.Pod, podStatus 
 			break
 		}
 
-		result, err := r.prober.ProbeLiveness(pod, podStatus, container, c.ID, c.Created)
-		if err == nil && result != probe.Success {
-			glog.V(4).Infof("Pod %q container %q is unhealthy (probe result: %v), it will be killed and re-created.",
-				podFullName, container.Name, result)
+		liveness, found := r.livenessManager.Get(c.ID)
+		if found && liveness != proberesults.Success && pod.Spec.RestartPolicy != api.RestartPolicyNever {
+			glog.Infof("Pod %q container %q is unhealthy, it will be killed and re-created.", podFullName, container.Name)
 			restartPod = true
 			break
-		}
-
-		if err != nil {
-			glog.V(2).Infof("Hyper: probe container %q failed: %v", container.Name, err)
 		}
 
 		delete(unidentifiedContainers, c.ID)
@@ -949,4 +951,8 @@ func (r *runtime) AttachContainer(containerID kubecontainer.ContainerID, stdin i
 		RawTerminal:  tty,
 	}
 	return r.hyperClient.Attach(opts)
+}
+
+func (r *runtime) GarbageCollect(gcPolicy kubecontainer.ContainerGCPolicy) error {
+	return nil
 }

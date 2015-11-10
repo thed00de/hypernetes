@@ -19,17 +19,15 @@ package tenant
 import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/rest"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/watch"
 )
 
 // Registry is an interface implemented by things that know how to store Tenant objects.
 type Registry interface {
 	// ListTenants obtains a list of tenants having labels which match selector.
-	ListTenants(ctx api.Context, selector labels.Selector) (*api.TenantList, error)
+	ListTenants(ctx api.Context, options *api.ListOptions) (*api.TenantList, error)
 	// Watch for new/changed/deleted tenants
-	WatchTenants(ctx api.Context, label labels.Selector, field fields.Selector, resourceVersion string) (watch.Interface, error)
+	WatchTenants(ctx api.Context, options *api.ListOptions) (watch.Interface, error)
 	// Get a specific tenant
 	GetTenant(ctx api.Context, tenantID string) (*api.Tenant, error)
 	// Create a tenant based on a specification.
@@ -51,16 +49,16 @@ func NewRegistry(s rest.StandardStorage) Registry {
 	return &storage{s}
 }
 
-func (s *storage) ListTenants(ctx api.Context, label labels.Selector) (*api.TenantList, error) {
-	obj, err := s.List(ctx, label, fields.Everything())
+func (s *storage) ListTenants(ctx api.Context, options *api.ListOptions) (*api.TenantList, error) {
+	obj, err := s.List(ctx, options)
 	if err != nil {
 		return nil, err
 	}
 	return obj.(*api.TenantList), nil
 }
 
-func (s *storage) WatchTenants(ctx api.Context, label labels.Selector, field fields.Selector, resourceVersion string) (watch.Interface, error) {
-	return s.Watch(ctx, label, field, resourceVersion)
+func (s *storage) WatchTenants(ctx api.Context, options *api.ListOptions) (watch.Interface, error) {
+	return s.Watch(ctx, options)
 }
 
 func (s *storage) GetTenant(ctx api.Context, tenantName string) (*api.Tenant, error) {

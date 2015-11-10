@@ -42,11 +42,16 @@ type StatusREST struct {
 }
 
 // NewREST returns a RESTStorage object that will work against tenants.
-func NewREST(s storage.Interface) (*REST, *StatusREST) {
+func NewREST(s storage.Interface, storageFactory storage.StorageFactory) (*REST, *StatusREST) {
 	prefix := "/tenants"
+
+	newListFunc := func() runtime.Object { return &api.TenantList{} }
+	storageInterface := storageFactory(
+		s, 100, nil, &api.Tenant{}, prefix, true, newListFunc)
+
 	store := &etcdgeneric.Etcd{
 		NewFunc:     func() runtime.Object { return &api.Tenant{} },
-		NewListFunc: func() runtime.Object { return &api.TenantList{} },
+		NewListFunc: newListFunc,
 		KeyRootFunc: func(ctx api.Context) string {
 			return prefix
 		},
@@ -65,7 +70,7 @@ func NewREST(s storage.Interface) (*REST, *StatusREST) {
 		UpdateStrategy:      tenant.Strategy,
 		ReturnDeletedObject: true,
 
-		Storage: s,
+		Storage: storageInterface,
 	}
 
 	statusStore := *store

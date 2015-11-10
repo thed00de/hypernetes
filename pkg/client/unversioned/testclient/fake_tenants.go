@@ -70,8 +70,8 @@ func (c *FakeTenants) Delete(name string) error {
 	return err
 }
 
-func (c *FakeTenants) Watch(label labels.Selector, field fields.Selector, resourceVersion string) (watch.Interface, error) {
-	return c.Fake.InvokesWatch(NewRootWatchAction("tenants", label, field, resourceVersion))
+func (c *FakeTenants) Watch(label labels.Selector, field fields.Selector, opts api.ListOptions) (watch.Interface, error) {
+	return c.Fake.InvokesWatch(NewRootWatchAction("tenants", label, field, opts))
 }
 
 func (c *FakeTenants) Finalize(tenant *api.Tenant) (*api.Tenant, error) {

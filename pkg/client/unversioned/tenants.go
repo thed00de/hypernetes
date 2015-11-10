@@ -35,7 +35,7 @@ type TenantInterface interface {
 	List(label labels.Selector, field fields.Selector) (*api.TenantList, error)
 	Delete(name string) error
 	Update(item *api.Tenant) (*api.Tenant, error)
-	Watch(label labels.Selector, field fields.Selector, resourceVersion string) (watch.Interface, error)
+	Watch(label labels.Selector, field fields.Selector, opts api.ListOptions) (watch.Interface, error)
 	Finalize(item *api.Tenant) (*api.Tenant, error)
 	Status(item *api.Tenant) (*api.Tenant, error)
 }
@@ -114,11 +114,11 @@ func (c *tenants) Delete(name string) error {
 }
 
 // Watch returns a watch.Interface that watches the requested tenants.
-func (c *tenants) Watch(label labels.Selector, field fields.Selector, resourceVersion string) (watch.Interface, error) {
+func (c *tenants) Watch(label labels.Selector, field fields.Selector, opts api.ListOptions) (watch.Interface, error) {
 	return c.r.Get().
 		Prefix("watch").
 		Resource("tenants").
-		Param("resourceVersion", resourceVersion).
+		VersionedParams(&opts, api.Scheme).
 		LabelsSelectorParam(label).
 		FieldsSelectorParam(field).
 		Watch()

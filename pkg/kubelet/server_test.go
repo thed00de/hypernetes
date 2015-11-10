@@ -147,8 +147,8 @@ func (f *fakeAuth) AuthenticateRequest(req *http.Request) (user.Info, bool, erro
 func (f *fakeAuth) GetRequestAttributes(u user.Info, req *http.Request) authorizer.Attributes {
 	return f.attributesFunc(u, req)
 }
-func (f *fakeAuth) Authorize(a authorizer.Attributes) (err error) {
-	return f.authorizeFunc(a)
+func (f *fakeAuth) Authorize(a authorizer.Attributes) (tenant string, err error) {
+	return "", f.authorizeFunc(a)
 }
 
 type serverTestFramework struct {

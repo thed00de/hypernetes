@@ -70,8 +70,8 @@ func (c *FakeNetworks) Delete(name string) error {
 	return err
 }
 
-func (c *FakeNetworks) Watch(label labels.Selector, field fields.Selector, resourceVersion string) (watch.Interface, error) {
-	return c.Fake.InvokesWatch(NewRootWatchAction("networks", label, field, resourceVersion))
+func (c *FakeNetworks) Watch(label labels.Selector, field fields.Selector, opts api.ListOptions) (watch.Interface, error) {
+	return c.Fake.InvokesWatch(NewRootWatchAction("networks", label, field, opts))
 }
 
 func (c *FakeNetworks) Finalize(network *api.Network) (*api.Network, error) {

@@ -2739,6 +2739,8 @@ func (kl *Kubelet) containerRuntimeVersionRequirementMet() bool {
 	case "rkt":
 		// TODO(dawnchen): Rkt support here
 		return true
+	case "hyper":
+		return true
 	default:
 		glog.Errorf("unsupported container runtime %s specified", kl.GetRuntime().Type())
 		return true

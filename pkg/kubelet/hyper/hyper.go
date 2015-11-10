@@ -163,8 +163,12 @@ func (r *runtime) Type() string {
 	return "hyper"
 }
 
-func (r *runtime) Type() string {
+func (r *runtime) Name() string {
 	return "hyper"
+}
+
+func (r *runtime) Status() error {
+	return nil
 }
 
 func parseTimeString(str string) (time.Time, error) {

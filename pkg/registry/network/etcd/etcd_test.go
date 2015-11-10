@@ -24,6 +24,7 @@ import (
 	"k8s.io/kubernetes/pkg/registry/network"
 	"k8s.io/kubernetes/pkg/registry/registrytest"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/storage"
 	"k8s.io/kubernetes/pkg/tools"
 	"k8s.io/kubernetes/pkg/tools/etcdtest"
 	"k8s.io/kubernetes/pkg/util"
@@ -31,7 +32,7 @@ import (
 
 func newStorage(t *testing.T) (*REST, *tools.FakeEtcdClient) {
 	etcdStorage, fakeClient := registrytest.NewEtcdStorage(t, "")
-	storage, _ := NewREST(etcdStorage)
+	storage, _ := NewREST(etcdStorage, storage.NoDecoration)
 	return storage, fakeClient
 }
 

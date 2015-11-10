@@ -78,7 +78,7 @@ kubelet
       --cluster-domain="": Domain for this cluster.  If set, kubelet will configure all containers to search this domain in addition to the host's search domains
       --config="": Path to the config file or directory of files
       --configure-cbr0[=false]: If true, kubelet will configure cbr0 based on Node.Spec.PodCIDR.
-      --container-runtime="docker": The container runtime to use. Possible values: 'docker', 'rkt'. Default: 'docker'.
+      --container-runtime="docker": The container runtime to use. Possible values: 'docker', 'rkt', 'hyper'. Default: 'docker'.
       --containerized[=false]: Experimental support for running kubelet in a container.  Intended for testing. [default=false]
       --cpu-cfs-quota[=true]: Enable CPU CFS quota enforcement for containers that specify CPU limits
       --docker-endpoint="": If non-empty, use this for the docker endpoint to communicate with

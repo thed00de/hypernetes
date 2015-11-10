@@ -3023,6 +3023,15 @@ func (kl *Kubelet) isContainerRuntimeVersionCompatible() error {
 		if result < 0 {
 			return fmt.Errorf("container runtime version is older than %s", dockertools.MinimumDockerAPIVersion)
 		}
+		return (result >= 0)
+	case "rkt":
+		// TODO(dawnchen): Rkt support here
+		return true
+	case "hyper":
+		return true
+	default:
+		glog.Errorf("unsupported container runtime %s specified", kl.GetRuntime().Type())
+		return true
 	}
 	return nil
 }

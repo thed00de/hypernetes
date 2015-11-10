@@ -63,7 +63,6 @@ kube-proxy
       --healthz-bind-address=127.0.0.1: The IP address for the health check server to serve on, defaulting to 127.0.0.1 (set to 0.0.0.0 for all interfaces)
       --healthz-port=10249: The port to bind the health check server. Use 0 to disable.
       --hostname-override="": If non-empty, will use this string as identification instead of the actual hostname.
-      --iptables-sync-period=30s: How often iptables rules are refreshed (e.g. '5s', '1m', '2h22m').  Must be greater than 0.
       --kube-api-burst=10: Burst to use while talking with kubernetes apiserver
       --kube-api-qps=5: QPS to use while talking with kubernetes apiserver
       --kubeconfig="": Path to kubeconfig file with authorization information (the master location is set by the master flag).

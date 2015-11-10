@@ -1409,7 +1409,7 @@ func (x codecSelfer1234) decSliceSimple(v *[]Simple, d *codec1978.Decoder) {
 	yyrr132 = yyl132
 
 	if yyv132 == nil {
-		if yyrl132, yyrt132 = z.DecInferLen(yyl132, z.DecBasicHandle().MaxInitLen, 216); yyrt132 {
+		if yyrl132, yyrt132 = z.DecInferLen(yyl132, z.DecBasicHandle().MaxInitLen, 232); yyrt132 {
 			yyrr132 = yyrl132
 		}
 		yyv132 = make([]Simple, yyrl132)
@@ -1424,7 +1424,7 @@ func (x codecSelfer1234) decSliceSimple(v *[]Simple, d *codec1978.Decoder) {
 	} else if yyl132 > 0 {
 
 		if yyl132 > cap(yyv132) {
-			yyrl132, yyrt132 = z.DecInferLen(yyl132, z.DecBasicHandle().MaxInitLen, 216)
+			yyrl132, yyrt132 = z.DecInferLen(yyl132, z.DecBasicHandle().MaxInitLen, 232)
 			yyv132 = make([]Simple, yyrl132)
 			yyc132 = true
 

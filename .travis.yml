@@ -23,5 +23,4 @@ script:
   - make verify BRANCH=$TRAVIS_BRANCH
 
 notifications:
-  irc: "chat.freenode.net#kubernetes-dev"
-  slack: kubernetes:PHPPkljtEsHXED6xl9IfOvKe
+  slack: hyperteam:spb3r9ctER5jIpm9thD5pWNo

@@ -438,9 +438,11 @@ func NewMainKubelet(
 			recorder,
 			klet.networkPlugin,
 			containerRefManager,
-			klet, // prober
+			klet.livenessManager,
 			klet.volumeManager,
 			klet.kubeClient,
+			imageBackOff,
+			serializeImagePulls,
 		)
 		if err != nil {
 			return nil, err

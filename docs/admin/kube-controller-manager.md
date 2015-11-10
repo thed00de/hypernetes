@@ -56,6 +56,7 @@ kube-controller-manager
       --master="": The address of the Kubernetes API server (overrides any value in kubeconfig)
       --min-resync-period=12h0m0s: The resync period in reflectors will be random between MinResyncPeriod and 2*MinResyncPeriod
       --namespace-sync-period=5m0s: The period for syncing namespace life-cycle updates
+      --network-provider="": The provider for network services.  Empty string for no provider.
       --node-monitor-grace-period=40s: Amount of time which we allow running Node to be unresponsive before marking it unhealty. Must be N times more than kubelet's nodeStatusUpdateFrequency, where N means number of retries allowed for kubelet to post node status.
       --node-monitor-period=5s: The period for syncing NodeStatus in NodeController.
       --node-startup-grace-period=1m0s: Amount of time which we allow starting Node to be unresponsive before marking it unhealty.

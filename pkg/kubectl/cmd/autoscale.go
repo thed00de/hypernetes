@@ -69,7 +69,7 @@ func NewCmdAutoscale(f *cmdutil.Factory, out io.Writer) *cobra.Command {
 }
 
 func RunAutoscale(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []string, filenames []string) error {
-	namespace, enforceNamespace, err := f.DefaultNamespace()
+	namespace, _, err := f.DefaultNamespace()
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func RunAutoscale(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []
 	r := resource.NewBuilder(mapper, typer, resource.ClientMapperFunc(f.ClientForMapping), f.Decoder(true)).
 		ContinueOnError().
 		NamespaceParam(namespace).DefaultNamespace().
-		FilenameParam(enforceNamespace, filenames...).
+		FilenameParam(false, filenames...).
 		ResourceTypeOrNameArgs(false, args...).
 		Flatten().
 		Do()

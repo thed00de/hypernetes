@@ -163,10 +163,6 @@ func NewProxier(loadBalancer LoadBalancer, listenIP net.IP, iptables iptables.In
 	return createProxier(loadBalancer, listenIP, iptables, hostIP, proxyPorts, syncPeriod, udpIdleTimeout, kubeClient, withHaproxier)
 }
 
-func setRLimit(limit uint64) error {
-	return syscall.Setrlimit(syscall.RLIMIT_NOFILE, &syscall.Rlimit{Max: limit, Cur: limit})
-}
-
 func createProxier(loadBalancer LoadBalancer, listenIP net.IP, iptables iptables.Interface, hostIP net.IP, proxyPorts PortAllocator, syncPeriod, udpIdleTimeout time.Duration, kubeClient *kubeclient.Client, withHaproxier bool) (*Proxier, error) {
 	// convenient to pass nil for tests..
 	if proxyPorts == nil {

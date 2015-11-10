@@ -116,7 +116,7 @@ func (vh *volumeHost) GetHostName() string {
 }
 
 func (vh *volumeHost) IsNoMountSupported() bool {
-	return vh.kubelet.GetRuntime().Name() == "hyper"
+	return vh.kubelet.GetRuntime().Type() == "hyper"
 }
 
 func (kl *Kubelet) mountExternalVolumes(pod *api.Pod) (kubecontainer.VolumeMap, error) {

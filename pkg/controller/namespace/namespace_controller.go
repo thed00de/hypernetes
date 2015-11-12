@@ -60,7 +60,6 @@ func NewNamespaceController(kubeClient client.Interface, versions *unversioned.A
 		framework.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				namespace := obj.(*api.Namespace)
-				syncTenantAndNamespace(kubeClient, namespace)
 				if err := syncNamespace(kubeClient, versions, namespace); err != nil {
 					if estimate, ok := err.(*contentRemainingError); ok {
 						go func() {

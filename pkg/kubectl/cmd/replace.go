@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -207,6 +208,7 @@ func forceReplace(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []
 	if err != nil {
 		return err
 	}
+	time.Sleep(200 * time.Millisecond)
 
 	r = resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		Schema(schema).

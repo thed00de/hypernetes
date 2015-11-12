@@ -194,7 +194,8 @@ func NewMixedFactory(apiClient resource.RESTClient) (*cmdutil.Factory, *testFact
 
 func NewAPIFactory() (*cmdutil.Factory, *testFactory, runtime.Codec) {
 	t := &testFactory{
-		Validator: validation.NullSchema{},
+		Validator:    validation.NullSchema{},
+		ClientConfig: &client.Config{Host: "http://"},
 	}
 	generators := map[string]kubectl.Generator{
 		"run/v1":       kubectl.BasicReplicationController{},

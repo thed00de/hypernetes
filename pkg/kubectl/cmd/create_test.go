@@ -58,6 +58,7 @@ func TestCreateObject(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 
 	cmd := NewCmdCreate(f, buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
 	cmd.Flags().Set("filename", "../../../examples/guestbook/redis-master-controller.yaml")
 	cmd.Flags().Set("output", "name")
 	cmd.Flags().Set("namespace", "test")
@@ -92,6 +93,7 @@ func TestCreateMultipleObject(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 
 	cmd := NewCmdCreate(f, buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
 	cmd.Flags().Set("filename", "../../../examples/guestbook/redis-master-controller.yaml")
 	cmd.Flags().Set("filename", "../../../examples/guestbook/frontend-service.yaml")
 	cmd.Flags().Set("output", "name")
@@ -128,6 +130,7 @@ func TestCreateDirectory(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 
 	cmd := NewCmdCreate(f, buf)
+	cmd.Flags().StringP("namespace", "", "", "namespace")
 	cmd.Flags().Set("filename", "../../../examples/guestbook")
 	cmd.Flags().Set("output", "name")
 	cmd.Flags().Set("namespace", "test")

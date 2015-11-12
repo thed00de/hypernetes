@@ -226,7 +226,14 @@ func TestDeleteFinalStateUnknown(t *testing.T) {
 }
 
 func TestSyncReplicationControllerCreates(t *testing.T) {
-	client := client.NewOrDie(&client.Config{Host: "", Version: testapi.Default.Version()})
+	// Setup a fake server to listen for requests, and run the rc manager in steady state
+	fakeResponse := serverResponse{
+		statusCode: 200,
+		obj:        &api.ReplicationController{},
+	}
+	testServer, _ := makeTestServer(t, api.NamespaceDefault, api.TenantDefault, fakeResponse)
+	defer testServer.Close()
+	client := client.NewOrDie(&client.Config{Host: testServer.URL, Version: testapi.Default.Version()})
 	manager := NewReplicationManager(client, controller.NoResyncPeriodFunc, BurstReplicas)
 	manager.podStoreSynced = alwaysReady
 
@@ -812,7 +819,14 @@ func TestRCSyncExpectations(t *testing.T) {
 }
 
 func TestDeleteControllerAndExpectations(t *testing.T) {
-	client := client.NewOrDie(&client.Config{Host: "", Version: testapi.Default.Version()})
+	// Setup a fake server to listen for requests, and run the rc manager in steady state
+	fakeResponse := serverResponse{
+		statusCode: 200,
+		obj:        &api.ReplicationController{},
+	}
+	testServer, _ := makeTestServer(t, api.NamespaceDefault, api.TenantDefault, fakeResponse)
+	defer testServer.Close()
+	client := client.NewOrDie(&client.Config{Host: testServer.URL, Version: testapi.Default.Version()})
 	manager := NewReplicationManager(client, controller.NoResyncPeriodFunc, 10)
 	manager.podStoreSynced = alwaysReady
 

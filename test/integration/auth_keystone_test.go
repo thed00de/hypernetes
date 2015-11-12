@@ -188,8 +188,18 @@ func TestAdminAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	expEtcdStorage, err := framework.NewExtensionsEtcdStorage(nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
 	storageDestinations := master.NewStorageDestinations()
 	storageDestinations.AddAPIGroup("", etcdStorage)
+	storageDestinations.AddAPIGroup("extensions", expEtcdStorage)
+
+	storageVersions := make(map[string]string)
+	storageVersions[""] = testapi.Default.Version()
+	storageVersions["extensions"] = testapi.Extensions.GroupAndVersion()
 
 	var m *master.Master
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -205,6 +215,7 @@ func TestAdminAccess(t *testing.T) {
 		Password: "admin",
 	}
 	kclient := client.NewOrDie(clientConfig)
+
 	m = master.New(&master.Config{
 		StorageDestinations:   storageDestinations,
 		KubeletClient:         client.FakeKubeletClient{},
@@ -216,7 +227,7 @@ func TestAdminAccess(t *testing.T) {
 		Authenticator:         getTestBasicAuth(),
 		Authorizer:            &allowTestAuthorizer{kubeClient: kclient},
 		AdmissionControl:      admit.NewAlwaysAdmit(),
-		StorageVersions:       map[string]string{"": testapi.Default.Version()},
+		StorageVersions:       storageVersions,
 	})
 
 	previousResourceVersion := make(map[string]float64)
@@ -307,8 +318,18 @@ func TestUserTestAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	expEtcdStorage, err := framework.NewExtensionsEtcdStorage(nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
 	storageDestinations := master.NewStorageDestinations()
 	storageDestinations.AddAPIGroup("", etcdStorage)
+	storageDestinations.AddAPIGroup("extensions", expEtcdStorage)
+
+	storageVersions := make(map[string]string)
+	storageVersions[""] = testapi.Default.Version()
+	storageVersions["extensions"] = testapi.Extensions.GroupAndVersion()
 
 	var m *master.Master
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -336,7 +357,7 @@ func TestUserTestAccess(t *testing.T) {
 		Authenticator:         getTestBasicAuth(),
 		Authorizer:            &allowTestAuthorizer{kubeClient: client},
 		AdmissionControl:      admit.NewAlwaysAdmit(),
-		StorageVersions:       map[string]string{"": testapi.Default.Version()},
+		StorageVersions:       storageVersions,
 	})
 
 	previousResourceVersion := make(map[string]float64)

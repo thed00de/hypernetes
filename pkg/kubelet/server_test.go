@@ -138,7 +138,7 @@ func (fk *fakeKubelet) StreamingConnectionIdleTimeout() time.Duration {
 type fakeAuth struct {
 	authenticateFunc func(*http.Request) (user.Info, bool, error)
 	attributesFunc   func(user.Info, *http.Request) authorizer.Attributes
-	authorizeFunc    func(authorizer.Attributes) (err error)
+	authorizeFunc    func(authorizer.Attributes) (str string, err error)
 }
 
 func (f *fakeAuth) AuthenticateRequest(req *http.Request) (user.Info, bool, error) {
@@ -148,7 +148,7 @@ func (f *fakeAuth) GetRequestAttributes(u user.Info, req *http.Request) authoriz
 	return f.attributesFunc(u, req)
 }
 func (f *fakeAuth) Authorize(a authorizer.Attributes) (tenant string, err error) {
-	return "", f.authorizeFunc(a)
+	return f.authorizeFunc(a)
 }
 
 type serverTestFramework struct {
@@ -183,8 +183,8 @@ func newServerTest() *serverTestFramework {
 		attributesFunc: func(u user.Info, req *http.Request) authorizer.Attributes {
 			return &authorizer.AttributesRecord{User: u}
 		},
-		authorizeFunc: func(a authorizer.Attributes) (err error) {
-			return nil
+		authorizeFunc: func(a authorizer.Attributes) (str string, err error) {
+			return "", nil
 		},
 	}
 	server := NewServer(fw.fakeKubelet, fw.fakeAuth, true)
@@ -599,12 +599,12 @@ func TestAuthFilters(t *testing.T) {
 			}
 			return expectedAttributes
 		}
-		fw.fakeAuth.authorizeFunc = func(a authorizer.Attributes) (err error) {
+		fw.fakeAuth.authorizeFunc = func(a authorizer.Attributes) (str string, err error) {
 			calledAuthorize = true
 			if a != expectedAttributes {
 				t.Fatalf("%s: expected attributes %v, got %v", tc.Path, expectedAttributes, a)
 			}
-			return errors.New("Forbidden")
+			return "", errors.New("Forbidden")
 		}
 
 		req, err := http.NewRequest(tc.Method, fw.testHTTPServer.URL+tc.Path, nil)
@@ -657,9 +657,9 @@ func TestAuthenticationFailure(t *testing.T) {
 		calledAttributes = true
 		return expectedAttributes
 	}
-	fw.fakeAuth.authorizeFunc = func(a authorizer.Attributes) (err error) {
+	fw.fakeAuth.authorizeFunc = func(a authorizer.Attributes) (str string, err error) {
 		calledAuthorize = true
-		return errors.New("not allowed")
+		return "", errors.New("not allowed")
 	}
 
 	assertHealthFails(t, fw.testHTTPServer.URL+"/healthz", http.StatusUnauthorized)
@@ -694,9 +694,9 @@ func TestAuthorizationSuccess(t *testing.T) {
 		calledAttributes = true
 		return expectedAttributes
 	}
-	fw.fakeAuth.authorizeFunc = func(a authorizer.Attributes) (err error) {
+	fw.fakeAuth.authorizeFunc = func(a authorizer.Attributes) (str string, err error) {
 		calledAuthorize = true
-		return nil
+		return "", nil
 	}
 
 	assertHealthIsOk(t, fw.testHTTPServer.URL+"/healthz")

@@ -14,13 +14,36 @@ matrix:
     - go: 1.5.3
 
 install:
+  - mkdir -p $HOME/gopath/src/k8s.io
+  - mv $HOME/gopath/src/github.com/hyperhq/hypernetes $HOME/gopath/src/k8s.io/kubernetes
+  - cd $HOME/gopath/src/k8s.io/kubernetes
+  - export LOG_LEVEL=4
+  - export TRAVIS_BUILD_DIR=$HOME/gopath/src/k8s.io/kubernetes
+  - export PATH=$GOPATH/bin:./third_party/etcd:$PATH
+  - export KUBE_GOVERALLS_BIN=$GOPATH/bin/goveralls
+  - go get golang.org/x/tools/cmd/cover
   - go get github.com/tools/godep
+  - go get github.com/mattn/goveralls
+  - go get github.com/jstemmer/go-junit-report
   - ./hack/install-etcd.sh
   - ./hack/build-go.sh
-  - export PATH=$GOPATH/bin:./third_party/etcd:$PATH
+  - godep go install ./...
+  - ./hack/verify-gofmt.sh
+  - ./hack/verify-boilerplate.sh
+  - ./hack/verify-description.sh
+  - ./hack/verify-flags-underscore.py
+  - ./hack/travis/install-std-race.sh
+  - ./hack/verify-generated-conversions.sh
+  - ./hack/verify-generated-deep-copies.sh
+  - ./hack/verify-generated-docs.sh
+  - ./hack/verify-generated-swagger-docs.sh
+  - ./hack/verify-swagger-spec.sh
+  - ./hack/verify-linkcheck.sh
 
 script:
-  - make verify BRANCH=$TRAVIS_BRANCH
+  - cd $HOME/gopath/src/k8s.io/kubernetes
+  - ./hack/test-go.sh
+  - ./hack/test-cmd.sh
 
 notifications:
   slack: hyperteam:spb3r9ctER5jIpm9thD5pWNo

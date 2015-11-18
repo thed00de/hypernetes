@@ -27,7 +27,7 @@ Please refer to the models in
 
 .SH OPTIONS
 .PP
-\fB\-\-cascade\fP=false
+\fB\-\-cascade\fP=true
     Only relevant during a force replace. If true, cascade the deletion of the resources managed by this resource (e.g. Pods created by a ReplicationController).
 
 .PP
@@ -39,7 +39,7 @@ Please refer to the models in
     Delete and re\-create the specified resource
 
 .PP
-\fB\-\-grace\-period\fP=\-1
+\fB\-\-grace\-period\fP=0
     Only relevant during a force replace. Period of time in seconds given to the old resource to terminate gracefully. Ignored if negative.
 
 .PP

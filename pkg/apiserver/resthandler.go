@@ -360,9 +360,20 @@ func createHandler(r rest.NamedCreater, scope RequestScope, typer runtime.Object
 		}
 
 		if objTenant, err := scope.Namer.ObjectTenant(obj); err == nil {
+			tenant := api.TenantValue(ctx)
+			if objTenant != tenant && tenant != "" && objTenant != "" {
+				forbidden(w, req.Request)
+				return
+			}
 			if objTenant == "" {
-				tenant := api.TenantValue(ctx)
 				scope.Namer.SetTenant(obj, tenant)
+			}
+			if scope.Kind == "Tenant" {
+				if _, objName, err := scope.Namer.ObjectName(obj); err == nil {
+					scope.Namer.SetTenant(obj, objName)
+				} else {
+					scope.Namer.SetTenant(obj, "")
+				}
 			}
 		}
 		result, err := finishRequest(timeout, func() (runtime.Object, error) {

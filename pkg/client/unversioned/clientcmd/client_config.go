@@ -220,10 +220,6 @@ func (config DirectClientConfig) Tenant() (string, bool, error) {
 
 	configContext := config.getContext()
 
-	if len(configContext.Tenant) == 0 {
-		return api.TenantDefault, false, nil
-	}
-
 	overridden := false
 	if config.overrides != nil && config.overrides.Context.Tenant != "" {
 		overridden = true

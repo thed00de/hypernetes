@@ -93,21 +93,23 @@ func RunCreate(f *cmdutil.Factory, cmd *cobra.Command, out io.Writer, options *C
 	if err != nil {
 		return err
 	}
-	var all bool = false
+
 	client, err := f.ClientConfig()
 	if err != nil {
 		return err
 	}
-	userNamespace := cmdutil.GetFlagString(cmd, "namespace")
-	if userNamespace != "" && strings.Index(client.Host, "https://") == 0 {
-		all = true
+	if strings.Index(client.Host, "http://") == 0 {
+		if cmdTenant == "" {
+			cmdTenant = api.TenantDefault
+		}
 	}
+
 	mapper, typer := f.Object()
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		Schema(schema).
 		ContinueOnError().
 		NamespaceParam(cmdNamespace).DefaultNamespace().
-		TenantParam(cmdTenant).DefaultTenant().AllTenants(all).
+		TenantParam(cmdTenant).DefaultTenant().
 		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		Flatten().
 		Do()

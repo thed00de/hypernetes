@@ -114,7 +114,11 @@ func (ka *keystoneAuthorizer) Authorize(a authorizer.Attributes) (string, error)
 		}
 	}
 	if authorizer.IsWhiteListedUser(a.GetUserName()) {
-		return tenantName, nil
+		if a.GetUserName() != api.UserAdmin {
+			return tenantName, nil
+		} else {
+			return api.TenantDefault, nil
+		}
 	} else {
 		if !a.IsReadOnly() && a.GetResource() == "tenants" {
 			return "", errors.New("only admin can write tenant")

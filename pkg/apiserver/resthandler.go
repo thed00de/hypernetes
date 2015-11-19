@@ -870,24 +870,14 @@ func filterListInTenant(obj runtime.Object, tenant string, kind string, namer Sc
 	if err != nil {
 		return err
 	}
-	if kind == "Tenant" {
-		for i := range items {
-			if _, name, err := namer.ObjectName(items[i]); err == nil {
-				if tenant == name {
-					result = append(result, items[i])
-				}
+	for i := range items {
+		if name, err := namer.ObjectTenant(items[i]); err == nil {
+			if tenant == name {
+				result = append(result, items[i])
+				continue
 			}
-		}
-	} else {
-		for i := range items {
-			if name, err := namer.ObjectTenant(items[i]); err == nil {
-				if tenant == name {
-					result = append(result, items[i])
-					continue
-				}
-				if name == "" {
-					result = append(result, items[i])
-				}
+			if name == "" {
+				result = append(result, items[i])
 			}
 		}
 	}

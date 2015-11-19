@@ -44,7 +44,7 @@ kube::test::find_dirs() {
 }
 
 # -covermode=atomic becomes default with -race in Go >=1.3
-KUBE_TIMEOUT=${KUBE_TIMEOUT:--timeout 120s}
+KUBE_TIMEOUT=${KUBE_TIMEOUT:--timeout 180s}
 KUBE_COVER=${KUBE_COVER:-n} # set to 'y' to enable coverage collection
 KUBE_COVERMODE=${KUBE_COVERMODE:-atomic}
 # How many 'go test' instances to run simultaneously when running tests in

@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"os/exec"
 	"path"
@@ -193,7 +192,7 @@ func (r *runtime) buildContainerID(hyperContainerID string) string {
 func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID string) api.ContainerStatus {
 	var status api.ContainerStatus
 
-	_, _, _, containerName, err := r.parseHyperContainerFullName(container.Name)
+	_, _, _, containerName, _, err := r.parseHyperContainerFullName(container.Name)
 	if err != nil {
 		return status
 	}
@@ -256,13 +255,13 @@ func (r *runtime) buildHyperPodFullName(uid, name, namespace string) string {
 }
 
 func (r *runtime) buildHyperContainerFullName(uid, podName, namespace, containerName string, container api.Container) string {
-	return fmt.Sprintf("%s_%s_%s_%s_%s_%08x",
+	return fmt.Sprintf("%s_%s_%s_%s_%s_%s",
 		hyperContainerNamePrefix,
 		uid,
 		podName,
 		namespace,
-		containerName+"."+strconv.FormatUint(kubecontainer.HashContainer(&container), 16),
-		rand.Uint32())
+		containerName,
+		strconv.FormatUint(kubecontainer.HashContainer(&container), 16))
 }
 
 func (r *runtime) parseHyperPodFullName(podFullName string) (string, string, string, error) {
@@ -273,12 +272,12 @@ func (r *runtime) parseHyperPodFullName(podFullName string) (string, string, str
 	return parts[1], parts[2], parts[3], nil
 }
 
-func (r *runtime) parseHyperContainerFullName(containerName string) (string, string, string, string, error) {
+func (r *runtime) parseHyperContainerFullName(containerName string) (string, string, string, string, string, error) {
 	parts := strings.Split(containerName, "_")
 	if len(parts) != 6 {
-		return "", "", "", "", fmt.Errorf("failed to parse the container full name %q", containerName)
+		return "", "", "", "", "", fmt.Errorf("failed to parse the container full name %q", containerName)
 	}
-	return parts[1], parts[2], parts[3], parts[4], nil
+	return parts[1], parts[2], parts[3], parts[4], parts[5], nil
 }
 
 // GetPods returns a list containers group by pods. The boolean parameter
@@ -319,14 +318,14 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 				}
 			}
 
-			_, _, _, containerName, err := r.parseHyperContainerFullName(cinfo.Name)
+			_, _, _, containerName, containerHash, err := r.parseHyperContainerFullName(cinfo.Name)
 			if err != nil {
 				glog.V(5).Infof("Hyper: container %s is not managed by kubelet", cinfo.Name)
 				continue
 			}
-			container.Name = strings.Split(containerName, ".")[0]
+			container.Name = containerName
 
-			hash, err := strconv.ParseUint(strings.Split(containerName, ".")[1], 16, 8)
+			hash, err := strconv.ParseUint(containerHash, 16, 64)
 			if err == nil {
 				container.Hash = hash
 			}
@@ -701,7 +700,12 @@ func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 
 // KillPod kills all the containers of a pod.
 func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
+	if len(runningPod.Name) == 0 {
+		return nil
+	}
+
 	var podID string
+	namespace := runningPod.Namespace
 	podName := r.buildHyperPodFullName(string(runningPod.ID), runningPod.Name, runningPod.Namespace)
 	glog.V(4).Infof("Hyper: killing pod %q.", podName)
 
@@ -727,20 +731,19 @@ func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 	}
 
 	// Teardown pod's network
-	podFullName := r.buildHyperPodFullName(string(pod.UID), string(pod.Name), string(pod.Namespace))
-	err = r.networkPlugin.TearDownPod(runningPod.Namespace, podFullName, "", "hyper")
+	err = r.networkPlugin.TearDownPod(namespace, podName, "", "hyper")
 	if err != nil {
 		glog.Errorf("Hyper: networkPlugin.TearDownPod failed, error: %v", err)
 		return err
 	}
 
 	// Delete pod spec file
-	specFileName := path.Join(hyperPodSpecDir, podFullName)
+	specFileName := path.Join(hyperPodSpecDir, podName)
 	_, err = os.Stat(specFileName)
 	if err == nil {
 		e := os.Remove(specFileName)
 		if e != nil {
-			glog.Errorf("Hyper: delete spec file for %s failed, error: %v", pod.Name, e)
+			glog.Errorf("Hyper: delete spec file for %s failed, error: %v", runningPod.Name, e)
 		}
 	}
 

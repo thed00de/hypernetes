@@ -116,6 +116,17 @@ func getResourceHandler(scope RequestScope, getter getterFunc) restful.RouteFunc
 			errorJSON(err, scope.Codec, w)
 			return
 		}
+		//
+		userinfo, ok := api.UserFrom(ctx)
+		if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
+			tenant := api.TenantValue(ctx)
+			if objTenant, err := scope.Namer.ObjectTenant(result); err == nil {
+				if objTenant != tenant && tenant != "" && objTenant != "" {
+					forbidden(w, req.Request)
+					return
+				}
+			}
+		}
 		write(http.StatusOK, scope.APIVersion, scope.Codec, result, w, req.Request)
 	}
 }
@@ -362,8 +373,11 @@ func createHandler(r rest.NamedCreater, scope RequestScope, typer runtime.Object
 		if objTenant, err := scope.Namer.ObjectTenant(obj); err == nil {
 			tenant := api.TenantValue(ctx)
 			if objTenant != tenant && tenant != "" && objTenant != "" {
-				forbidden(w, req.Request)
-				return
+				userinfo, ok := api.UserFrom(ctx)
+				if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
+					forbidden(w, req.Request)
+					return
+				}
 			}
 			if objTenant == "" {
 				scope.Namer.SetTenant(obj, tenant)
@@ -865,7 +879,6 @@ func filterListInTenant(obj runtime.Object, tenant string, kind string, namer Sc
 		return nil
 	}
 
-	// Set self-link of objects in the list.
 	items, err := runtime.ExtractList(obj)
 	if err != nil {
 		return err

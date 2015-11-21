@@ -199,6 +199,7 @@ func RunGet(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []string
 
 	b := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		NamespaceParam(cmdNamespace).DefaultNamespace().AllNamespaces(all).
+		TenantParam(cmdTenant).DefaultTenant().
 		FilenameParam(enforceTenant, enforceNamespace, options.Filenames...).
 		SelectorParam(selector).
 		ResourceTypeOrNameArgs(true, args...).

@@ -204,7 +204,7 @@ func (c *Controller) CreateTenantIfNeeded(te string) error {
 		ObjectMeta: api.ObjectMeta{
 			Name:      te,
 			Namespace: api.NamespaceDefault,
-			Tenant:    "",
+			Tenant:    api.TenantDefault,
 		},
 		Spec: api.TenantSpec{
 			Namespaces: []api.Namespace{*ns},

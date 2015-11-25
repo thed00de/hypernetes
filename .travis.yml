@@ -1,10 +1,11 @@
-sudo: false
+sudo: required
+dist: trusty
 
 language: go
 
 go:
   - 1.4
-
+    
 install:
   - mkdir -p $HOME/gopath/src/k8s.io
   - mv $HOME/gopath/src/github.com/hyperhq/hypernetes $HOME/gopath/src/k8s.io/kubernetes
@@ -18,6 +19,7 @@ install:
   - go get github.com/mattn/goveralls
   - go get github.com/jstemmer/go-junit-report
   - ./hack/install-etcd.sh
+  - sudo ./hack/install-keystone.sh
   - ./hack/build-go.sh
   - godep go install ./...
   - ./hack/verify-gofmt.sh
@@ -38,6 +40,7 @@ script:
   #- ./hack/test-cmd.sh
   - ./hack/test-integration.sh
   - ./hack/test-update-storage-objects.sh
+  - ./hack/test-keystone.sh
 
 notifications:
   slack: hyperteam:spb3r9ctER5jIpm9thD5pWNo

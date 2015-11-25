@@ -37,7 +37,7 @@ install:
 script:
   - cd $HOME/gopath/src/k8s.io/kubernetes
   - ./hack/test-go.sh
-  #- ./hack/test-cmd.sh
+  - ./hack/test-cmd.sh
   - ./hack/test-integration.sh
   - ./hack/test-update-storage-objects.sh
   - ./hack/test-keystone.sh

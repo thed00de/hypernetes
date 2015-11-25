@@ -119,6 +119,10 @@ func getResourceHandler(scope RequestScope, getter getterFunc) restful.RouteFunc
 		//
 		userinfo, ok := api.UserFrom(ctx)
 		if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
+			if scope.Kind == "Node" || scope.Kind == "ComponentStatus" {
+				forbidden(w, req.Request)
+				return
+			}
 			tenant := api.TenantValue(ctx)
 			if objTenant, err := scope.Namer.ObjectTenant(result); err == nil {
 				if objTenant != tenant && tenant != "" && objTenant != "" {
@@ -310,9 +314,13 @@ func ListResource(r rest.Lister, rw rest.Watcher, scope RequestScope, forceWatch
 			errorJSON(err, scope.Codec, w)
 			return
 		}
-		//
+
 		userinfo, ok := api.UserFrom(ctx)
 		if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
+			if scope.Kind == "Node" || scope.Kind == "ComponentStatus" {
+				forbidden(w, req.Request)
+				return
+			}
 			tenant := api.TenantValue(ctx)
 			if err := filterListInTenant(result, tenant, scope.Kind, scope.Namer); err != nil {
 				errorJSON(err, scope.Codec, w)
@@ -370,10 +378,16 @@ func createHandler(r rest.NamedCreater, scope RequestScope, typer runtime.Object
 			}
 		}
 
+		userinfo, ok := api.UserFrom(ctx)
+		if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
+			if scope.Kind == "Node" || scope.Kind == "ComponentStatus" {
+				forbidden(w, req.Request)
+				return
+			}
+		}
 		if objTenant, err := scope.Namer.ObjectTenant(obj); err == nil {
 			tenant := api.TenantValue(ctx)
 			if objTenant != tenant && tenant != "" && objTenant != "" {
-				userinfo, ok := api.UserFrom(ctx)
 				if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
 					forbidden(w, req.Request)
 					return
@@ -478,6 +492,21 @@ func PatchResource(r rest.Patcher, scope RequestScope, typer runtime.ObjectTyper
 		if err != nil {
 			errorJSON(err, scope.Codec, w)
 			return
+		}
+
+		userinfo, ok := api.UserFrom(ctx)
+		if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
+			if scope.Kind == "Node" || scope.Kind == "ComponentStatus" {
+				forbidden(w, req.Request)
+				return
+			}
+			if objTenant, err := scope.Namer.ObjectTenant(obj); err == nil {
+				tenant := api.TenantValue(ctx)
+				if objTenant != tenant && tenant != "" && objTenant != "" {
+					forbidden(w, req.Request)
+					return
+				}
+			}
 		}
 
 		result, err := patchResource(ctx, timeout, versionedObj, r, name, patchType, patchJS, scope.Namer, scope.Codec)
@@ -628,6 +657,21 @@ func UpdateResource(r rest.Updater, scope RequestScope, typer runtime.ObjectType
 			}
 		}
 
+		userinfo, ok := api.UserFrom(ctx)
+		if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
+			if scope.Kind == "Node" || scope.Kind == "ComponentStatus" {
+				forbidden(w, req.Request)
+				return
+			}
+			if objTenant, err := scope.Namer.ObjectTenant(obj); err == nil {
+				tenant := api.TenantValue(ctx)
+				if objTenant != tenant && tenant != "" && objTenant != "" {
+					forbidden(w, req.Request)
+					return
+				}
+			}
+		}
+
 		wasCreated := false
 		result, err := finishRequest(timeout, func() (runtime.Object, error) {
 			obj, created, err := r.Update(ctx, obj)
@@ -689,6 +733,14 @@ func DeleteResource(r rest.GracefulDeleter, checkBody bool, scope RequestScope, 
 			err = admit.Admit(admission.NewAttributesRecord(nil, scope.Kind, namespace, name, scope.Resource, scope.Subresource, admission.Delete, userInfo))
 			if err != nil {
 				errorJSON(err, scope.Codec, w)
+				return
+			}
+		}
+
+		userinfo, ok := api.UserFrom(ctx)
+		if ok && !authorizer.IsWhiteListedUser(userinfo.GetName()) {
+			if scope.Kind == "Node" || scope.Kind == "ComponentStatus" {
+				forbidden(w, req.Request)
 				return
 			}
 		}

@@ -272,13 +272,6 @@ func getCommonTestRequests() []RequestTerm {
 		{"GET", path("services", "", ""), "", code200},
 		{"GET", path("endpoints", "", ""), "", code200},
 
-		// Normal methods on nodes
-		{"GET", path("nodes", "", ""), "", code200},
-		{"POST", timeoutPath("nodes", "", ""), aNode, code201},
-		{"PUT", timeoutPath("nodes", "", "a"), aNode, code200},
-		{"GET", path("nodes", "", "a"), "", code200},
-		{"DELETE", timeoutPath("nodes", "", "a"), "", code200},
-
 		{"GET", path("replicationControllers", "", ""), "", code200},
 		{"GET", path("events", "", ""), "", code200},
 		{"GET", path("foo", "", ""), "", code404},

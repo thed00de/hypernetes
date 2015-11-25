@@ -95,6 +95,13 @@ func getAdminTestRequests() []RequestTerm {
 		{"POST", path("tenants", "", ""), testTenant, code201},
 		{"GET", path("tenants", "", ""), "", code200},
 		{"POST", path("namespaces", "", ""), testNamespace, code201},
+
+		// Normal methods on nodes
+		{"GET", path("nodes", "", ""), "", code200},
+		{"POST", timeoutPath("nodes", "", ""), aNode, code201},
+		{"PUT", timeoutPath("nodes", "", "a"), aNode, code200},
+		{"GET", path("nodes", "", "a"), "", code200},
+		{"DELETE", timeoutPath("nodes", "", "a"), "", code200},
 	}
 	comRequests := getCommonTestRequests()
 	comDefaultRequests := getTestRequestsWithNamespace(NamespaceDefault)
@@ -124,6 +131,12 @@ func getTestRequestsForibidden() []RequestTerm {
 	requests := []RequestTerm{
 		// Tenants
 		{"POST", path("tenants", "", ""), testTenant, code201},
+
+		// Normal methods on nodes
+		{"GET", path("nodes", "", ""), "", code403},
+		{"POST", timeoutPath("nodes", "", ""), aNode, code403},
+		{"PUT", timeoutPath("nodes", "", "a"), aNode, code403},
+		{"DELETE", timeoutPath("nodes", "", "a"), "", code403},
 	}
 	comDefaultRequests := getTestRequestsWithNamespace(NamespaceDefault)
 	requests = append(requests, comDefaultRequests...)

@@ -27,6 +27,7 @@ kube::test::clear_all() {
 }
 
 kube::test::get_object_assert() {
+  sleep 0.1
   local object=$1
   local request=$2
   local expected=$3

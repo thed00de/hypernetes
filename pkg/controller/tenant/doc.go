@@ -15,4 +15,4 @@ limitations under the License.
 */
 
 // tenant contains a controller that handles tenant lifecycle
-package tenantcontroller
+package tenant

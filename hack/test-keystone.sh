@@ -308,10 +308,10 @@ runTests() {
   ! kubectl delete tenant test "${kube_user_flags[@]}" --grace-period=0
   kube::test::get_object_assert "tenants" "{{range.items}}{{$id_field}}:{{end}}" 'test:'
 
-  # https://github.com/hyperhq/hypernetes/issues/52
-  # After the issue is fixed, the following test case shoule be removed
   kubectl delete tenant test "${kube_admin_flags[@]}" --grace-period=0
-  kube::test::get_object_assert "tenants test" "{{.status.phase}}" 'Terminating'
+  # https://github.com/hyperhq/hypernetes/issues/52
+  # kube::test::get_object_assert "tenants test" "{{.status.phase}}" 'Terminating'
+  kube::test::get_object_assert "tenants" "{{range.items}}{{$id_field}}:{{end}}" ''
 
   #################################
   # namespace creation / deletion #

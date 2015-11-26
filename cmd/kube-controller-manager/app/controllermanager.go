@@ -53,6 +53,7 @@ import (
 	routecontroller "k8s.io/kubernetes/pkg/controller/route"
 	servicecontroller "k8s.io/kubernetes/pkg/controller/service"
 	"k8s.io/kubernetes/pkg/controller/serviceaccount"
+	tenantcontroller "k8s.io/kubernetes/pkg/controller/tenant"
 	"k8s.io/kubernetes/pkg/healthz"
 	"k8s.io/kubernetes/pkg/master/ports"
 	"k8s.io/kubernetes/pkg/networkprovider"
@@ -80,6 +81,7 @@ type CMServer struct {
 	NodeSyncPeriod                    time.Duration
 	ResourceQuotaSyncPeriod           time.Duration
 	NamespaceSyncPeriod               time.Duration
+	TenantSyncPeriod                  time.Duration
 	PVClaimBinderSyncPeriod           time.Duration
 	VolumeConfigFlags                 VolumeConfigFlags
 	TerminatedPodGCThreshold          int
@@ -121,6 +123,7 @@ func NewCMServer() *CMServer {
 		NodeSyncPeriod:                    10 * time.Second,
 		ResourceQuotaSyncPeriod:           10 * time.Second,
 		NamespaceSyncPeriod:               5 * time.Minute,
+		TenantSyncPeriod:                  5 * time.Minute,
 		PVClaimBinderSyncPeriod:           10 * time.Minute,
 		HorizontalPodAutoscalerSyncPeriod: 30 * time.Second,
 		DeploymentControllerSyncPeriod:    30 * time.Second,
@@ -191,6 +194,7 @@ func (s *CMServer) AddFlags(fs *pflag.FlagSet) {
 		"fewer calls to cloud provider, but may delay addition of new nodes to cluster.")
 	fs.DurationVar(&s.ResourceQuotaSyncPeriod, "resource-quota-sync-period", s.ResourceQuotaSyncPeriod, "The period for syncing quota usage status in the system")
 	fs.DurationVar(&s.NamespaceSyncPeriod, "namespace-sync-period", s.NamespaceSyncPeriod, "The period for syncing namespace life-cycle updates")
+	fs.DurationVar(&s.TenantSyncPeriod, "tenant-sync-period", s.TenantSyncPeriod, "The period for syncing tenant life-cycle updates")
 	fs.DurationVar(&s.PVClaimBinderSyncPeriod, "pvclaimbinder-sync-period", s.PVClaimBinderSyncPeriod, "The period for syncing persistent volumes and persistent volume claims")
 	fs.DurationVar(&s.MinResyncPeriod, "min-resync-period", s.MinResyncPeriod, "The resync period in reflectors will be random between MinResyncPeriod and 2*MinResyncPeriod")
 	fs.StringVar(&s.VolumeConfigFlags.PersistentVolumeRecyclerPodTemplateFilePathNFS, "pv-recycler-pod-template-filepath-nfs", s.VolumeConfigFlags.PersistentVolumeRecyclerPodTemplateFilePathNFS, "The file path to a pod definition used as a template for NFS persistent volume recycling")
@@ -345,6 +349,7 @@ func (s *CMServer) Run(_ []string) error {
 	}
 
 	namespacecontroller.NewNamespaceController(kubeClient, versions, s.NamespaceSyncPeriod).Run()
+	tenantcontroller.NewTenantController(kubeClient, versions, s.TenantSyncPeriod).Run()
 
 	groupVersion := "extensions/v1beta1"
 	resources, found := resourceMap[groupVersion]

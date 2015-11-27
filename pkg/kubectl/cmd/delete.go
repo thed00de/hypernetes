@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -109,6 +110,15 @@ func RunDelete(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []str
 	cmdTenant, enforceTenant, err := f.DefaultTenant()
 	if err != nil {
 		return err
+	}
+	client, err := f.ClientConfig()
+	if err != nil {
+		return err
+	}
+	if strings.Index(client.Host, "http://") == 0 {
+		if cmdTenant == "" {
+			cmdTenant = api.TenantDefault
+		}
 	}
 	deleteAll := cmdutil.GetFlagBool(cmd, "all")
 	mapper, typer := f.Object()

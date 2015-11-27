@@ -73,6 +73,10 @@ func RunAutoscale(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []
 	if err != nil {
 		return err
 	}
+	tenant, enforceTenant, err := f.DefaultTenant()
+	if err != nil {
+		return err
+	}
 
 	// validate flags
 	if err := validateFlags(cmd); err != nil {
@@ -83,7 +87,8 @@ func RunAutoscale(f *cmdutil.Factory, out io.Writer, cmd *cobra.Command, args []
 	r := resource.NewBuilder(mapper, typer, f.ClientMapperForCommand()).
 		ContinueOnError().
 		NamespaceParam(namespace).DefaultNamespace().
-		FilenameParam(false, enforceNamespace, filenames...).
+		TenantParam(tenant).DefaultTenant().
+		FilenameParam(enforceTenant, enforceNamespace, filenames...).
 		ResourceTypeOrNameArgs(false, args...).
 		Flatten().
 		Do()

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -128,6 +129,15 @@ func Run(f *cmdutil.Factory, cmdIn io.Reader, cmdOut, cmdErr io.Writer, cmd *cob
 	namespace, _, err := f.DefaultNamespace()
 	if err != nil {
 		return err
+	}
+	client, err := f.ClientConfig()
+	if err != nil {
+		return err
+	}
+	if strings.Index(client.Host, "http://") == 0 {
+		if namespace == "" {
+			namespace = api.TenantDefault
+		}
 	}
 
 	restartPolicy, err := getRestartPolicy(cmd, interactive)

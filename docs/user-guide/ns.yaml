@@ -4,3 +4,5 @@ metadata:
   name: test
   labels:
     app: test
+spec:
+  network: eth0

@@ -292,6 +292,7 @@ runTests() {
   ##############################
   # tenant creation / deletion #
   ##############################
+  kube::log::status "Testing kubectl(${version}:tenants)"
 
   kube_flags=${kube_user_flags[@]}
   kube::test::get_object_assert "tenants" "{{range.items}}{{$id_field}}:{{end}}" ''
@@ -313,31 +314,350 @@ runTests() {
   # kube::test::get_object_assert "tenants test" "{{.status.phase}}" 'Terminating'
   kube::test::get_object_assert "tenants" "{{range.items}}{{$id_field}}:{{end}}" ''
 
+  kubectl create -f docs/user-guide/te.yaml "${kube_admin_flags[@]}"
+  kube::test::get_object_assert "tenants" "{{range.items}}{{$id_field}}:{{end}}" 'test:'
+  kubectl create -f docs/user-guide/ns.yaml "${kube_user_flags[@]}"
+  kube::test::get_object_assert "namespaces" "{{range.items}}{{$id_field}}:{{end}}" 'test:'
+
+  kubectl delete tenant test "${kube_admin_flags[@]}" --grace-period=0
+  sleep 5
+  kube::test::get_object_assert "tenants" "{{range.items}}{{$id_field}}:{{end}}" ''
+  kube::test::get_object_assert "namespaces" "{{range.items}}{{$id_field}}:{{end}}" ''
+
   #################################
   # namespace creation / deletion #
   #################################
+  kube::log::status "Testing kubectl(${version}:namespaces)"
+
   kube_flags=${kube_admin_flags[@]}
   kube::test::get_object_assert "namespaces" "{{range.items}}{{$id_field}}:{{end}}" 'default:'
   kube_flags=${kube_user_flags[@]}
   kube::test::get_object_assert "namespaces" "{{range.items}}{{$id_field}}:{{end}}" ''
 
   # Create 'test' tenant
-  # kubectl create -f docs/user-guide/te.yaml "${kube_admin_flags[@]}"
+  kubectl create -f docs/user-guide/te.yaml "${kube_admin_flags[@]}"
   # Create 'test' namespace for 'test' tenant
-  # kubectl create -f docs/user-guide/ns.yaml "${kube_user_flags[@]}"
-  # kube::test::get_object_assert "namespaces" "{{range.items}}{{$id_field}}:{{end}}" 'test:'
+  kubectl create -f docs/user-guide/ns.yaml "${kube_user_flags[@]}"
+  kube::test::get_object_assert "namespaces" "{{range.items}}{{$id_field}}:{{end}}" 'test:'
+  kube_flags=${kube_admin_flags[@]}
+  kube::test::get_object_assert "namespaces" "{{range.items}}{{$id_field}}:{{end}}" 'default:test:'
+  ! kubectl delete namespace default "${kube_user_flags[@]}" --grace-period=0
+  kube::test::get_object_assert "namespaces" "{{range.items}}{{$id_field}}:{{end}}" 'default:test:'
+  kubectl delete namespace test "${kube_user_flags[@]}" --grace-period=0
+  sleep 5
+  kube::test::get_object_assert "namespaces" "{{range.items}}{{$id_field}}:{{end}}" 'default:'
 
   ###########################
   # POD creation / deletion #
   ###########################
-
   kube::log::status "Testing kubectl(${version}:pods)"
 
   kube_flags=${kube_admin_flags[@]}
   ### Create POD valid-pod from JSON
   # Pre-condition: no POD is running
   kube::test::get_object_assert "pods" "{{range.items}}{{$id_field}}:{{end}}" ''
+  # Create 'test' namespace for 'test' tenant
+  kubectl create -f docs/user-guide/ns.yaml "${kube_user_flags[@]}"
+  kube::test::get_object_assert "namespaces" "{{range.items}}{{$id_field}}:{{end}}" 'default:test:'
+  # should specific the namespace
+  ! kubectl create -f docs/admin/limitrange/valid-pod.yaml "${kube_user_flags[@]}"
+  kube::test::get_object_assert "pods" "{{range.items}}{{$id_field}}:{{end}}" ''
+  kubectl create -f docs/admin/limitrange/valid-pod.yaml "${kube_user_flags[@]}" --namespace=test
+  kube::test::get_object_assert "pods" "{{range.items}}{{$id_field}}:{{end}}" 'valid-pod:'
+  kube::test::get_object_assert 'pod valid-pod --namespace=test' "{{$id_field}}" 'valid-pod'
+  kube::test::get_object_assert 'pod/valid-pod --namespace=test' "{{$id_field}}" 'valid-pod'
+  kube::test::get_object_assert 'pods/valid-pod --namespace=test' "{{$id_field}}" 'valid-pod'
+  # Repeat above test using jsonpath template
+  kube::test::get_object_jsonpath_assert pods "{.items[*]$id_field}" 'valid-pod'
+  kube::test::get_object_jsonpath_assert 'pod valid-pod --namespace=test' "{$id_field}" 'valid-pod'
+  kube::test::get_object_jsonpath_assert 'pod/valid-pod --namespace=test' "{$id_field}" 'valid-pod'
+  kube::test::get_object_jsonpath_assert 'pods/valid-pod --namespace=test' "{$id_field}" 'valid-pod'
+  # Describe command should print detailed information
+  kube::test::describe_object_assert pods 'valid-pod --namespace=test' "Name:" "Image(s):" "Node:" "Labels:" "Status:" "Replication Controllers"
+  # Describe command (resource only) should print detailed information
+  kube::test::describe_resource_assert pods "Name:" "Image(s):" "Node:" "Labels:" "Status:" "Replication Controllers"
 
+  ### Dump current valid-pod POD
+  output_pod=$(kubectl get pod valid-pod --namespace=test -o yaml --output-version=v1 "${kube_user_flags[@]}")
+
+  ### Delete POD valid-pod by id
+  # Pre-condition: valid-pod POD is running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" 'valid-pod:'
+  # Command
+  kubectl delete pod valid-pod --namespace=test "${kube_user_flags[@]}" --grace-period=0
+  # Post-condition: no POD is running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" ''
+
+  ### Create POD valid-pod from dumped YAML
+  # Pre-condition: no POD is running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" ''
+  # Command
+  echo "${output_pod}" | kubectl create -f - "${kube_user_flags[@]}" --namespace=test
+  # Post-condition: valid-pod POD is running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" 'valid-pod:'
+
+  ### Delete POD valid-pod from JSON
+  # Pre-condition: valid-pod POD is running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" 'valid-pod:'
+  # Command
+  kubectl delete -f docs/admin/limitrange/valid-pod.yaml "${kube_user_flags[@]}" --grace-period=0 --namespace=test
+  # Post-condition: no POD is running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" ''
+
+  ### Create POD redis-master from JSON
+  # Pre-condition: no POD is running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" ''
+  # Command
+  kubectl create -f docs/admin/limitrange/valid-pod.yaml "${kube_user_flags[@]}" --namespace=test
+  # Post-condition: valid-pod POD is running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" 'valid-pod:'
+
+  ### Delete POD valid-pod with label
+  # Pre-condition: valid-pod POD is running
+  kube::test::get_object_assert "pods -l'name in (valid-pod)'" '{{range.items}}{{$id_field}}:{{end}}' 'valid-pod:'
+  # Command
+  kubectl delete pods -l'name in (valid-pod)' "${kube_user_flags[@]}" --grace-period=0 --namespace=test
+  # Post-condition: no POD is running
+  kube::test::get_object_assert "pods -l'name in (valid-pod)'" '{{range.items}}{{$id_field}}:{{end}}' ''
+
+  ### Create POD in 'default' namespace, test user can not access it
+  # Pre-condition: no POD is running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" ''
+  # Command
+  ! kubectl create -f docs/admin/limitrange/valid-pod.yaml "${kube_user_flags[@]}" --namespace=default
+  kubectl create -f docs/admin/limitrange/valid-pod.yaml "${kube_admin_flags[@]}" --namespace=default
+  # Post-condition: valid-pod POD is running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" 'valid-pod:'
+  kube::test::get_object_assert 'pod valid-pod --namespace=default' "{{$id_field}}" 'valid-pod'
+  kube::test::get_object_assert 'pod/valid-pod --namespace=default' "{{$id_field}}" 'valid-pod'
+  kube::test::get_object_assert 'pods/valid-pod --namespace=default' "{{$id_field}}" 'valid-pod'
+  kube_flags=${kube_user_flags[@]}
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" ''
+  ! kubectl delete pod valid-pod "${kube_user_flags[@]}"
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" ''
+  ! kubectl delete pods -lnew-name=new-valid-pod --grace-period=0 "${kube_user_flags[@]}"
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" ''
+
+  ## Patch pod can change image, test user can not do that
+  # Command
+  kube_flags=${kube_admin_flags[@]}
+  ! kubectl patch "${kube_user_flags[@]}" pod valid-pod -p='{"spec":{"containers":[{"name": "kubernetes-serve-hostname", "image": "nginx"}]}}'
+  kube::test::get_object_assert pods "{{range.items}}{{$image_field}}:{{end}}" 'gcr.io/google_containers/serve_hostname:'
+  kubectl patch "${kube_admin_flags[@]}" pod valid-pod -p='{"spec":{"containers":[{"name": "kubernetes-serve-hostname", "image": "nginx"}]}}'
+  # Post-condition: valid-pod POD has image nginx
+  kube::test::get_object_assert pods "{{range.items}}{{$image_field}}:{{end}}" 'nginx:'
+
+  ## Delete POD
+  kubectl delete pod valid-pod "${kube_admin_flags[@]}" --grace-period=0
+
+  ### Create two PODs from 1 yaml file
+  # Pre-condition: no POD is running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" ''
+  # Command
+  kubectl create -f docs/user-guide/multi-pod.yaml "${kube_admin_flags[@]}" --namespace=default
+  # Post-condition: valid-pod and redis-proxy PODs are running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" 'redis-master:redis-proxy:'
+
+  ### Delete two PODs from 1 yaml file
+  # Pre-condition: redis-master and redis-proxy PODs are running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" 'redis-master:redis-proxy:'
+  # Command
+  kubectl delete -f docs/user-guide/multi-pod.yaml "${kube_admin_flags[@]}" --grace-period=0
+  # Post-condition: no PODs are running
+  kube::test::get_object_assert pods "{{range.items}}{{$id_field}}:{{end}}" ''
+
+  # Pre-Condition: no RC is running
+  kube::test::get_object_assert rc "{{range.items}}{{$id_field}}:{{end}}" ''
+  # Command: create the rc "nginx" with image nginx
+  kubectl run nginx --image=nginx --save-config "${kube_admin_flags[@]}" --namespace=default
+  # Post-Condition: rc "nginx" has configuration annotation
+  ! kubectl get rc nginx --namespace=default -o yaml ${kube_user_flags[@]}
+  [[ "$(kubectl get rc nginx --namespace=default -o yaml "${kube_admin_flags[@]}" | grep kubectl.kubernetes.io/last-applied-configuration)" ]]
+  ## kubectl expose --save-config should generate configuration annotation
+  # Pre-Condition: no service is running
+  kube::test::get_object_assert svc "{{range.items}}{{$id_field}}:{{end}}" 'kubernetes:'
+  # Command: expose the rc "nginx"
+  kubectl expose rc nginx --save-config --port=80 --target-port=8000 "${kube_admin_flags[@]}"
+  # Post-Condition: service "nginx" has configuration annotation
+  ! kubectl get svc nginx --namespace=default -o yaml ${kube_user_flags[@]}
+  [[ "$(kubectl get svc nginx --namespace=default -o yaml "${kube_admin_flags[@]}" | grep kubectl.kubernetes.io/last-applied-configuration)" ]]
+  # Clean up
+  ! kubectl delete rc,svc nginx ${kube_user_flags[@]}
+  kubectl delete rc,svc nginx ${kube_admin_flags[@]}
+  ## kubectl autoscale --save-config should generate configuration annotation
+  # Pre-Condition: no RC is running, then create the rc "frontend", which shouldn't have configuration annotation
+  kube::test::get_object_assert rc "{{range.items}}{{$id_field}}:{{end}}" ''
+  ! kubectl create -f examples/guestbook/frontend-controller.yaml "${kube_user_flags[@]}" --namespace=default
+  kubectl create -f examples/guestbook/frontend-controller.yaml "${kube_user_flags[@]}" --namespace=test
+  ! [[ "$(kubectl get rc frontend --namespace=test -o yaml "${kube_user_flags[@]}" | grep kubectl.kubernetes.io/last-applied-configuration)" ]]
+  # Command: autoscale rc "frontend" 
+  kubectl autoscale -f examples/guestbook/frontend-controller.yaml --save-config "${kube_user_flags[@]}" --max=2 --namespace=test
+  # Post-Condition: hpa "frontend" has configuration annotation
+  [[ "$(kubectl get hpa frontend --namespace=test -o yaml "${kube_user_flags[@]}" | grep kubectl.kubernetes.io/last-applied-configuration)" ]]
+  # Clean up
+  kubectl delete rc,hpa frontend ${kube_user_flags[@]} --namespace=test
+
+  #################
+  # Pod templates #
+  #################
+
+  ### Create PODTEMPLATE
+  # Pre-condition: no PODTEMPLATE
+  kube::test::get_object_assert podtemplates "{{range.items}}{{.metadata.name}}:{{end}}" ''
+  # Command
+  kubectl create -f docs/user-guide/walkthrough/podtemplate.json "${kube_admin_flags[@]}" --namespace=default
+  # Post-condition: nginx PODTEMPLATE is available
+  kube::test::get_object_assert podtemplates "{{range.items}}{{.metadata.name}}:{{end}}" 'nginx:'
+
+  ! kubectl get podtemplates nginx "${kube_user_flags[@]}"
+  ### Printing pod templates works
+  kubectl get podtemplates "${kube_admin_flags[@]}"
+  [[ "$(kubectl get podtemplates -o yaml "${kube_admin_flags[@]}" | grep nginx)" ]]
+
+  ### Delete nginx pod template by name
+  # Pre-condition: nginx pod template is available
+  kube::test::get_object_assert podtemplates "{{range.items}}{{.metadata.name}}:{{end}}" 'nginx:'
+  # Command
+  ! kubectl delete podtemplate nginx "${kube_user_flags[@]}"
+  kubectl delete podtemplate nginx "${kube_admin_flags[@]}"
+  # Post-condition: No templates exist
+  kube::test::get_object_assert podtemplate "{{range.items}}{{.metadata.name}}:{{end}}" ''
+
+  ############
+  # Services #
+  ############
+
+  kube::log::status "Testing kubectl(${version}:services)"
+
+  kube_flags=${kube_admin_flags[@]}
+  ### Create redis-master service from JSON
+  # Pre-condition: Only the default kubernetes services are running
+  kube::test::get_object_assert services "{{range.items}}{{$id_field}}:{{end}}" 'kubernetes:'
+  # Command
+  kubectl create -f examples/guestbook/redis-master-service.yaml "${kube_user_flags[@]}" --namespace=test
+  # Post-condition: redis-master service is running
+  kube::test::get_object_assert services "{{range.items}}{{$id_field}}:{{end}}" 'kubernetes:redis-master:'
+  # Describe command should print detailed information
+  kube::test::describe_object_assert services 'redis-master --namespace=test' "Name:" "Labels:" "Selector:" "IP:" "Port:" "Endpoints:" "Session Affinity:"
+  # Describe command (resource only) should print detailed information
+  kube::test::describe_resource_assert services "Name:" "Labels:" "Selector:" "IP:" "Port:" "Endpoints:" "Session Affinity:"
+
+  kube_flags=${kube_user_flags[@]}
+  kube::test::get_object_assert services "{{range.items}}{{$id_field}}:{{end}}" 'redis-master:'
+
+  kubectl delete services redis-master --namespace=test --grace-period=0 ${kube_user_flags[@]}
+
+  ###########################
+  # Replication controllers #
+  ###########################
+
+  kube::log::status "Testing kubectl(${version}:replicationcontrollers)"
+
+  kube_flags=${kube_admin_flags[@]}
+  ### Create and stop controller, make sure it doesn't leak pods
+  # Pre-condition: no replication controller is running
+  kube::test::get_object_assert rc "{{range.items}}{{$id_field}}:{{end}}" ''
+  # Command
+  kubectl create -f examples/guestbook/frontend-controller.yaml "${kube_admin_flags[@]}" --namespace=default
+  ! kubectl get rc frontend "${kube_user_flags[@]}" --namespace=default
+  ! kubectl delete rc frontend "${kube_user_flags[@]}" --grace-period=0 --namespace=default
+  kubectl delete rc frontend "${kube_admin_flags[@]}" --grace-period=0 --namespace=default
+  # Post-condition: no pods from frontend controller
+  kube::test::get_object_assert 'pods -l "name=frontend"' "{{range.items}}{{$id_field}}:{{end}}" ''
+
+  kube_flags=${kube_user_flags[@]}
+  ### Create replication controller frontend from JSON
+  # Pre-condition: no replication controller is running
+  kube::test::get_object_assert rc "{{range.items}}{{$id_field}}:{{end}}" ''
+  # Command
+  kubectl create -f examples/guestbook/frontend-controller.yaml "${kube_user_flags[@]}" --namespace=test
+  # Post-condition: frontend replication controller is running
+  kube::test::get_object_assert rc "{{range.items}}{{$id_field}}:{{end}}" 'frontend:'
+  # Describe command should print detailed information
+  kube::test::describe_object_assert rc 'frontend --namespace=test' "Name:" "Image(s):" "Labels:" "Selector:" "Replicas:" "Pods Status:"
+  # Describe command (resource only) should print detailed information
+  kube::test::describe_resource_assert rc "Name:" "Name:" "Image(s):" "Labels:" "Selector:" "Replicas:" "Pods Status:"
+
+  ### Scale replication controller frontend with current-replicas and replicas
+  # Pre-condition: 3 replicas
+  kube::test::get_object_assert 'rc frontend --namespace=test' "{{$rc_replicas_field}}" '3'
+  # Command
+  kubectl scale --current-replicas=3 --replicas=2 replicationcontrollers frontend "${kube_user_flags[@]}" --namespace=test
+  # Post-condition: 2 replicas
+  kube::test::get_object_assert 'rc frontend --namespace=test' "{{$rc_replicas_field}}" '2'
+
+  ######################
+  # Persistent Volumes #
+  ######################
+
+  kube_flags=${kube_admin_flags[@]}
+  ### Create and delete persistent volume examples
+  # Pre-condition: no persistent volumes currently exist
+  kube::test::get_object_assert pv "{{range.items}}{{$id_field}}:{{end}}" ''
+  # Command
+  kubectl create -f docs/user-guide/persistent-volumes/volumes/local-01.yaml "${kube_admin_flags[@]}" --namespace=default
+  kube::test::get_object_assert pv "{{range.items}}{{$id_field}}:{{end}}" 'pv0001:'
+  kubectl delete pv pv0001 "${kube_admin_flags[@]}" --namespace=default
+  kubectl create -f docs/user-guide/persistent-volumes/volumes/local-02.yaml "${kube_admin_flags[@]}" --namespace=default
+  kube::test::get_object_assert pv "{{range.items}}{{$id_field}}:{{end}}" 'pv0002:'
+  kubectl delete pv pv0002 "${kube_admin_flags[@]}" --namespace=default
+  kubectl create -f docs/user-guide/persistent-volumes/volumes/gce.yaml "${kube_admin_flags[@]}" --namespace=default
+  kube::test::get_object_assert pv "{{range.items}}{{$id_field}}:{{end}}" 'pv0003:'
+  kubectl delete pv pv0003 "${kube_admin_flags[@]}" --namespace=default
+  # Post-condition: no PVs
+  kube::test::get_object_assert pv "{{range.items}}{{$id_field}}:{{end}}" ''
+
+  ############################
+  # Persistent Volume Claims #
+  ############################
+
+  kube_flags=${kube_admin_flags[@]}
+  ### Create and delete persistent volume claim examples
+  # Pre-condition: no persistent volume claims currently exist
+  kube::test::get_object_assert pvc "{{range.items}}{{$id_field}}:{{end}}" ''
+  # Command
+  kubectl create -f docs/user-guide/persistent-volumes/claims/claim-01.yaml "${kube_admin_flags[@]}" --namespace=default
+  kube::test::get_object_assert pvc "{{range.items}}{{$id_field}}:{{end}}" 'myclaim-1:'
+  kubectl delete pvc myclaim-1 "${kube_admin_flags[@]}" --namespace=default
+
+  kubectl create -f docs/user-guide/persistent-volumes/claims/claim-02.yaml "${kube_admin_flags[@]}" --namespace=default
+  kube::test::get_object_assert pvc "{{range.items}}{{$id_field}}:{{end}}" 'myclaim-2:'
+  kubectl delete pvc myclaim-2 "${kube_admin_flags[@]}" --namespace=default
+
+  kubectl create -f docs/user-guide/persistent-volumes/claims/claim-03.json "${kube_admin_flags[@]}" --namespace=default
+  kube::test::get_object_assert pvc "{{range.items}}{{$id_field}}:{{end}}" 'myclaim-3:'
+  kubectl delete pvc myclaim-3 "${kube_admin_flags[@]}" --namespace=default
+  # Post-condition: no PVCs
+  kube::test::get_object_assert pvc "{{range.items}}{{$id_field}}:{{end}}" ''
+
+
+  #########
+  # Nodes #
+  #########
+
+  kube::log::status "Testing kubectl(${version}:nodes)"
+
+  kube_flags=${kube_admin_flags[@]}
+  kube::test::get_object_assert nodes "{{range.items}}{{$id_field}}:{{end}}" '127.0.0.1:'
+
+  kube::test::describe_object_assert nodes "127.0.0.1 --namespace=default" "Name:" "Labels:" "CreationTimestamp:" "Conditions:" "Addresses:" "Capacity:" "Pods:"
+  # Describe command (resource only) should print detailed information
+  kube::test::describe_resource_assert nodes "Name:" "Labels:" "CreationTimestamp:" "Conditions:" "Addresses:" "Capacity:" "Pods:"
+
+  ### kubectl patch update can mark node unschedulable
+  # Pre-condition: node is schedulable
+  kube::test::get_object_assert "nodes 127.0.0.1 --namespace=default" "{{.spec.unschedulable}}" '<no value>'
+  kubectl patch "${kube_admin_flags[@]}" nodes "127.0.0.1" --namespace=default -p='{"spec":{"unschedulable":true}}'
+  # Post-condition: node is unschedulable
+  kube::test::get_object_assert "nodes 127.0.0.1 --namespace=default" "{{.spec.unschedulable}}" 'true'
+  kubectl patch "${kube_admin_flags[@]}" nodes "127.0.0.1" --namespace=default -p='{"spec":{"unschedulable":null}}'
+  # Post-condition: node is schedulable
+  kube::test::get_object_assert "nodes 127.0.0.1 --namespace=default" "{{.spec.unschedulable}}" '<no value>'
+
+  # Common user can not access the node resource
+  ! kubectl get nodes ${kube_user_flags[@]}
+  ! kubectl patch "${kube_user_flags[@]}" nodes "127.0.0.1" -p='{"spec":{"unschedulable":true}}'
+  ! kubectl patch "${kube_user_flags[@]}" nodes "127.0.0.1" -p='{"spec":{"unschedulable":null}}'
 
   ###########
   # Swagger #

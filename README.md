@@ -1,4 +1,4 @@
-# Hypernetes
+# Hypernetes [![Build Status](https://travis-ci.org/hyperhq/hypernetes.svg?branch=master)](https://travis-ci.org/hyperhq/hypernetes)
 
 ## What is Hypernetes?
 

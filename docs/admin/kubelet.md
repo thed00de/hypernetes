@@ -115,9 +115,9 @@ kubelet
       --network-plugin="": <Warning: Alpha feature> The name of the network plugin to be invoked for various events in kubelet/pod lifecycle. Note that network-provider option will override this option.
       --network-plugin-dir="/usr/libexec/kubernetes/kubelet-plugins/net/exec/": <Warning: Alpha feature> The full path of the directory in which to search for network plugins
       --node-ip=<nil>: IP address of the node. If set, kubelet will use this IP address for the node
+      --network-provider="": The name of network provider. Enable network provider will disable network-plugin option
       --node-label=[]: add labels when registering the node in the cluster, the flag can be used multiple times (key=value)
       --node-labels-file="": the path to a yaml or json file containing a series of key pair labels to apply on node registration
-      --network-provider="": The name of network provider. Enable network provider will disable network-plugin option
       --node-status-update-frequency=10s: Specifies how often kubelet posts node status to master. Note: be cautious when changing the constant, it must work with nodeMonitorGracePeriod in nodecontroller. Default: 10s
       --oom-score-adj=-999: The oom-score-adj value for kubelet process. Values must be within the range [-1000, 1000]
       --outofdisk-transition-frequency=5m0s: Duration for which the kubelet has to wait before transitioning out of out-of-disk node condition status. Default: 5m0s

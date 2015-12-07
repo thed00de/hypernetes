@@ -368,8 +368,6 @@ func NewMainKubelet(
 			imageBackOff,
 			serializeImagePulls,
 		)
-
-		klet.pleg = pleg.NewGenericPLEG(klet.containerRuntime, plegChannelCapacity, plegRelistPeriod)
 	case "rkt":
 		conf := &rkt.Config{
 			Path:               rktPath,
@@ -390,7 +388,6 @@ func NewMainKubelet(
 			return nil, err
 		}
 		klet.containerRuntime = rktRuntime
-		klet.pleg = pleg.NewGenericPLEG(klet.containerRuntime, plegChannelCapacity, plegRelistPeriod)
 
 		// No Docker daemon to put in a container.
 		dockerDaemonContainer = ""
@@ -417,6 +414,7 @@ func NewMainKubelet(
 		return nil, fmt.Errorf("unsupported container runtime %q specified", containerRuntime)
 	}
 
+	klet.pleg = pleg.NewGenericPLEG(klet.containerRuntime, plegChannelCapacity, plegRelistPeriod)
 	klet.runtimeState = newRuntimeState(maxWaitForContainerRuntime, configureCBR0, podCIDR, klet.isContainerRuntimeVersionCompatible)
 
 	// setup containerGC
@@ -3023,16 +3021,8 @@ func (kl *Kubelet) isContainerRuntimeVersionCompatible() error {
 		if result < 0 {
 			return fmt.Errorf("container runtime version is older than %s", dockertools.MinimumDockerAPIVersion)
 		}
-		return (result >= 0)
-	case "rkt":
-		// TODO(dawnchen): Rkt support here
-		return true
-	case "hyper":
-		return true
-	default:
-		glog.Errorf("unsupported container runtime %s specified", kl.GetRuntime().Type())
-		return true
 	}
+
 	return nil
 }
 

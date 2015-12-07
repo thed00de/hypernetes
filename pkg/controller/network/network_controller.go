@@ -22,12 +22,10 @@ import (
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/errors"
+	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/client/cache"
-	"k8s.io/kubernetes/pkg/client/record"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/controller/framework"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/networkprovider"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util"
@@ -35,6 +33,7 @@ import (
 	"k8s.io/kubernetes/pkg/watch"
 
 	"github.com/golang/glog"
+	"k8s.io/kubernetes/pkg/util/intstr"
 )
 
 const (
@@ -61,11 +60,9 @@ var (
 
 // NetworkController manages all networks
 type NetworkController struct {
-	client           *client.Client
-	queue            *workqueue.Type
-	netProvider      networkprovider.Interface
-	eventRecorder    record.EventRecorder
-	eventBroadcaster record.EventBroadcaster
+	client      *client.Client
+	queue       *workqueue.Type
+	netProvider networkprovider.Interface
 
 	networkStore  cache.StoreToNetworksLister
 	serviceStore  cache.StoreToServiceLister
@@ -78,25 +75,19 @@ type NetworkController struct {
 
 // NewNetworkController returns a new *NetworkController.
 func NewNetworkController(client *client.Client, provider networkprovider.Interface) *NetworkController {
-	broadcaster := record.NewBroadcaster()
-	broadcaster.StartRecordingToSink(client.Events(""))
-	recorder := broadcaster.NewRecorder(api.EventSource{Component: "network-controller"})
-
 	e := &NetworkController{
-		client:           client,
-		queue:            workqueue.New(),
-		netProvider:      provider,
-		eventRecorder:    recorder,
-		eventBroadcaster: broadcaster,
+		client:      client,
+		queue:       workqueue.New(),
+		netProvider: provider,
 	}
 
 	e.serviceStore.Store, e.serviceController = framework.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func() (runtime.Object, error) {
-				return e.client.Services(api.NamespaceAll).List(labels.Everything(), fields.Everything())
+				return e.client.Services(api.NamespaceAll).List(unversioned.ListOptions{})
 			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return e.client.Services(api.NamespaceAll).Watch(labels.Everything(), fields.Everything(), options)
+			WatchFunc: func(options unversioned.ListOptions) (watch.Interface, error) {
+				return e.client.Services(api.NamespaceAll).Watch(options)
 			},
 		},
 		&api.Service{},
@@ -113,10 +104,10 @@ func NewNetworkController(client *client.Client, provider networkprovider.Interf
 	e.networkStore.Store, e.networkController = framework.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func() (runtime.Object, error) {
-				return e.client.Networks().List(labels.Everything(), fields.Everything())
+				return e.client.Networks().List(unversioned.ListOptions{})
 			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return e.client.Networks().Watch(labels.Everything(), fields.Everything(), options)
+			WatchFunc: func(options unversioned.ListOptions) (watch.Interface, error) {
+				return e.client.Networks().Watch(unversioned.ListOptions{})
 			},
 		},
 		&api.Network{},
@@ -131,10 +122,10 @@ func NewNetworkController(client *client.Client, provider networkprovider.Interf
 	e.endpointStore.Store, e.endpointController = framework.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func() (runtime.Object, error) {
-				return e.client.Endpoints(api.NamespaceAll).List(labels.Everything(), fields.Everything())
+				return e.client.Endpoints(api.NamespaceAll).List(unversioned.ListOptions{})
 			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return e.client.Endpoints(api.NamespaceAll).Watch(labels.Everything(), fields.Everything(), options)
+			WatchFunc: func(options unversioned.ListOptions) (watch.Interface, error) {
+				return e.client.Endpoints(api.NamespaceAll).Watch(unversioned.ListOptions{})
 			},
 		},
 		&api.Endpoints{},
@@ -399,7 +390,7 @@ func (e *NetworkController) syncService(key string) {
 		service.Status.LoadBalancer = *status
 		err := e.updateService(service)
 		if err != nil {
-			e.eventRecorder.Event(service, "created loadbalancer", "created loadbalancer")
+			glog.Errorf("updateService failed: %v", err)
 		}
 	}
 }
@@ -430,10 +421,11 @@ func (e *NetworkController) getEndpointHosts(service *api.Service) ([]*networkpr
 
 	for _, svc := range service.Spec.Ports {
 		var targetPort int
-		if svc.TargetPort.String() == "" {
+		portName := svc.TargetPort
+		if portName.String() == "" {
 			targetPort = svc.Port
-		} else if svc.TargetPort.Kind == util.IntstrInt {
-			targetPort = svc.TargetPort.IntVal
+		} else if portName.Type == intstr.String {
+			targetPort = portName.IntValue()
 		}
 
 		for _, hostport := range hosts {
@@ -580,7 +572,7 @@ func (e *NetworkController) createLoadBalancer(service *api.Service) (*api.LoadB
 
 // In order to process services deleted while controller is down, fill the queue on startup
 func (e *NetworkController) startUp() {
-	svcList, err := e.client.Services(api.NamespaceAll).List(labels.Everything(), fields.Everything())
+	svcList, err := e.client.Services(api.NamespaceAll).List(unversioned.ListOptions{})
 	if err != nil {
 		glog.Errorf("Unable to list services: %v", err)
 		return
@@ -597,7 +589,7 @@ func (e *NetworkController) startUp() {
 		}
 	}
 
-	endpointList, err := e.client.Endpoints(api.NamespaceAll).List(labels.Everything(), fields.Everything())
+	endpointList, err := e.client.Endpoints(api.NamespaceAll).List(unversioned.ListOptions{})
 	if err != nil {
 		glog.Errorf("Unable to list endpoints: %v", err)
 		return

@@ -184,27 +184,9 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 	var proxier proxy.ProxyProvider
 	var endpointsHandler proxyconfig.EndpointsConfigHandler
 
-	if config.ProxyMode != proxyModeHaproxy {
-		useIptablesProxy := false
-		if mayTryIptablesProxy(config.ProxyMode, client.Nodes(), hostname) && config.ProxyMode != proxyModeHaproxy {
-			var err error
+	proxyMode := getProxyMode(config.ProxyMode, client.Nodes(), hostname, iptInterface)
 
-			// guaranteed false on error, error only necessary for debugging
-			useIptablesProxy, err = iptables.ShouldUseIptablesProxier()
-			if err != nil {
-				glog.Fatalf("Can't determine whether to use iptables proxy, using userspace proxier: %v", err)
-				config.ProxyMode = proxyModeUserspace
-			}
-		}
-
-		if useIptablesProxy {
-			config.ProxyMode = proxyModeIptables
-		} else {
-			config.ProxyMode = proxyModeUserspace
-		}
-	}
-
-	switch config.ProxyMode {
+	switch proxyMode {
 	case proxyModeIptables:
 		glog.V(2).Info("Using iptables Proxier.")
 		proxierIptables, err := iptables.NewProxier(iptInterface, execer, config.IptablesSyncPeriod, config.MasqueradeAll)
@@ -344,6 +326,8 @@ func getProxyMode(proxyMode string, client nodeGetter, hostname string, iptver i
 		return proxyModeUserspace
 	} else if proxyMode == proxyModeIptables {
 		return tryIptablesProxy(iptver)
+	} else if proxyMode == proxyModeHaproxy {
+		return proxyModeHaproxy
 	} else if proxyMode != "" {
 		glog.V(1).Infof("Flag proxy-mode=%q unknown, assuming iptables proxy", proxyMode)
 		return tryIptablesProxy(iptver)

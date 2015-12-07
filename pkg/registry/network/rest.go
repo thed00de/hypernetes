@@ -43,6 +43,10 @@ func (networkStrategy) NamespaceScoped() bool {
 	return false
 }
 
+// Canonicalize normalizes the object after validation.
+func (networkStrategy) Canonicalize(obj runtime.Object) {
+}
+
 // PrepareForCreate clears subnets if
 func (networkStrategy) PrepareForCreate(obj runtime.Object) {
 	// on create, status is Initializing

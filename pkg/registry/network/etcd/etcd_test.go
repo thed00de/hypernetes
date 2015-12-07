@@ -20,20 +20,19 @@ import (
 	"testing"
 
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/testapi"
+	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/registry/network"
 	"k8s.io/kubernetes/pkg/registry/registrytest"
 	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/storage"
-	"k8s.io/kubernetes/pkg/tools"
-	"k8s.io/kubernetes/pkg/tools/etcdtest"
-	"k8s.io/kubernetes/pkg/util"
+	"k8s.io/kubernetes/pkg/storage/etcd/etcdtest"
+	etcdtesting "k8s.io/kubernetes/pkg/storage/etcd/testing"
 )
 
-func newStorage(t *testing.T) (*REST, *tools.FakeEtcdClient) {
-	etcdStorage, fakeClient := registrytest.NewEtcdStorage(t, "")
-	storage, _ := NewREST(etcdStorage, storage.NoDecoration)
-	return storage, fakeClient
+func newStorage(t *testing.T) (*REST, *etcdtesting.EtcdTestServer) {
+	etcdStorage, server := registrytest.NewEtcdStorage(t, "")
+	storage, _ := NewREST(etcdStorage, generic.UndecoratedStorage)
+	return storage, server
 }
 
 func validNewNetwork() *api.Network {
@@ -59,8 +58,9 @@ func TestStorage(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	storage, fakeClient := newStorage(t)
-	test := registrytest.New(t, fakeClient, storage.Etcd).ClusterScope()
+	storage, server := newStorage(t)
+	defer server.Terminate(t)
+	test := registrytest.New(t, storage.Etcd).ClusterScope()
 	Network := validNewNetwork()
 	Network.ObjectMeta = api.ObjectMeta{GenerateName: "foo"}
 	test.TestCreate(
@@ -83,11 +83,12 @@ func expectNetwork(t *testing.T, out runtime.Object) (*api.Network, bool) {
 }
 
 func TestCreateSetsFields(t *testing.T) {
-	storage, fakeClient := newStorage(t)
+	storage, server := newStorage(t)
+	defer server.Terminate(t)
 	Network := validNewNetwork()
 	ctx := api.NewContext()
 	_, err := storage.Create(ctx, Network)
-	if err != fakeClient.Err {
+	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -108,22 +109,25 @@ func TestCreateSetsFields(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	storage, fakeClient := newStorage(t)
-	test := registrytest.New(t, fakeClient, storage.Etcd).ClusterScope()
+	storage, server := newStorage(t)
+	defer server.Terminate(t)
+	test := registrytest.New(t, storage.Etcd).ClusterScope()
 	test.TestGet(validNewNetwork())
 }
 
 func TestList(t *testing.T) {
-	storage, fakeClient := newStorage(t)
-	test := registrytest.New(t, fakeClient, storage.Etcd).ClusterScope()
+	storage, server := newStorage(t)
+	defer server.Terminate(t)
+	test := registrytest.New(t, storage.Etcd).ClusterScope()
 	test.TestList(validNewNetwork())
 }
 
 func TestDeleteNetwork(t *testing.T) {
-	storage, fakeClient := newStorage(t)
+	storage, server := newStorage(t)
+	defer server.Terminate(t)
 	key := etcdtest.AddPrefix("networks/foo")
 	ctx := api.NewContext()
-	now := util.Now()
+	now := unversioned.Now()
 	net := &api.Network{
 		ObjectMeta: api.ObjectMeta{
 			Name:              "foo",
@@ -140,7 +144,7 @@ func TestDeleteNetwork(t *testing.T) {
 		},
 		Status: api.NetworkStatus{Phase: api.NetworkInitializing},
 	}
-	if _, err := fakeClient.Set(key, runtime.EncodeOrDie(testapi.Default.Codec(), net), 0); err != nil {
+	if err := storage.Storage.Set(ctx, key, net, nil, 0); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if _, err := storage.Delete(ctx, "foo", nil); err != nil {

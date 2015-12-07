@@ -558,6 +558,10 @@ func (f *stubVolume) SetUpAt(dir string) error {
 	return nil
 }
 
+func (f *stubVolume) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 func TestMakeVolumeMounts(t *testing.T) {
 	container := api.Container{
 		VolumeMounts: []api.VolumeMount{

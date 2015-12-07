@@ -448,9 +448,6 @@ func NewMainKubelet(
 			return nil, err
 		}
 		klet.containerRuntime = hyperRuntime
-
-		// No Docker daemon to put in a container.
-		dockerDaemonContainer = ""
 	default:
 		return nil, fmt.Errorf("unsupported container runtime %q specified", containerRuntime)
 	}

@@ -627,3 +627,7 @@ func (r *mockRecycler) Recycle() error {
 	// return nil means recycle passed
 	return nil
 }
+
+func (r *mockRecycler) GetMetaData() map[string]interface{} {
+	return nil
+}

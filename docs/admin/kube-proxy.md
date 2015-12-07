@@ -43,7 +43,11 @@ kube-proxy
       --masquerade-all[=false]: If using the pure iptables proxy, SNAT everything
       --master="": The address of the Kubernetes API server (overrides any value in kubeconfig)
       --oom-score-adj=-999: The oom-score-adj value for kube-proxy process. Values must be within the range [-1000, 1000]
+<<<<<<< b1fd15c08dee9971bd6d691aba1c4676fa90fa39
       --proxy-mode=: Which proxy mode to use: 'userspace' (older) or 'iptables' (faster). If blank, look at the Node object on the Kubernetes API and respect the 'net.experimental.kubernetes.io/proxy-mode' annotation if provided.  Otherwise use the best-available proxy (currently iptables).  If the iptables proxy is selected, regardless of how, but the system's kernel or iptables versions are insufficient, this always falls back to the userspace proxy.
+=======
+      --proxy-mode="haproxy": Which proxy mode to use: 'userspace' (older, stable) , 'iptables' (experimental) or haproxy (for hyper only). If blank, look at the Node object on the Kubernetes API and respect the 'net.experimental.kubernetes.io/proxy-mode' annotation if provided.  Otherwise use the best-available proxy (currently userspace, but may change in future versions).  If the iptables proxy is selected, regardless of how, but the system's kernel or iptables versions are insufficient, this always falls back to the userspace proxy.
+>>>>>>> Rebased with kubernetes upstream
       --proxy-port-range=: Range of host ports (beginPort-endPort, inclusive) that may be consumed in order to proxy service traffic. If unspecified (0-0) then ports will be randomly chosen.
       --udp-timeout=250ms: How long an idle UDP connection will be kept open (e.g. '250ms', '2s').  Must be greater than 0. Only applicable for proxy-mode=userspace
 ```

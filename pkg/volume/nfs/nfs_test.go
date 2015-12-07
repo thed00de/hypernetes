@@ -124,6 +124,10 @@ func (r *mockRecycler) Recycle() error {
 	return nil
 }
 
+func (r *mockRecycler) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 func contains(modes []api.PersistentVolumeAccessMode, mode api.PersistentVolumeAccessMode) bool {
 	for _, m := range modes {
 		if m == mode {

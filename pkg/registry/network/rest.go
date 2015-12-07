@@ -117,7 +117,6 @@ func MatchNetwork(label labels.Selector, field fields.Selector) generic.Matcher 
 }
 
 // NetworkToSelectableFields returns a label set that represents the object
-// TODO: fields are not labels, and the validation rules for them do not apply.
 func NetworkToSelectableFields(network *api.Network) labels.Set {
 	return labels.Set{
 		"name":         network.Name,

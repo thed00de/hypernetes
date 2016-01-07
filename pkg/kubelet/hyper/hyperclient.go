@@ -666,3 +666,22 @@ func (client *HyperClient) UpdateServices(podId string, services []HyperService)
 
 	return nil
 }
+
+func (client *HyperClient) UpdatePodLabels(podId string, labels map[string]string) error {
+	v := url.Values{}
+	v.Set("podId", podId)
+	v.Set("override", "true")
+
+	labelsData, err := json.Marshal(labels)
+	if err != nil {
+		return err
+	}
+	v.Set("labels", string(labelsData))
+
+	_, _, err = client.call("POST", "/pod/labels?"+v.Encode(), "", nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

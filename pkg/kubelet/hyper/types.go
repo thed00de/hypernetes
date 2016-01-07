@@ -80,6 +80,7 @@ type ContainerStatus struct {
 type Container struct {
 	Name            string           `json:"name"`
 	ContainerID     string           `json:"containerID"`
+	PodID           string           `json:"podID"`
 	Image           string           `json:"image"`
 	ImageID         string           `json:"imageID"`
 	Commands        []string         `json:"commands"`
@@ -109,8 +110,11 @@ type PodVolume struct {
 }
 
 type PodSpec struct {
-	Volumes    []PodVolume `json:"volumes"`
-	Containers []Container `json:"containers"`
+	Volumes    []PodVolume       `json:"volumes"`
+	Containers []Container       `json:"containers"`
+	Labels     map[string]string `json:"labels"`
+	Vcpu       int               `json:"vcpu"`
+	Memory     int               `json:"memory"`
 }
 
 type PodStatus struct {

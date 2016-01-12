@@ -1031,7 +1031,7 @@ func printNamespace(item *api.Namespace, w io.Writer, options printOptions) erro
 		return fmt.Errorf("namespace is not namespaced")
 	}
 
-	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s", item.Name, labels.FormatLabels(item.Labels), item.Spec.Network, item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {
+	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s", item.Name, labels.FormatLabels(item.Labels), item.Spec.Network, item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {
 		return err
 	}
 	_, err := fmt.Fprint(w, appendLabels(item.Labels, options.columnLabels))

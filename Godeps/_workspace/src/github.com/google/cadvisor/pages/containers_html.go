@@ -52,6 +52,11 @@ const containersHtmlTemplate = `
         <h4><a href="../docker">Docker Containers</a></h4>
       </div>
       {{end}}
+      {{if .IsRoot}}
+      <div class="col-sm-12">
+        <h4><a href="../hyper">Hyper Containers</a></h4>
+      </div>
+      {{end}}
       {{if .Subcontainers}}
       <div class="col-sm-12">
 	<div class="page-header">

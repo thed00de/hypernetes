@@ -40,7 +40,7 @@ import (
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	proberesults "k8s.io/kubernetes/pkg/kubelet/prober/results"
-	"k8s.io/kubernetes/pkg/kubelet/util/format"
+	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util"
 )
@@ -73,12 +73,6 @@ type runtime struct {
 }
 
 var _ kubecontainer.Runtime = &runtime{}
-
-type sortByRestartCount []*kubecontainer.ContainerStatus
-
-func (s sortByRestartCount) Len() int           { return len(s) }
-func (s sortByRestartCount) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s sortByRestartCount) Less(i, j int) bool { return s[i].RestartCount < s[j].RestartCount }
 
 type volumeGetter interface {
 	GetVolumes(podUID types.UID) (kubecontainer.VolumeMap, bool)
@@ -195,16 +189,19 @@ func (r *runtime) buildContainerID(hyperContainerID string) string {
 	return typeHyper + "://" + hyperContainerID
 }
 
-func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID string) api.ContainerStatus {
-	var status api.ContainerStatus
+func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID string) *kubecontainer.ContainerStatus {
+	status := &kubecontainer.ContainerStatus{}
 
 	_, _, _, containerName, _, err := r.parseHyperContainerFullName(container.Name)
 	if err != nil {
 		return status
 	}
 
-	status.Name = strings.Split(containerName, ".")[0]
-	status.ContainerID = r.buildContainerID(container.ContainerID)
+	status.Name = containerName
+	status.ID = kubecontainer.ContainerID{
+		Type: typeHyper,
+		ID:   r.buildContainerID(container.ContainerID),
+	}
 	status.Image = image
 	status.ImageID = imageID
 
@@ -216,17 +213,10 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID s
 			return status
 		}
 
-		status.State = api.ContainerState{
-			Running: &api.ContainerStateRunning{
-				StartedAt: unversioned.NewTime(runningStartedAt),
-			},
-		}
+		status.State = kubecontainer.ContainerStateRunning
+		status.StartedAt = runningStartedAt
 	case StatusPending:
-		status.State = api.ContainerState{
-			Waiting: &api.ContainerStateWaiting{
-				Reason: container.Waiting.Reason,
-			},
-		}
+		status.State = kubecontainer.ContainerStateUnknown
 	case StatusFailed, StatusSuccess:
 		terminatedStartedAt, err := parseTimeString(container.Terminated.StartedAt)
 		if err != nil {
@@ -240,15 +230,12 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID s
 			return status
 		}
 
-		status.State = api.ContainerState{
-			Terminated: &api.ContainerStateTerminated{
-				ExitCode:   container.Terminated.ExitCode,
-				Reason:     container.Terminated.Reason,
-				Message:    container.Terminated.Message,
-				StartedAt:  unversioned.NewTime(terminatedStartedAt),
-				FinishedAt: unversioned.NewTime(terminatedFinishedAt),
-			},
-		}
+		status.State = kubecontainer.ContainerStateExited
+		status.Reason = container.Terminated.Reason
+		status.FinishedAt = terminatedFinishedAt
+		status.StartedAt = terminatedStartedAt
+		status.Message = container.Terminated.Message
+		status.ExitCode = container.Terminated.ExitCode
 	default:
 		glog.Warningf("Hyper: Unknown pod state: %q", container.Phase)
 	}
@@ -320,6 +307,8 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 					switch cstatus.Phase {
 					case StatusRunning:
 						container.State = kubecontainer.ContainerStateRunning
+					case StatusPending:
+						container.State = kubecontainer.ContainerStateUnknown
 					default:
 						container.State = kubecontainer.ContainerStateExited
 					}
@@ -812,7 +801,7 @@ func (r *runtime) GetPodStatus(uid types.UID, name, namespace string) (*kubecont
 
 	glog.V(5).Infof("Hyper: get pod %s status %s", podFullName, status)
 
-	return &status, nil
+	return status, nil
 }
 
 // PullImage pulls an image from the network to local storage using the supplied
@@ -1002,13 +991,8 @@ func (r *runtime) AttachContainer(containerID kubecontainer.ContainerID, stdin i
 // TODO(yifan): Delete this function when the logic is moved to kubelet.
 func (r *runtime) ConvertPodStatusToAPIPodStatus(pod *api.Pod, status *kubecontainer.PodStatus) (*api.PodStatus, error) {
 	apiPodStatus := &api.PodStatus{
-		// TODO(yifan): Add reason and message field.
 		PodIP: status.IP,
 	}
-
-	// Sort in the reverse order of the restart count because the
-	// lastest one will have the largest restart count.
-	sort.Sort(sort.Reverse(sortByRestartCount(status.ContainerStatuses)))
 
 	containerStatuses := make(map[string]*api.ContainerStatus)
 	for _, c := range status.ContainerStatuses {
@@ -1021,14 +1005,15 @@ func (r *runtime) ConvertPodStatusToAPIPodStatus(pod *api.Pod, status *kubeconta
 		case kubecontainer.ContainerStateExited:
 			if pod.Spec.RestartPolicy == api.RestartPolicyAlways ||
 				pod.Spec.RestartPolicy == api.RestartPolicyOnFailure && c.ExitCode != 0 {
-				// TODO(yifan): Add reason and message.
 				st.Waiting = &api.ContainerStateWaiting{}
 				break
 			}
 			st.Terminated = &api.ContainerStateTerminated{
-				ExitCode:  c.ExitCode,
-				StartedAt: unversioned.NewTime(c.StartedAt),
-				// TODO(yifan): Add reason, message, finishedAt, signal.
+				ExitCode:    c.ExitCode,
+				StartedAt:   unversioned.NewTime(c.StartedAt),
+				Reason:      c.Reason,
+				Message:     c.Message,
+				FinishedAt:  unversioned.NewTime(c.FinishedAt),
 				ContainerID: c.ID.String(),
 			}
 		default:
@@ -1070,6 +1055,8 @@ func (r *runtime) ConvertPodStatusToAPIPodStatus(pod *api.Pod, status *kubeconta
 		}
 		apiPodStatus.ContainerStatuses = append(apiPodStatus.ContainerStatuses, *cs)
 	}
+
+	sort.Sort(kubetypes.SortedContainerStatuses(apiPodStatus.ContainerStatuses))
 
 	return apiPodStatus, nil
 }

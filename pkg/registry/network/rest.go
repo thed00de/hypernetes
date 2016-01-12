@@ -84,10 +84,6 @@ func (networkStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) 
 	return append(errorList, validation.ValidateNetworkUpdate(obj.(*api.Network), old.(*api.Network))...)
 }
 
-// Canonicalize normalizes the object after validation.
-func (networkStrategy) Canonicalize(obj runtime.Object) {
-}
-
 func (networkStrategy) AllowUnconditionalUpdate() bool {
 	return true
 }

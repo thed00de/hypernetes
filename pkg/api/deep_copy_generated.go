@@ -1341,9 +1341,10 @@ func deepCopy_api_NetworkList(in NetworkList, out *NetworkList, c *conversion.Cl
 		return err
 	}
 	if in.Items != nil {
-		out.Items = make([]Network, len(in.Items))
-		for i := range in.Items {
-			if err := deepCopy_api_Network(in.Items[i], &out.Items[i], c); err != nil {
+		in, out := in.Items, &out.Items
+		*out = make([]Network, len(in))
+		for i := range in {
+			if err := deepCopy_api_Network(in[i], &(*out)[i], c); err != nil {
 				return err
 			}
 		}
@@ -1355,13 +1356,14 @@ func deepCopy_api_NetworkList(in NetworkList, out *NetworkList, c *conversion.Cl
 
 func deepCopy_api_NetworkSpec(in NetworkSpec, out *NetworkSpec, c *conversion.Cloner) error {
 	if in.Subnets != nil {
-		out.Subnets = make(map[string]Subnet)
-		for key, val := range in.Subnets {
+		in, out := in.Subnets, &out.Subnets
+		*out = make(map[string]Subnet)
+		for key, val := range in {
 			newVal := new(Subnet)
 			if err := deepCopy_api_Subnet(val, newVal, c); err != nil {
 				return err
 			}
-			out.Subnets[key] = *newVal
+			(*out)[key] = *newVal
 		}
 	} else {
 		out.Subnets = nil

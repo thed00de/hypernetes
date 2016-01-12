@@ -22,7 +22,6 @@ import (
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/errors"
-	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/client/cache"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/controller/framework"
@@ -83,10 +82,10 @@ func NewNetworkController(client *client.Client, provider networkprovider.Interf
 
 	e.serviceStore.Store, e.serviceController = framework.NewInformer(
 		&cache.ListWatch{
-			ListFunc: func() (runtime.Object, error) {
-				return e.client.Services(api.NamespaceAll).List(unversioned.ListOptions{})
+			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
+				return e.client.Services(api.NamespaceAll).List(options)
 			},
-			WatchFunc: func(options unversioned.ListOptions) (watch.Interface, error) {
+			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
 				return e.client.Services(api.NamespaceAll).Watch(options)
 			},
 		},
@@ -103,11 +102,11 @@ func NewNetworkController(client *client.Client, provider networkprovider.Interf
 
 	e.networkStore.Store, e.networkController = framework.NewInformer(
 		&cache.ListWatch{
-			ListFunc: func() (runtime.Object, error) {
-				return e.client.Networks().List(unversioned.ListOptions{})
+			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
+				return e.client.Networks().List(options)
 			},
-			WatchFunc: func(options unversioned.ListOptions) (watch.Interface, error) {
-				return e.client.Networks().Watch(unversioned.ListOptions{})
+			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
+				return e.client.Networks().Watch(options)
 			},
 		},
 		&api.Network{},
@@ -121,11 +120,11 @@ func NewNetworkController(client *client.Client, provider networkprovider.Interf
 
 	e.endpointStore.Store, e.endpointController = framework.NewInformer(
 		&cache.ListWatch{
-			ListFunc: func() (runtime.Object, error) {
-				return e.client.Endpoints(api.NamespaceAll).List(unversioned.ListOptions{})
+			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
+				return e.client.Endpoints(api.NamespaceAll).List(options)
 			},
-			WatchFunc: func(options unversioned.ListOptions) (watch.Interface, error) {
-				return e.client.Endpoints(api.NamespaceAll).Watch(unversioned.ListOptions{})
+			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
+				return e.client.Endpoints(api.NamespaceAll).Watch(options)
 			},
 		},
 		&api.Endpoints{},
@@ -572,7 +571,7 @@ func (e *NetworkController) createLoadBalancer(service *api.Service) (*api.LoadB
 
 // In order to process services deleted while controller is down, fill the queue on startup
 func (e *NetworkController) startUp() {
-	svcList, err := e.client.Services(api.NamespaceAll).List(unversioned.ListOptions{})
+	svcList, err := e.client.Services(api.NamespaceAll).List(api.ListOptions{})
 	if err != nil {
 		glog.Errorf("Unable to list services: %v", err)
 		return
@@ -589,7 +588,7 @@ func (e *NetworkController) startUp() {
 		}
 	}
 
-	endpointList, err := e.client.Endpoints(api.NamespaceAll).List(unversioned.ListOptions{})
+	endpointList, err := e.client.Endpoints(api.NamespaceAll).List(api.ListOptions{})
 	if err != nil {
 		glog.Errorf("Unable to list endpoints: %v", err)
 		return

@@ -61,6 +61,7 @@ cluster/rackspace/util.sh:    local node_ip=$(nova show --minimal ${NODE_NAMES[$
 cluster/saltbase/salt/kube-addons/kube-addons.sh:# Create admission_control objects if defined before any other addon services. If the limits
 cluster/saltbase/salt/kube-admission-controls/init.sls:{% if 'LimitRanger' in pillar.get('admission_control', '') %}
 cluster/saltbase/salt/kube-apiserver/kube-apiserver.manifest:{% set params = address + " " + etcd_servers + " " + etcd_servers_overrides + " " + cloud_provider + " " + cloud_config + " " + runtime_config + " " + admission_control + " " + service_cluster_ip_range + " " + client_ca_file + " " + basic_auth_file + " " + min_request_timeout -%}
+cluster/saltbase/salt/kube-controller-manager/kube-controller-manager.manifest:{% if pillar.get('network_provider', '').lower() == 'flannel' %}
 cluster/saltbase/salt/kube-controller-manager/kube-controller-manager.manifest:{% set params = "--master=127.0.0.1:8080" + " " + cluster_name + " " + cluster_cidr + " " + allocate_node_cidrs + " " + terminated_pod_gc + " " + cloud_provider  + " " + cloud_config + " " + service_account_key + " " + log_level + " " + root_ca_file -%}
 cluster/saltbase/salt/kube-proxy/kube-proxy.manifest:  {% set api_servers_with_port = api_servers + ":6443" -%}
 cluster/saltbase/salt/kube-proxy/kube-proxy.manifest:  {% set api_servers_with_port = api_servers -%}
@@ -74,6 +75,10 @@ cluster/saltbase/salt/opencontrail-networking-master/init.sls:      - 'SERVICE_C
 cluster/saltbase/salt/opencontrail-networking-minion/init.sls:      - 'SERVICE_CLUSTER_IP_RANGE': '{{ pillar.get('service_cluster_ip_range') }}'
 cluster/saltbase/salt/supervisor/kubelet-checker.sh:	{% set kubelet_port = pillar['kubelet_port'] -%}
 cluster/saltbase/salt/supervisor/supervisor_watcher.sh:# Apply oom_score_adj: -901 to processes
+cluster/saltbase/salt/top.sls:{% if pillar.get('network_provider', '').lower() == 'flannel' %}
+cluster/saltbase/salt/top.sls:{% if pillar.get('network_provider', '').lower() == 'flannel' %}
+cluster/saltbase/salt/top.sls:{% if pillar.get('network_provider', '').lower() == 'opencontrail' %}
+cluster/saltbase/salt/top.sls:{% if pillar.get('network_provider', '').lower() == 'opencontrail' %}
 cluster/ubuntu/util.sh:  local node_ip=${1}
 cluster/vagrant/provision-utils.sh:  api_servers: '$(echo "$MASTER_IP" | sed -e "s/'/''/g")'
 cluster/vagrant/provision-utils.sh:  node_ip: '$(echo "$MASTER_IP" | sed -e "s/'/''/g")'

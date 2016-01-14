@@ -44,6 +44,10 @@ func (c *Fake) DockerContainer(name string, req *cadvisorapi.ContainerInfoReques
 	return cadvisorapi.ContainerInfo{}, nil
 }
 
+func (c *Fake) HyperContainer(name string, req *cadvisorapi.ContainerInfoRequest) (cadvisorapi.ContainerInfo, error) {
+	return cadvisorapi.ContainerInfo{}, nil
+}
+
 func (c *Fake) MachineInfo() (*cadvisorapi.MachineInfo, error) {
 	return new(cadvisorapi.MachineInfo), nil
 }

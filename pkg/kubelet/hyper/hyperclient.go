@@ -74,6 +74,7 @@ const (
 	KEY_COMMAND        = "command"
 	KEY_CONTAINER_ARGS = "args"
 	KEY_WORKDIR        = "workdir"
+	KEY_LABELS         = "labels"
 	VOLUME_TYPE_VFS    = "vfs"
 	TYPE_CONTAINER     = "container"
 	TYPE_POD           = "pod"

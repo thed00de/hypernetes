@@ -1092,6 +1092,7 @@ func (s *Server) serveStats(w http.ResponseWriter, req *http.Request) {
 	// /stats/                                              : Root container stats
 	// /stats/container/                                    : Non-Kubernetes container stats (returns a map)
 	// /stats/<pod name>/<container name>                   : Stats for Kubernetes pod/container
+	// /stats/pod/<namespace>/<pod name>/					: Stats for Kubernetes namespace/pod
 	// /stats/<namespace>/<pod name>/<uid>/<container name> : Stats for Kubernetes namespace/pod/uid/container
 	components := strings.Split(strings.TrimPrefix(path.Clean(req.URL.Path), "/"), "/")
 	var stats interface{}
@@ -1132,6 +1133,17 @@ func (s *Server) serveStats(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		stats, err = s.host.GetContainerInfo(kubecontainer.GetPodFullName(pod), "", components[2], &cadvisorRequest)
+	case 4:
+		if components[1] != "pod" {
+			http.Error(w, fmt.Sprintf("unknown stats request type %q", components[1]), http.StatusNotFound)
+			return
+		}
+		pod, ok := s.host.GetPodByName(components[2], components[3])
+		if !ok {
+			http.Error(w, "Pod does not exist", http.StatusNotFound)
+			return
+		}
+		stats, err = s.host.GetContainerInfo(kubecontainer.GetPodFullName(pod), "", "", &cadvisorRequest)
 	case 5:
 		pod, ok := s.host.GetPodByName(components[1], components[2])
 		if !ok {

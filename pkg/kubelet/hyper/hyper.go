@@ -235,10 +235,6 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID s
 	return status
 }
 
-func (r *runtime) buildHyperPodFullName(uid, name, namespace string) string {
-	return fmt.Sprintf("%s_%s_%s_%s", hyperPodNamePrefix, uid, name, namespace)
-}
-
 func (r *runtime) buildHyperContainerFullName(uid, podName, namespace, containerName string, container api.Container) string {
 	return fmt.Sprintf("%s_%s_%s_%s_%s_%s",
 		hyperContainerNamePrefix,
@@ -247,14 +243,6 @@ func (r *runtime) buildHyperContainerFullName(uid, podName, namespace, container
 		namespace,
 		containerName,
 		strconv.FormatUint(kubecontainer.HashContainer(&container), 16))
-}
-
-func (r *runtime) parseHyperPodFullName(podFullName string) (string, string, string, error) {
-	parts := strings.Split(podFullName, "_")
-	if len(parts) != 4 {
-		return "", "", "", fmt.Errorf("failed to parse the pod full name %q", podFullName)
-	}
-	return parts[1], parts[2], parts[3], nil
 }
 
 func (r *runtime) parseHyperContainerFullName(containerName string) (string, string, string, string, string, error) {
@@ -279,7 +267,8 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 		var pod kubecontainer.Pod
 		var containers []*kubecontainer.Container
 
-		podID, podName, podNamespace, err := r.parseHyperPodFullName(podInfo.PodName)
+		podID := podInfo.PodInfo.Spec.Labels["UID"]
+		podName, podNamespace, err := kubecontainer.ParsePodFullName(podInfo.PodName)
 		if err != nil {
 			glog.V(5).Infof("Hyper: pod %s is not managed by kubelet", podInfo.PodName)
 			continue
@@ -531,7 +520,8 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 	glog.V(5).Infof("Hyper: pod limit vcpu=%v mem=%vMiB", podResource[KEY_VCPU], podResource[KEY_MEMORY])
 
 	// other params required
-	specMap[KEY_ID] = r.buildHyperPodFullName(string(pod.UID), string(pod.Name), string(pod.Namespace))
+	specMap[KEY_ID] = kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
+	specMap[KEY_LABELS] = map[string]string{"UID": string(pod.UID)}
 	specMap[KEY_TTY] = true
 
 	podData, err := json.Marshal(specMap)
@@ -584,7 +574,7 @@ func (r *runtime) RunPod(pod *api.Pod, pullSecrets []api.Secret) error {
 		return err
 	}
 
-	podFullName := r.buildHyperPodFullName(string(pod.UID), string(pod.Name), string(pod.Namespace))
+	podFullName := kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
 	err = r.savePodSpec(string(podData), podFullName)
 	if err != nil {
 		glog.Errorf("Hyper: savePodSpec failed, error: %s", err)
@@ -630,7 +620,7 @@ func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 	// TODO: (random-liu) Rename podStatus to apiPodStatus, rename internalPodStatus to podStatus, and use new pod status as much as possible,
 	// we may stop using apiPodStatus someday.
 	runningPod := kubecontainer.ConvertPodStatusToRunningPod(internalPodStatus)
-	podFullName := r.buildHyperPodFullName(string(pod.UID), string(pod.Name), string(pod.Namespace))
+	podFullName := kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
 	if len(runningPod.Containers) == 0 {
 		glog.V(4).Infof("Pod %q is not running, will start it", podFullName)
 		return r.RunPod(pod, pullSecrets)
@@ -700,7 +690,7 @@ func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 
 	var podID string
 	namespace := runningPod.Namespace
-	podName := r.buildHyperPodFullName(string(runningPod.ID), runningPod.Name, runningPod.Namespace)
+	podName := kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
 	glog.V(4).Infof("Hyper: killing pod %q.", podName)
 
 	podInfos, err := r.hyperClient.ListPods()
@@ -770,7 +760,7 @@ func (r *runtime) GetPodStatus(uid types.UID, name, namespace string) (*kubecont
 		return nil, err
 	}
 
-	podFullName := r.buildHyperPodFullName(string(uid), name, namespace)
+	podFullName := kubecontainer.BuildPodFullName(name, namespace)
 	for _, podInfo := range podInfos {
 		if podInfo.PodName != podFullName {
 			continue

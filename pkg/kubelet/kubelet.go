@@ -3520,23 +3520,40 @@ func (kl *Kubelet) ResyncInterval() time.Duration {
 
 // GetContainerInfo returns stats (from Cadvisor) for a container.
 func (kl *Kubelet) GetContainerInfo(podFullName string, podUID types.UID, containerName string, req *cadvisorapi.ContainerInfoRequest) (*cadvisorapi.ContainerInfo, error) {
-
+	cadvisorID := podFullName
 	podUID = kl.podManager.TranslatePodUID(podUID)
-
 	pods, err := kl.runtimeCache.GetPods()
 	if err != nil {
 		return nil, err
 	}
 	pod := kubecontainer.Pods(pods).FindPod(podFullName, podUID)
-	container := pod.FindContainerByName(containerName)
-	if container == nil {
-		return nil, kubecontainer.ErrContainerNotFound
+
+	// Get container stats
+	if len(containerName) > 0 {
+		container := pod.FindContainerByName(containerName)
+		if container == nil {
+			return nil, kubecontainer.ErrContainerNotFound
+		}
+
+		cadvisorID = container.ID.ID
 	}
 
-	ci, err := kl.cadvisor.DockerContainer(container.ID.ID, req)
+	var ci cadvisorapi.ContainerInfo
+	switch kl.containerRuntime.Type() {
+	case "docker":
+		ci, err = kl.cadvisor.DockerContainer(cadvisorID, req)
+	case "hyper":
+		// TODO(feisky): Hyper container stats is not supported
+		cadvisorID = podFullName
+		ci, err = kl.cadvisor.HyperContainer(cadvisorID, req)
+	default:
+		err = fmt.Errorf("Container runtime %v not supported", kl.containerRuntime.Type())
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &ci, nil
 }
 

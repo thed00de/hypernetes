@@ -698,7 +698,7 @@ func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 
 	var podID string
 	namespace := runningPod.Namespace
-	podName := kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
+	podName := kubecontainer.BuildPodFullName(runningPod.Name, runningPod.Namespace)
 	glog.V(4).Infof("Hyper: killing pod %q.", podName)
 
 	podInfos, err := r.hyperClient.ListPods()

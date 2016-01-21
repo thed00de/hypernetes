@@ -29,6 +29,7 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	kubeclient "k8s.io/kubernetes/pkg/client/unversioned"
+	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/hyper"
 	"k8s.io/kubernetes/pkg/proxy"
 	"k8s.io/kubernetes/pkg/types"
@@ -348,14 +349,6 @@ func flattenValidEndpoints(endpoints []hostPortPair) []string {
 	return result
 }
 
-func (proxier *Proxier) parseHyperPodFullName(podFullName string) (string, string, string, error) {
-	parts := strings.Split(podFullName, "_")
-	if len(parts) != 4 {
-		return "", "", "", fmt.Errorf("failed to parse the pod full name %q", podFullName)
-	}
-	return parts[1], parts[2], parts[3], nil
-}
-
 // This is where all of haproxy-setting calls happen.
 // assumes proxier.mu is held
 func (proxier *Proxier) syncProxyRules() {
@@ -375,7 +368,7 @@ func (proxier *Proxier) syncProxyRules() {
 
 	// setup services with pod's same namespace for each pod
 	for _, podInfo := range podList {
-		_, _, podNamespace, err := proxier.parseHyperPodFullName(podInfo.PodName)
+		_, podNamespace, err := kubecontainer.ParsePodFullName(podInfo.PodName)
 		if err != nil {
 			glog.Warningf("Pod %s is not managed by kubernetes", podInfo.PodName)
 			continue

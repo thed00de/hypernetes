@@ -185,10 +185,6 @@ func parseTimeString(str string) (time.Time, error) {
 	return t, nil
 }
 
-func (r *runtime) buildContainerID(hyperContainerID string) string {
-	return typeHyper + "://" + hyperContainerID
-}
-
 func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID string) *kubecontainer.ContainerStatus {
 	status := &kubecontainer.ContainerStatus{}
 
@@ -200,7 +196,7 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID s
 	status.Name = containerName
 	status.ID = kubecontainer.ContainerID{
 		Type: typeHyper,
-		ID:   r.buildContainerID(container.ContainerID),
+		ID:   container.ContainerID,
 	}
 	status.Image = image
 	status.ImageID = imageID

@@ -188,7 +188,7 @@ func parseTimeString(str string) (time.Time, error) {
 func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID string) *kubecontainer.ContainerStatus {
 	status := &kubecontainer.ContainerStatus{}
 
-	_, _, _, containerName, _, err := r.parseHyperContainerFullName(container.Name)
+	_, _, _, containerName, restartCount, _, err := r.parseHyperContainerFullName(container.Name)
 	if err != nil {
 		return status
 	}
@@ -200,6 +200,7 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID s
 	}
 	status.Image = image
 	status.ImageID = imageID
+	status.RestartCount = restartCount
 
 	switch container.Phase {
 	case StatusRunning:
@@ -211,9 +212,7 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID s
 
 		status.State = kubecontainer.ContainerStateRunning
 		status.StartedAt = runningStartedAt
-	case StatusPending:
-		status.State = kubecontainer.ContainerStateUnknown
-	case StatusFailed, StatusSuccess:
+	default:
 		terminatedStartedAt, err := parseTimeString(container.Terminated.StartedAt)
 		if err != nil {
 			glog.Errorf("Hyper: can't parse terminatedStartedAt %s", container.Terminated.StartedAt)
@@ -232,29 +231,33 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID s
 		status.StartedAt = terminatedStartedAt
 		status.Message = container.Terminated.Message
 		status.ExitCode = container.Terminated.ExitCode
-	default:
-		glog.Warningf("Hyper: Unknown pod state: %q", container.Phase)
 	}
 
 	return status
 }
 
-func (r *runtime) buildHyperContainerFullName(uid, podName, namespace, containerName string, container api.Container) string {
-	return fmt.Sprintf("%s_%s_%s_%s_%s_%s",
+func (r *runtime) buildHyperContainerFullName(uid, podName, namespace, containerName string, restartCount int, container api.Container) string {
+	return fmt.Sprintf("%s_%s_%s_%s_%s_%d_%s",
 		hyperContainerNamePrefix,
 		uid,
 		podName,
 		namespace,
 		containerName,
+		restartCount,
 		strconv.FormatUint(kubecontainer.HashContainer(&container), 16))
 }
 
-func (r *runtime) parseHyperContainerFullName(containerName string) (string, string, string, string, string, error) {
+func (r *runtime) parseHyperContainerFullName(containerName string) (string, string, string, string, int, string, error) {
 	parts := strings.Split(containerName, "_")
-	if len(parts) != 6 {
-		return "", "", "", "", "", fmt.Errorf("failed to parse the container full name %q", containerName)
+	if len(parts) != 7 {
+		return "", "", "", "", 0, "", fmt.Errorf("failed to parse the container full name %q", containerName)
 	}
-	return parts[1], parts[2], parts[3], parts[4], parts[5], nil
+
+	restartCount, err := strconv.Atoi(parts[5])
+	if err != nil {
+		return "", "", "", "", 0, "", fmt.Errorf("failed to parse the container full name %q", containerName)
+	}
+	return parts[1], parts[2], parts[3], parts[4], restartCount, parts[6], nil
 }
 
 // GetPods returns a list containers group by pods. The boolean parameter
@@ -292,8 +295,6 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 					switch cstatus.Phase {
 					case StatusRunning:
 						container.State = kubecontainer.ContainerStateRunning
-					case StatusPending:
-						container.State = kubecontainer.ContainerStateUnknown
 					default:
 						container.State = kubecontainer.ContainerStateExited
 					}
@@ -305,7 +306,7 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 				}
 			}
 
-			_, _, _, containerName, containerHash, err := r.parseHyperContainerFullName(cinfo.Name)
+			_, _, _, containerName, _, containerHash, err := r.parseHyperContainerFullName(cinfo.Name)
 			if err != nil {
 				glog.V(5).Infof("Hyper: container %s is not managed by kubelet", cinfo.Name)
 				continue
@@ -361,7 +362,7 @@ func (r *runtime) buildHyperPodServices(pod *api.Pod) []HyperService {
 	return services
 }
 
-func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte, error) {
+func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []api.Secret) ([]byte, error) {
 	// check and pull image
 	for _, c := range pod.Spec.Containers {
 		if err, _ := r.imagePuller.PullImage(pod, &c, pullSecrets); err != nil {
@@ -407,7 +408,7 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 
 		volumes = append(volumes, v)
 	}
-	specMap[KEY_VOLUMES] = volumes
+
 	glog.V(4).Infof("Hyper volumes: %v", volumes)
 
 	services := r.buildHyperPodServices(pod)
@@ -424,6 +425,7 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 
 	// build hyper containers spec
 	var containers []map[string]interface{}
+	var k8sHostNeeded = true
 	for _, container := range pod.Spec.Containers {
 		c := make(map[string]interface{})
 		c[KEY_NAME] = r.buildHyperContainerFullName(
@@ -431,6 +433,7 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 			string(pod.Name),
 			string(pod.Namespace),
 			container.Name,
+			restartCount,
 			container)
 		c[KEY_IMAGE] = container.Image
 		c[KEY_TTY] = container.TTY
@@ -486,6 +489,16 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 				v[KEY_VOLUME] = volume.Name
 				v[KEY_READONLY] = volume.ReadOnly
 				containerVolumes = append(containerVolumes, v)
+
+				// Setup global hosts volume
+				if volume.Name == "k8s-managed-etc-hosts" && k8sHostNeeded {
+					k8sHostNeeded = false
+					volumes = append(volumes, map[string]interface{}{
+						KEY_NAME:          volume.Name,
+						KEY_VOLUME_DRIVE:  VOLUME_TYPE_VFS,
+						KEY_VOLUME_SOURCE: volume.HostPath,
+					})
+				}
 			}
 			c[KEY_VOLUMES] = containerVolumes
 		}
@@ -493,6 +506,7 @@ func (r *runtime) buildHyperPod(pod *api.Pod, pullSecrets []api.Secret) ([]byte,
 		containers = append(containers, c)
 	}
 	specMap[KEY_CONTAINERS] = containers
+	specMap[KEY_VOLUMES] = volumes
 
 	// build hyper pod resources spec
 	var podCPULimit, podMemLimit int64
@@ -571,46 +585,70 @@ func (r *runtime) getPodSpec(podFullName string) (string, error) {
 	return string(spec), nil
 }
 
-func (r *runtime) RunPod(pod *api.Pod, pullSecrets []api.Secret) error {
-	podData, err := r.buildHyperPod(pod, pullSecrets)
+func (r *runtime) GetPodStartCount(podID string) (int, error) {
+	containers, err := r.hyperClient.ListContainers()
 	if err != nil {
-		glog.Errorf("Hyper: buildHyperPod failed, error: %s", err)
+		return 0, err
+	}
+
+	for _, c := range containers {
+		if c.podID != podID {
+			continue
+		}
+
+		_, _, _, _, restartCount, _, err := r.parseHyperContainerFullName(c.name)
+		if err != nil {
+			continue
+		}
+
+		return restartCount, nil
+	}
+
+	return 0, nil
+}
+
+func (r *runtime) RunPod(pod *api.Pod, restartCount int, pullSecrets []api.Secret) error {
+	podFullName := kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
+
+	podData, err := r.buildHyperPod(pod, restartCount, pullSecrets)
+	if err != nil {
+		glog.Errorf("Hyper: buildHyperPod failed, error: %v", err)
 		return err
 	}
 
-	podFullName := kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
 	err = r.savePodSpec(string(podData), podFullName)
 	if err != nil {
-		glog.Errorf("Hyper: savePodSpec failed, error: %s", err)
+		glog.Errorf("Hyper: savePodSpec failed, error: %v", err)
 		return err
 	}
 
 	// Setup pod's network by network plugin
 	err = r.networkPlugin.SetUpPod(pod.Namespace, podFullName, "", "hyper")
 	if err != nil {
-		glog.Errorf("Hyper: networkPlugin.SetUpPod %s failed, error: %s", pod.Name, err)
+		glog.Errorf("Hyper: networkPlugin.SetUpPod %s failed, error: %v", pod.Name, err)
 		return err
 	}
 
 	// Create and start hyper pod
 	podSpec, err := r.getPodSpec(podFullName)
 	if err != nil {
-		glog.Errorf("Hyper: create pod %s failed, error: %s", podFullName, err)
+		glog.Errorf("Hyper: create pod %s failed, error: %v", podFullName, err)
 		return err
 	}
 	result, err := r.hyperClient.CreatePod(podSpec)
 	if err != nil {
-		glog.Errorf("Hyper: create pod %s failed, error: %s", podData, err)
+		glog.Errorf("Hyper: create pod %s failed, error: %v", podData, err)
 		return err
 	}
 
 	podID := string(result["ID"].(string))
+
 	err = r.hyperClient.StartPod(podID)
 	if err != nil {
-		glog.Errorf("Hyper: start pod %s (ID:%s) failed, error: %s", pod.Name, podID, err)
+		glog.Errorf("Hyper: start pod %s (ID:%s) failed, error: %v", pod.Name, podID, err)
 		destroyErr := r.hyperClient.RemovePod(podID)
 		if destroyErr != nil {
-			glog.Errorf("Hyper: destory pod %s (ID:%s) failed: %s", pod.Name, podID, destroyErr)
+			glog.Errorf("Hyper: destory pod %s (ID:%s) failed: %v", pod.Name, podID, destroyErr)
 		}
 		return err
 	}
@@ -625,10 +663,6 @@ func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 	// we may stop using apiPodStatus someday.
 	runningPod := kubecontainer.ConvertPodStatusToRunningPod(internalPodStatus)
 	podFullName := kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
-	if len(runningPod.Containers) == 0 {
-		glog.V(4).Infof("Pod %q is not running, will start it", podFullName)
-		return r.RunPod(pod, pullSecrets)
-	}
 
 	// Add references to all containers.
 	unidentifiedContainers := make(map[kubecontainer.ContainerID]*kubecontainer.Container)
@@ -674,11 +708,25 @@ func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 	}
 
 	if restartPod {
-		if err := r.KillPod(nil, runningPod); err != nil {
-			glog.Errorf("Hyper: kill pod %s failed, error: %s", runningPod.Name, err)
-			return err
+		restartCount := 0
+		// Only kill existing pod
+		podID, err := r.hyperClient.GetPodIDByName(podFullName)
+		if err == nil && len(podID) > 0 {
+			// Update pod restart count
+			restartCount, err = r.GetPodStartCount(podID)
+			if err != nil {
+				glog.Errorf("Hyper: get pod startcount failed: %v", err)
+				return err
+			}
+			restartCount += 1
+
+			if err := r.KillPod(nil, runningPod); err != nil {
+				glog.Errorf("Hyper: kill pod %s failed, error: %s", runningPod.Name, err)
+				return err
+			}
 		}
-		if err := r.RunPod(pod, pullSecrets); err != nil {
+
+		if err := r.RunPod(pod, restartCount, pullSecrets); err != nil {
 			glog.Errorf("Hyper: run pod %s failed, error: %s", pod.Name, err)
 			return err
 		}

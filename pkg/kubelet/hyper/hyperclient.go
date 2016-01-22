@@ -316,6 +316,30 @@ func (client *HyperClient) Version() (string, error) {
 	return version.(string), nil
 }
 
+func (client *HyperClient) GetPodIDByName(podName string) (string, error) {
+	v := url.Values{}
+	v.Set(KEY_ITEM, TYPE_POD)
+	body, _, err := client.call("GET", "/list?"+v.Encode(), "", nil)
+	if err != nil {
+		return "", err
+	}
+
+	var podList map[string]interface{}
+	err = json.Unmarshal(body, &podList)
+	if err != nil {
+		return "", err
+	}
+
+	for _, pod := range podList["podData"].([]interface{}) {
+		fields := strings.Split(pod.(string), ":")
+		if fields[1] == podName {
+			return fields[0], nil
+		}
+	}
+
+	return "", nil
+}
+
 func (client *HyperClient) ListPods() ([]HyperPod, error) {
 	v := url.Values{}
 	v.Set(KEY_ITEM, TYPE_POD)

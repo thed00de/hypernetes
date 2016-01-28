@@ -185,7 +185,7 @@ func parseTimeString(str string) (time.Time, error) {
 	return t, nil
 }
 
-func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID string) *kubecontainer.ContainerStatus {
+func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID, startTime string) *kubecontainer.ContainerStatus {
 	status := &kubecontainer.ContainerStatus{}
 
 	_, _, _, containerName, restartCount, _, err := r.parseHyperContainerFullName(container.Name)
@@ -212,25 +212,54 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID s
 
 		status.State = kubecontainer.ContainerStateRunning
 		status.StartedAt = runningStartedAt
-	default:
-		terminatedStartedAt, err := parseTimeString(container.Terminated.StartedAt)
-		if err != nil {
-			glog.Errorf("Hyper: can't parse terminatedStartedAt %s", container.Terminated.StartedAt)
-			return status
+	case StatusFailed, StatusSuccess:
+		// TODO: ensure container.Terminated.StartedAt
+		if container.Terminated.StartedAt == "" {
+			status.StartedAt = time.Now().Add(-2 * time.Second)
+		} else {
+			terminatedStartedAt, err := parseTimeString(container.Terminated.StartedAt)
+			if err != nil {
+				glog.Errorf("Hyper: can't parse terminatedStartedAt %s", container.Terminated.StartedAt)
+				return status
+			}
+			status.StartedAt = terminatedStartedAt
 		}
 
-		terminatedFinishedAt, err := parseTimeString(container.Terminated.FinishedAt)
-		if err != nil {
-			glog.Errorf("Hyper: can't parse terminatedFinishedAt %s", container.Terminated.FinishedAt)
-			return status
+		// TODO: ensure container.Terminated.FinishedAt
+		if container.Terminated.FinishedAt == "" {
+			status.FinishedAt = time.Now()
+		} else {
+			terminatedFinishedAt, err := parseTimeString(container.Terminated.FinishedAt)
+			if err != nil {
+				glog.Errorf("Hyper: can't parse terminatedFinishedAt %s", container.Terminated.FinishedAt)
+				return status
+			}
+
+			status.FinishedAt = terminatedFinishedAt
 		}
 
 		status.State = kubecontainer.ContainerStateExited
 		status.Reason = container.Terminated.Reason
-		status.FinishedAt = terminatedFinishedAt
-		status.StartedAt = terminatedStartedAt
+
 		status.Message = container.Terminated.Message
 		status.ExitCode = container.Terminated.ExitCode
+	default:
+		if startTime == "" {
+			status.StartedAt = time.Now().Add(-2 * time.Second)
+		} else {
+			startedAt, err := parseTimeString(startTime)
+			if err != nil {
+				glog.Errorf("Hyper: can't parse startTime %s", container.Terminated.StartedAt)
+				return status
+			}
+
+			status.StartedAt = startedAt
+		}
+
+		status.FinishedAt = time.Now()
+		status.State = kubecontainer.ContainerStateExited
+		status.Reason = container.Waiting.Reason
+		status.ExitCode = 0
 	}
 
 	return status
@@ -273,6 +302,10 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 	for _, podInfo := range podInfos {
 		var pod kubecontainer.Pod
 		var containers []*kubecontainer.Container
+
+		if !all && podInfo.Status != StatusRunning {
+			continue
+		}
 
 		podID := podInfo.PodInfo.Spec.Labels["UID"]
 		podName, podNamespace, err := kubecontainer.ParsePodFullName(podInfo.PodName)
@@ -437,14 +470,20 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 			container)
 		c[KEY_IMAGE] = container.Image
 		c[KEY_TTY] = container.TTY
-		if len(container.Command) > 0 {
-			c[KEY_COMMAND] = container.Command
+
+		containerCommands := make([]string, 0, 1)
+		for _, cmd := range container.Command {
+			containerCommands = append(containerCommands, cmd)
 		}
+		for _, arg := range container.Args {
+			containerCommands = append(containerCommands, arg)
+		}
+		if len(containerCommands) > 0 {
+			c[KEY_COMMAND] = containerCommands
+		}
+
 		if container.WorkingDir != "" {
 			c[KEY_WORKDIR] = container.WorkingDir
-		}
-		if len(container.Args) > 0 {
-			c[KEY_CONTAINER_ARGS] = container.Args
 		}
 
 		opts, err := r.generator.GenerateRunContainerOptions(pod, &container)
@@ -758,7 +797,6 @@ func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 		}
 	}
 
-	//err = r.hyperClient.RemovePod(podID)
 	cmds := append([]string{}, "rm", podID)
 	_, err = r.runCommand(cmds...)
 	if err != nil {
@@ -827,7 +865,8 @@ func (r *runtime) GetPodStatus(uid types.UID, name, namespace string) (*kubecont
 				if container.ContainerID == containerInfo.ContainerID {
 					status.ContainerStatuses = append(
 						status.ContainerStatuses,
-						r.getContainerStatus(containerInfo, container.Image, container.ImageID))
+						r.getContainerStatus(containerInfo, container.Image, container.ImageID,
+							podInfo.PodInfo.Status.StartTime))
 				}
 			}
 		}
@@ -981,27 +1020,15 @@ func (r *runtime) PortForward(pod *kubecontainer.Pod, port uint16, stream io.Rea
 func (r *runtime) ExecInContainer(containerID kubecontainer.ContainerID, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
 	glog.V(4).Infof("Hyper: execing %s in container %s.", cmd, containerID.ID)
 
-	args := append([]string{}, "exec", "-a", containerID.ID)
-	args = append(args, cmd...)
-	command := r.buildCommand(args...)
-
-	p, err := kubecontainer.StartPty(command)
-	if err != nil {
-		return err
-	}
-	defer p.Close()
-
-	// make sure to close the stdout stream
-	defer stdout.Close()
-
-	if stdin != nil {
-		go io.Copy(p, stdin)
+	opts := ExecInContainerOptions{
+		Container:    containerID.ID,
+		Commands:     cmd,
+		InputStream:  stdin,
+		OutputStream: stdout,
+		ErrorStream:  stderr,
 	}
 
-	if stdout != nil {
-		go io.Copy(stdout, p)
-	}
-	return command.Wait()
+	return r.hyperClient.Exec(opts)
 }
 
 func (r *runtime) AttachContainer(containerID kubecontainer.ContainerID, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
@@ -1012,20 +1039,16 @@ func (r *runtime) AttachContainer(containerID kubecontainer.ContainerID, stdin i
 		InputStream:  stdin,
 		OutputStream: stdout,
 		ErrorStream:  stderr,
-		Stream:       true,
-		Logs:         true,
-		Stdin:        stdin != nil,
-		Stdout:       stdout != nil,
-		Stderr:       stderr != nil,
-		RawTerminal:  tty,
 	}
+
 	return r.hyperClient.Attach(opts)
 }
 
 // TODO(yifan): Delete this function when the logic is moved to kubelet.
 func (r *runtime) ConvertPodStatusToAPIPodStatus(pod *api.Pod, status *kubecontainer.PodStatus) (*api.PodStatus, error) {
 	apiPodStatus := &api.PodStatus{
-		PodIP: status.IP,
+		PodIP:             status.IP,
+		ContainerStatuses: make([]api.ContainerStatus, 0, 1),
 	}
 
 	containerStatuses := make(map[string]*api.ContainerStatus)
@@ -1037,11 +1060,6 @@ func (r *runtime) ConvertPodStatusToAPIPodStatus(pod *api.Pod, status *kubeconta
 				StartedAt: unversioned.NewTime(c.StartedAt),
 			}
 		case kubecontainer.ContainerStateExited:
-			if pod.Spec.RestartPolicy == api.RestartPolicyAlways ||
-				pod.Spec.RestartPolicy == api.RestartPolicyOnFailure && c.ExitCode != 0 {
-				st.Waiting = &api.ContainerStateWaiting{}
-				break
-			}
 			st.Terminated = &api.ContainerStateTerminated{
 				ExitCode:    c.ExitCode,
 				StartedAt:   unversioned.NewTime(c.StartedAt),
@@ -1052,7 +1070,6 @@ func (r *runtime) ConvertPodStatusToAPIPodStatus(pod *api.Pod, status *kubeconta
 			}
 		default:
 			// Unknown state.
-			// TODO(yifan): Add reason and message.
 			st.Waiting = &api.ContainerStateWaiting{}
 		}
 
@@ -1096,6 +1113,40 @@ func (r *runtime) ConvertPodStatusToAPIPodStatus(pod *api.Pod, status *kubeconta
 }
 
 func (r *runtime) GarbageCollect(gcPolicy kubecontainer.ContainerGCPolicy) error {
+	podInfos, err := r.hyperClient.ListPods()
+	if err != nil {
+		return err
+	}
+
+	for _, pod := range podInfos {
+		// omit not managed pods
+		_, _, err := kubecontainer.ParsePodFullName(pod.PodName)
+		if err != nil {
+			continue
+		}
+
+		// omit running pods
+		if pod.Status == StatusRunning {
+			continue
+		}
+
+		// TODO: Replace lastTime with pod exited time
+		lastTime, err := parseTimeString(pod.PodInfo.Status.StartTime)
+		if err != nil {
+			lastTime = time.Now().Add(-1 * time.Hour)
+		}
+
+		if lastTime.Before(time.Now().Add(-gcPolicy.MinAge)) {
+			cmds := append([]string{}, "rm", pod.PodID)
+			_, err = r.runCommand(cmds...)
+			if err != nil {
+				glog.Warningf("Hyper GarbageCollect: remove pod %s failed, error: %s", pod.PodID, err)
+				return err
+			}
+		}
+
+	}
+
 	return nil
 }
 

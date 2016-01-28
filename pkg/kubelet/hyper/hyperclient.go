@@ -32,7 +32,6 @@ import (
 	"strings"
 
 	"github.com/docker/docker/pkg/parsers"
-	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/golang/glog"
 	"time"
 )
@@ -72,7 +71,6 @@ const (
 	KEY_READONLY       = "readOnly"
 	KEY_VOLUME         = "volume"
 	KEY_COMMAND        = "command"
-	KEY_CONTAINER_ARGS = "args"
 	KEY_WORKDIR        = "workdir"
 	KEY_LABELS         = "labels"
 	VOLUME_TYPE_VFS    = "vfs"
@@ -91,40 +89,21 @@ type AttachToContainerOptions struct {
 	InputStream  io.Reader
 	OutputStream io.Writer
 	ErrorStream  io.Writer
+}
 
-	// Get container logs, sending it to OutputStream.
-	Logs bool
-
-	// Stream the response?
-	Stream bool
-
-	// Attach to stdin, and use InputStream.
-	Stdin bool
-
-	// Attach to stdout, and use OutputStream.
-	Stdout bool
-
-	// Attach to stderr, and use ErrorStream.
-	Stderr bool
-
-	// If set, after a successful connect, a sentinel will be sent and then the
-	// client will block on receive before continuing.
-	//
-	// It must be an unbuffered channel. Using a buffered channel can lead
-	// to unexpected behavior.
-	Success chan struct{}
-
-	// Use raw terminal? Usually true when the container contains a TTY.
-	RawTerminal bool `qs:"-"`
+type ExecInContainerOptions struct {
+	Container    string
+	InputStream  io.Reader
+	OutputStream io.Writer
+	ErrorStream  io.Writer
+	Commands     []string
 }
 
 type hijackOptions struct {
-	success        chan struct{}
-	setRawTerminal bool
-	in             io.Reader
-	stdout         io.Writer
-	stderr         io.Writer
-	data           interface{}
+	in     io.Reader
+	stdout io.Writer
+	stderr io.Writer
+	data   interface{}
 }
 
 func NewHyperClient() *HyperClient {
@@ -585,37 +564,35 @@ func (c *HyperClient) hijack(method, path string, hijackOptions hijackOptions) e
 
 	clientconn := httputil.NewClientConn(dial, nil)
 	defer clientconn.Close()
+
 	clientconn.Do(req)
-	if hijackOptions.success != nil {
-		hijackOptions.success <- struct{}{}
-		<-hijackOptions.success
-	}
+
 	rwc, br := clientconn.Hijack()
 	defer rwc.Close()
+
 	errChanOut := make(chan error, 1)
 	errChanIn := make(chan error, 1)
 	exit := make(chan bool)
+
 	go func() {
 		defer close(exit)
 		defer close(errChanOut)
-		var err error
-		if hijackOptions.setRawTerminal {
-			// When TTY is ON, use regular copy
-			_, err = io.Copy(hijackOptions.stdout, br)
-		} else {
-			_, err = stdcopy.StdCopy(hijackOptions.stdout, hijackOptions.stderr, br)
-		}
+		_, err := io.Copy(hijackOptions.stdout, br)
 		errChanOut <- err
 	}()
+
 	go func() {
 		if hijackOptions.in != nil {
 			_, err := io.Copy(rwc, hijackOptions.in)
+
+			rwc.(interface {
+				CloseWrite() error
+			}).CloseWrite()
+
 			errChanIn <- err
 		}
-		rwc.(interface {
-			CloseWrite() error
-		}).CloseWrite()
 	}()
+
 	<-exit
 	select {
 	case err = <-errChanIn:
@@ -635,11 +612,31 @@ func (client *HyperClient) Attach(opts AttachToContainerOptions) error {
 	v.Set(KEY_VALUE, opts.Container)
 	path := "/attach?" + v.Encode()
 	return client.hijack("POST", path, hijackOptions{
-		success:        opts.Success,
-		setRawTerminal: opts.RawTerminal,
-		in:             opts.InputStream,
-		stdout:         opts.OutputStream,
-		stderr:         opts.ErrorStream,
+		in:     opts.InputStream,
+		stdout: opts.OutputStream,
+		stderr: opts.ErrorStream,
+	})
+}
+
+func (client *HyperClient) Exec(opts ExecInContainerOptions) error {
+	if opts.Container == "" {
+		return fmt.Errorf("No Such Container %s", opts.Container)
+	}
+
+	command, err := json.Marshal(opts.Commands)
+	if err != nil {
+		return err
+	}
+
+	v := url.Values{}
+	v.Set(KEY_TYPE, TYPE_CONTAINER)
+	v.Set(KEY_VALUE, opts.Container)
+	v.Set(KEY_COMMAND, string(command))
+	path := "/exec?" + v.Encode()
+	return client.hijack("POST", path, hijackOptions{
+		in:     opts.InputStream,
+		stdout: opts.OutputStream,
+		stderr: opts.ErrorStream,
 	})
 }
 

@@ -407,3 +407,6 @@ func (self *hyperContainerHandler) Exists() bool {
 
 	return true
 }
+
+// Nothing to start up.
+func (self *hyperContainerHandler) Start() {}

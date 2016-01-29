@@ -29,8 +29,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/pkg/parsers"
-	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/golang/glog"
 	"time"
 )
@@ -70,7 +68,6 @@ const (
 	KEY_READONLY       = "readOnly"
 	KEY_VOLUME         = "volume"
 	KEY_COMMAND        = "command"
-	KEY_CONTAINER_ARGS = "args"
 	KEY_WORKDIR        = "workdir"
 	KEY_VM             = "vm"
 	VOLUME_TYPE_VFS    = "vfs"
@@ -89,40 +86,21 @@ type AttachToContainerOptions struct {
 	InputStream  io.Reader
 	OutputStream io.Writer
 	ErrorStream  io.Writer
+}
 
-	// Get container logs, sending it to OutputStream.
-	Logs bool
-
-	// Stream the response?
-	Stream bool
-
-	// Attach to stdin, and use InputStream.
-	Stdin bool
-
-	// Attach to stdout, and use OutputStream.
-	Stdout bool
-
-	// Attach to stderr, and use ErrorStream.
-	Stderr bool
-
-	// If set, after a successful connect, a sentinel will be sent and then the
-	// client will block on receive before continuing.
-	//
-	// It must be an unbuffered channel. Using a buffered channel can lead
-	// to unexpected behavior.
-	Success chan struct{}
-
-	// Use raw terminal? Usually true when the container contains a TTY.
-	RawTerminal bool `qs:"-"`
+type ExecInContainerOptions struct {
+	Container    string
+	InputStream  io.Reader
+	OutputStream io.Writer
+	ErrorStream  io.Writer
+	Commands     []string
 }
 
 type hijackOptions struct {
-	success        chan struct{}
-	setRawTerminal bool
-	in             io.Reader
-	stdout         io.Writer
-	stderr         io.Writer
-	data           interface{}
+	in     io.Reader
+	stdout io.Writer
+	stderr io.Writer
+	data   interface{}
 }
 
 func NewHyperClient() *HyperClient {
@@ -151,17 +129,6 @@ func (cli *HyperClient) encodeData(data string) (*bytes.Buffer, error) {
 		}
 	}
 	return params, nil
-}
-
-// parseImageName parses a docker image string into two parts: repo and tag.
-// If tag is empty, return the defaultImageTag.
-func parseImageName(image string) (string, string) {
-	repoToPull, tag := parsers.ParseRepositoryTag(image)
-	// If no tag was specified, use the default "latest".
-	if len(tag) == 0 {
-		tag = DEFAULT_IMAGE_TAG
-	}
-	return repoToPull, tag
 }
 
 func (cli *HyperClient) clientRequest(method, path string, in io.Reader, headers map[string][]string) (io.ReadCloser, string, int, *net.Conn, *httputil.ClientConn, error) {
@@ -258,32 +225,6 @@ func (cli *HyperClient) call(method, path string, data string, headers map[strin
 	}
 
 	return result, statusCode, nil
-}
-
-func (cli *HyperClient) stream(method, path string, in io.Reader, out io.Writer, headers map[string][]string) error {
-	body, contentType, _, dial, clientconn, err := cli.clientRequest(method, path, in, headers)
-	if dial != nil {
-		defer (*dial).Close()
-	}
-	if clientconn != nil {
-		defer clientconn.Close()
-	}
-	if err != nil {
-		return err
-	}
-
-	defer body.Close()
-
-	if MatchesContentType(contentType, "application/json") {
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(body)
-		if out != nil {
-			out.Write(buf.Bytes())
-		}
-		return nil
-	}
-	return nil
-
 }
 
 func MatchesContentType(contentType, expectedType string) bool {
@@ -468,262 +409,24 @@ func (client *HyperClient) ListImages() ([]HyperImage, error) {
 		}
 
 		var imageHyper HyperImage
-		imageHyper.repository = imageDesc[0]
-		imageHyper.tag = imageDesc[1]
-		imageHyper.imageID = imageDesc[2]
+		imageHyper.Repository = imageDesc[0]
+		imageHyper.Tag = imageDesc[1]
+		imageHyper.ImageID = imageDesc[2]
 
 		createdAt, err := strconv.ParseInt(imageDesc[3], 10, 0)
 		if err != nil {
 			return nil, err
 		}
-		imageHyper.createdAt = createdAt
+		imageHyper.CreatedAt = createdAt
 
 		virtualSize, err := strconv.ParseInt(imageDesc[4], 10, 0)
 		if err != nil {
 			return nil, err
 		}
-		imageHyper.virtualSize = virtualSize
+		imageHyper.VirtualSize = virtualSize
 
 		hyperImages = append(hyperImages, imageHyper)
 	}
 
 	return hyperImages, nil
-}
-
-func (client *HyperClient) RemoveImage(imageID string) error {
-	v := url.Values{}
-	v.Set(KEY_IMAGEID, imageID)
-	_, _, err := client.call("DELETE", "/images?"+v.Encode(), "", nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (client *HyperClient) RemovePod(podID string) error {
-	v := url.Values{}
-	v.Set(KEY_POD_ID, podID)
-	_, _, err := client.call("DELETE", "/pod?"+v.Encode(), "", nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (client *HyperClient) StartPod(podID string) error {
-	v := url.Values{}
-	v.Set(KEY_POD_ID, podID)
-	_, _, err := client.call("POST", "/pod/start?"+v.Encode(), "", nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (client *HyperClient) StopPod(podID string) error {
-	v := url.Values{}
-	v.Set(KEY_POD_ID, podID)
-	v.Set("stopVM", "yes")
-	_, _, err := client.call("POST", "/pod/stop?"+v.Encode(), "", nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (client *HyperClient) PullImage(image string, credential string) error {
-	v := url.Values{}
-	v.Set(KEY_IMAGENAME, image)
-
-	headers := make(map[string][]string)
-	if credential != "" {
-		headers["X-Registry-Auth"] = []string{credential}
-	}
-
-	err := client.stream("POST", "/image/create?"+v.Encode(), nil, nil, headers)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (client *HyperClient) CreatePod(podArgs string) (map[string]interface{}, error) {
-	glog.V(5).Infof("Hyper: starting to create pod %s", podArgs)
-	body, _, err := client.call("POST", "/pod/create", podArgs, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var result map[string]interface{}
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func (c *HyperClient) hijack(method, path string, hijackOptions hijackOptions) error {
-	var params io.Reader
-	if hijackOptions.data != nil {
-		buf, err := json.Marshal(hijackOptions.data)
-		if err != nil {
-			return err
-		}
-		params = bytes.NewBuffer(buf)
-	}
-
-	if hijackOptions.stdout == nil {
-		hijackOptions.stdout = ioutil.Discard
-	}
-	if hijackOptions.stderr == nil {
-		hijackOptions.stderr = ioutil.Discard
-	}
-	req, err := http.NewRequest(method, fmt.Sprintf("/v%s%s", HYPER_MINVERSION, path), params)
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("User-Agent", "kubelet")
-	req.Header.Set("Content-Type", "text/plain")
-	req.Header.Set("Connection", "Upgrade")
-	req.Header.Set("Upgrade", "tcp")
-	req.Host = HYPER_ADDR
-
-	dial, err := net.Dial(HYPER_PROTO, HYPER_ADDR)
-	if err != nil {
-		return err
-	}
-
-	clientconn := httputil.NewClientConn(dial, nil)
-	defer clientconn.Close()
-	clientconn.Do(req)
-	if hijackOptions.success != nil {
-		hijackOptions.success <- struct{}{}
-		<-hijackOptions.success
-	}
-	rwc, br := clientconn.Hijack()
-	defer rwc.Close()
-	errChanOut := make(chan error, 1)
-	errChanIn := make(chan error, 1)
-	exit := make(chan bool)
-	go func() {
-		defer close(exit)
-		defer close(errChanOut)
-		var err error
-		if hijackOptions.setRawTerminal {
-			// When TTY is ON, use regular copy
-			_, err = io.Copy(hijackOptions.stdout, br)
-		} else {
-			_, err = stdcopy.StdCopy(hijackOptions.stdout, hijackOptions.stderr, br)
-		}
-		errChanOut <- err
-	}()
-	go func() {
-		if hijackOptions.in != nil {
-			_, err := io.Copy(rwc, hijackOptions.in)
-			errChanIn <- err
-		}
-		rwc.(interface {
-			CloseWrite() error
-		}).CloseWrite()
-	}()
-	<-exit
-	select {
-	case err = <-errChanIn:
-		return err
-	case err = <-errChanOut:
-		return err
-	}
-}
-
-func (client *HyperClient) Attach(opts AttachToContainerOptions) error {
-	if opts.Container == "" {
-		return fmt.Errorf("No Such Container %s", opts.Container)
-	}
-
-	v := url.Values{}
-	v.Set(KEY_TYPE, TYPE_CONTAINER)
-	v.Set(KEY_VALUE, opts.Container)
-	path := "/attach?" + v.Encode()
-	return client.hijack("POST", path, hijackOptions{
-		success:        opts.Success,
-		setRawTerminal: opts.RawTerminal,
-		in:             opts.InputStream,
-		stdout:         opts.OutputStream,
-		stderr:         opts.ErrorStream,
-	})
-}
-
-func (client *HyperClient) IsImagePresent(repo, tag string) (bool, error) {
-	if outputs, err := client.ListImages(); err == nil {
-		for _, imgInfo := range outputs {
-			if imgInfo.repository == repo && imgInfo.tag == tag {
-				return true, nil
-			}
-		}
-	}
-	return false, nil
-}
-
-func (client *HyperClient) ListServices(podId string) ([]HyperService, error) {
-	v := url.Values{}
-	v.Set("podId", podId)
-	body, _, err := client.call("GET", "/service/list?"+v.Encode(), "", nil)
-	if err != nil {
-		if strings.Contains(err.Error(), "doesn't have services discovery") {
-			return nil, nil
-		} else {
-			return nil, err
-		}
-	}
-
-	var svcList []HyperService
-	err = json.Unmarshal(body, &svcList)
-	if err != nil {
-		return nil, err
-	}
-
-	return svcList, nil
-}
-
-func (client *HyperClient) UpdateServices(podId string, services []HyperService) error {
-	v := url.Values{}
-	v.Set("podId", podId)
-
-	serviceData, err := json.Marshal(services)
-	if err != nil {
-		return err
-	}
-	v.Set("services", string(serviceData))
-	_, _, err = client.call("POST", "/service/update?"+v.Encode(), "", nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (client *HyperClient) UpdatePodLabels(podId string, labels map[string]string) error {
-	v := url.Values{}
-	v.Set("podId", podId)
-	v.Set("override", "true")
-
-	labelsData, err := json.Marshal(labels)
-	if err != nil {
-		return err
-	}
-	v.Set("labels", string(labelsData))
-
-	_, _, err = client.call("POST", "/pod/labels?"+v.Encode(), "", nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

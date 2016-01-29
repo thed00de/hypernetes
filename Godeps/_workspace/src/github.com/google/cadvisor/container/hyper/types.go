@@ -22,11 +22,11 @@ const (
 )
 
 type HyperImage struct {
-	repository  string
-	tag         string
-	imageID     string
-	createdAt   int64
-	virtualSize int64
+	Repository  string
+	Tag         string
+	ImageID     string
+	CreatedAt   int64
+	VirtualSize int64
 }
 
 // Container JSON Data Structure

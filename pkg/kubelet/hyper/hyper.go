@@ -38,6 +38,7 @@ import (
 	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/credentialprovider"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
+	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	proberesults "k8s.io/kubernetes/pkg/kubelet/prober/results"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
@@ -46,14 +47,15 @@ import (
 )
 
 const (
-	hyperBinName             = "hyper"
-	typeHyper                = "hyper"
-	hyperContainerNamePrefix = "kube"
-	hyperPodNamePrefix       = "kube"
-	hyperBaseMemory          = 64
-	hyperDefaultContainerCPU = 1
-	hyperDefaultContainerMem = 128
-	hyperPodSpecDir          = "/var/lib/kubelet/hyper"
+	hyperBinName                = "hyper"
+	typeHyper                   = "hyper"
+	hyperContainerNamePrefix    = "kube"
+	hyperPodNamePrefix          = "kube"
+	hyperBaseMemory             = 64
+	hyperDefaultContainerCPU    = 1
+	hyperDefaultContainerMem    = 128
+	hyperPodSpecDir             = "/var/lib/kubelet/hyper"
+	minimumGracePeriodInSeconds = 2
 )
 
 // runtime implements the container runtime for hyper
@@ -70,6 +72,9 @@ type runtime struct {
 	kubeClient          client.Interface
 	imagePuller         kubecontainer.ImagePuller
 	version             kubecontainer.Version
+
+	// Runner of lifecycle events.
+	runner kubecontainer.HandlerRunner
 }
 
 var _ kubecontainer.Runtime = &runtime{}
@@ -88,6 +93,7 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 	kubeClient client.Interface,
 	imageBackOff *util.Backoff,
 	serializeImagePulls bool,
+	httpClient kubetypes.HttpGetter,
 ) (kubecontainer.Runtime, error) {
 	// check hyper has already installed
 	hyperBinAbsPath, err := exec.LookPath(hyperBinName)
@@ -126,6 +132,9 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 	}
 
 	hyper.version = hyperVersion
+
+	hyper.runner = lifecycle.NewHandlerRunner(httpClient, hyper, hyper)
+
 	return hyper, nil
 }
 
@@ -459,6 +468,7 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 	// build hyper containers spec
 	var containers []map[string]interface{}
 	var k8sHostNeeded = true
+	dnsServers := make(map[string]string)
 	for _, container := range pod.Spec.Containers {
 		c := make(map[string]interface{})
 		c[KEY_NAME] = r.buildHyperContainerFullName(
@@ -492,8 +502,8 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 		}
 
 		// dns
-		if len(opts.DNS) > 0 {
-			c[KEY_DNS] = opts.DNS
+		for _, dns := range opts.DNS {
+			dnsServers[dns] = dns
 		}
 
 		// envs
@@ -547,6 +557,15 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 	specMap[KEY_CONTAINERS] = containers
 	specMap[KEY_VOLUMES] = volumes
 
+	// dns
+	if len(dnsServers) > 0 {
+		dns := []string{}
+		for d := range dnsServers {
+			dns = append(dns, d)
+		}
+		specMap[KEY_DNS] = dns
+	}
+
 	// build hyper pod resources spec
 	var podCPULimit, podMemLimit int64
 	podResource := make(map[string]int64)
@@ -580,6 +599,14 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 	specMap[KEY_ID] = kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
 	specMap[KEY_LABELS] = map[string]string{"UID": string(pod.UID)}
 	specMap[KEY_TTY] = true
+
+	// Cap hostname at 63 chars (specification is 64bytes which is 63 chars and the null terminating char).
+	const hostnameMaxLen = 63
+	podHostname := pod.Name
+	if len(podHostname) > hostnameMaxLen {
+		podHostname = podHostname[:hostnameMaxLen]
+	}
+	specMap[KEY_HOSTNAME] = podHostname
 
 	podData, err := json.Marshal(specMap)
 	if err != nil {
@@ -692,6 +719,33 @@ func (r *runtime) RunPod(pod *api.Pod, restartCount int, pullSecrets []api.Secre
 		return err
 	}
 
+	podStatus, err := r.GetPodStatus(pod.UID, pod.Name, pod.Namespace)
+	if err != nil {
+		return err
+	}
+	runningPod := kubecontainer.ConvertPodStatusToRunningPod(podStatus)
+
+	for _, container := range pod.Spec.Containers {
+		var containerID kubecontainer.ContainerID
+
+		for _, runningContainer := range runningPod.Containers {
+			if container.Name == runningContainer.Name {
+				containerID = runningContainer.ID
+			}
+		}
+
+		if container.Lifecycle != nil && container.Lifecycle.PostStart != nil {
+			handlerErr := r.runner.Run(containerID, pod, &container, container.Lifecycle.PostStart)
+			if handlerErr != nil {
+				err := fmt.Errorf("PostStart handler: %v", handlerErr)
+				if e := r.KillPod(pod, runningPod); e != nil {
+					glog.Errorf("KillPod %v failed: %v", podFullName, e)
+				}
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -759,7 +813,7 @@ func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 			}
 			restartCount += 1
 
-			if err := r.KillPod(nil, runningPod); err != nil {
+			if err := r.KillPod(pod, runningPod); err != nil {
 				glog.Errorf("Hyper: kill pod %s failed, error: %s", runningPod.Name, err)
 				return err
 			}
@@ -777,6 +831,54 @@ func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 	if len(runningPod.Name) == 0 {
 		return nil
+	}
+
+	// preStop hook
+	for _, c := range runningPod.Containers {
+		var container *api.Container
+		if pod != nil {
+			for i, containerSpec := range pod.Spec.Containers {
+				if c.Name == containerSpec.Name {
+					container = &pod.Spec.Containers[i]
+					break
+				}
+			}
+		}
+
+		gracePeriod := int64(minimumGracePeriodInSeconds)
+		if pod != nil {
+			switch {
+			case pod.DeletionGracePeriodSeconds != nil:
+				gracePeriod = *pod.DeletionGracePeriodSeconds
+			case pod.Spec.TerminationGracePeriodSeconds != nil:
+				gracePeriod = *pod.Spec.TerminationGracePeriodSeconds
+			}
+		}
+
+		start := unversioned.Now()
+		if pod != nil && container != nil && container.Lifecycle != nil && container.Lifecycle.PreStop != nil {
+			glog.V(4).Infof("Running preStop hook for container %q", container.Name)
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				defer util.HandleCrash()
+				if err := r.runner.Run(c.ID, pod, container, container.Lifecycle.PreStop); err != nil {
+					glog.Errorf("preStop hook for container %q failed: %v", container.Name, err)
+				}
+			}()
+			select {
+			case <-time.After(time.Duration(gracePeriod) * time.Second):
+				glog.V(2).Infof("preStop hook for container %q did not complete in %d seconds", container.Name, gracePeriod)
+			case <-done:
+				glog.V(4).Infof("preStop hook for container %q completed", container.Name)
+			}
+			gracePeriod -= int64(unversioned.Now().Sub(start.Time).Seconds())
+		}
+
+		// always give containers a minimal shutdown window to avoid unnecessary SIGKILLs
+		if gracePeriod < minimumGracePeriodInSeconds {
+			gracePeriod = minimumGracePeriodInSeconds
+		}
 	}
 
 	var podID string

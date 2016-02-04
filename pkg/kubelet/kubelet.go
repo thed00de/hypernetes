@@ -443,6 +443,7 @@ func NewMainKubelet(
 			klet.kubeClient,
 			imageBackOff,
 			serializeImagePulls,
+			klet.httpClient,
 		)
 		if err != nil {
 			return nil, err

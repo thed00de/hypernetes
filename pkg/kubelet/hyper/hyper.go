@@ -481,15 +481,12 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 		c[KEY_IMAGE] = container.Image
 		c[KEY_TTY] = container.TTY
 
-		containerCommands := make([]string, 0, 1)
-		for _, cmd := range container.Command {
-			containerCommands = append(containerCommands, cmd)
+		if len(container.Command) > 0 {
+			c[KEY_ENTRYPOINT] = container.Command
 		}
-		for _, arg := range container.Args {
-			containerCommands = append(containerCommands, arg)
-		}
-		if len(containerCommands) > 0 {
-			c[KEY_COMMAND] = containerCommands
+
+		if len(container.Args) > 0 {
+			c[KEY_COMMAND] = container.Args
 		}
 
 		if container.WorkingDir != "" {
@@ -1071,32 +1068,24 @@ func (r *runtime) RemoveImage(image kubecontainer.ImageSpec) error {
 func (r *runtime) GetContainerLogs(pod *api.Pod, containerID kubecontainer.ContainerID, logOptions *api.PodLogOptions, stdout, stderr io.Writer) error {
 	glog.V(4).Infof("Hyper: running logs on container %s", containerID.ID)
 
-	args := append([]string{}, "logs")
-	if logOptions.Follow {
-		args = append(args, "--follow")
-	}
+	var tailLines, since int64
 	if logOptions.SinceSeconds != nil && *logOptions.SinceSeconds != 0 {
-		args = append(args, fmt.Sprintf("--since=%d", *logOptions.SinceSeconds))
+		since = *logOptions.SinceSeconds
 	}
 	if logOptions.TailLines != nil && *logOptions.TailLines != 0 {
-		args = append(args, fmt.Sprintf("--tail=%d", *logOptions.TailLines))
+		tailLines = *logOptions.TailLines
 	}
-	if logOptions.Timestamps {
-		args = append(args, "--timestamps")
+	opts := ContainerLogsOptions{
+		Container:    containerID.ID,
+		OutputStream: stdout,
+		ErrorStream:  stderr,
+		Follow:       logOptions.Follow,
+		Timestamps:   logOptions.Timestamps,
+		Since:        since,
+		TailLines:    tailLines,
 	}
-	args = append(args, containerID.ID)
 
-	command := r.buildCommand(args...)
-	p, err := kubecontainer.StartPty(command)
-	if err != nil {
-		return err
-	}
-	defer p.Close()
-
-	if stdout != nil {
-		go io.Copy(stdout, p)
-	}
-	return command.Wait()
+	return r.hyperClient.ContainerLogs(opts)
 }
 
 // Runs the command in the container of the specified pod

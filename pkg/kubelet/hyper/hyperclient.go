@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"mime"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -47,6 +46,7 @@ const (
 	KEY_CONTAINER_PORT = "containerPort"
 	KEY_CONTAINERS     = "containers"
 	KEY_DNS            = "dns"
+	KEY_ENTRYPOINT     = "entrypoint"
 	KEY_ENVS           = "envs"
 	KEY_HOST_PORT      = "hostPort"
 	KEY_HOSTNAME       = "hostname"
@@ -98,6 +98,17 @@ type ExecInContainerOptions struct {
 	OutputStream io.Writer
 	ErrorStream  io.Writer
 	Commands     []string
+}
+
+type ContainerLogsOptions struct {
+	Container    string
+	OutputStream io.Writer
+	ErrorStream  io.Writer
+
+	Follow     bool
+	Since      int64
+	Timestamps bool
+	TailLines  int64
 }
 
 type hijackOptions struct {
@@ -243,7 +254,7 @@ func (cli *HyperClient) call(method, path string, data string, headers map[strin
 }
 
 func (cli *HyperClient) stream(method, path string, in io.Reader, out io.Writer, headers map[string][]string) error {
-	body, contentType, _, dial, clientconn, err := cli.clientRequest(method, path, in, headers)
+	body, _, _, dial, clientconn, err := cli.clientRequest(method, path, in, headers)
 	if dial != nil {
 		defer (*dial).Close()
 	}
@@ -256,24 +267,13 @@ func (cli *HyperClient) stream(method, path string, in io.Reader, out io.Writer,
 
 	defer body.Close()
 
-	if MatchesContentType(contentType, "application/json") {
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(body)
-		if out != nil {
-			out.Write(buf.Bytes())
-		}
-		return nil
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(body)
+	if out != nil {
+		out.Write(buf.Bytes())
 	}
 	return nil
 
-}
-
-func MatchesContentType(contentType, expectedType string) bool {
-	mimetype, _, err := mime.ParseMediaType(contentType)
-	if err != nil {
-		glog.V(4).Infof("Error parsing media type: %s error: %v", contentType, err)
-	}
-	return err == nil && mimetype == expectedType
 }
 
 func (client *HyperClient) Version() (string, error) {
@@ -583,15 +583,16 @@ func (c *HyperClient) hijack(method, path string, hijackOptions hijackOptions) e
 	}()
 
 	go func() {
+		defer close(errChanIn)
+
 		if hijackOptions.in != nil {
 			_, err := io.Copy(rwc, hijackOptions.in)
-
-			rwc.(interface {
-				CloseWrite() error
-			}).CloseWrite()
-
 			errChanIn <- err
 		}
+
+		rwc.(interface {
+			CloseWrite() error
+		}).CloseWrite()
 	}()
 
 	<-exit
@@ -639,6 +640,32 @@ func (client *HyperClient) Exec(opts ExecInContainerOptions) error {
 		stdout: opts.OutputStream,
 		stderr: opts.ErrorStream,
 	})
+}
+
+func (client *HyperClient) ContainerLogs(opts ContainerLogsOptions) error {
+	if opts.Container == "" {
+		return fmt.Errorf("No Such Container %s", opts.Container)
+	}
+
+	v := url.Values{}
+	v.Set(TYPE_CONTAINER, opts.Container)
+	v.Set("stdout", "yes")
+	v.Set("stderr", "yes")
+	if opts.TailLines > 0 {
+		v.Set("tail", fmt.Sprintf("%d", opts.TailLines))
+	}
+	if opts.Follow {
+		v.Set("follow", "yes")
+	}
+	if opts.Timestamps {
+		v.Set("timestamps", "yes")
+	}
+	if opts.Since > 0 {
+		v.Set("since", fmt.Sprintf("%d", opts.Since))
+	}
+
+	path := "/container/logs?" + v.Encode()
+	return client.stream("GET", path, nil, opts.OutputStream, nil)
 }
 
 func (client *HyperClient) IsImagePresent(repo, tag string) (bool, error) {

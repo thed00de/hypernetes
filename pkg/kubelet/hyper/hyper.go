@@ -481,14 +481,6 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 		c[KEY_IMAGE] = container.Image
 		c[KEY_TTY] = container.TTY
 
-		if len(container.Command) > 0 {
-			c[KEY_ENTRYPOINT] = container.Command
-		}
-
-		if len(container.Args) > 0 {
-			c[KEY_COMMAND] = container.Args
-		}
-
 		if container.WorkingDir != "" {
 			c[KEY_WORKDIR] = container.WorkingDir
 		}
@@ -496,6 +488,14 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 		opts, err := r.generator.GenerateRunContainerOptions(pod, &container)
 		if err != nil {
 			return nil, err
+		}
+
+		command, args := kubecontainer.ExpandContainerCommandAndArgs(&container, opts.Envs)
+		if len(command) > 0 {
+			c[KEY_ENTRYPOINT] = command
+		}
+		if len(args) > 0 {
+			c[KEY_COMMAND] = args
 		}
 
 		// dns

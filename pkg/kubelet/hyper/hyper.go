@@ -29,6 +29,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/golang/glog"
@@ -44,6 +45,7 @@ import (
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util"
+	utilexec "k8s.io/kubernetes/pkg/util/exec"
 )
 
 const (
@@ -51,7 +53,6 @@ const (
 	typeHyper                   = "hyper"
 	hyperContainerNamePrefix    = "kube"
 	hyperPodNamePrefix          = "kube"
-	hyperBaseMemory             = 64
 	hyperDefaultContainerCPU    = 1
 	hyperDefaultContainerMem    = 128
 	hyperPodSpecDir             = "/var/lib/kubelet/hyper"
@@ -152,7 +153,7 @@ func (r *runtime) buildCommand(args ...string) *exec.Cmd {
 // runCommand invokes hyper binary with arguments and returns the result
 // from stdout in a list of strings. Each string in the list is a line.
 func (r *runtime) runCommand(args ...string) ([]string, error) {
-	output, err := r.buildCommand(args...).Output()
+	output, err := r.buildCommand(args...).CombinedOutput()
 	if err != nil {
 		return nil, err
 	}
@@ -588,14 +589,14 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 	}
 
 	podResource[KEY_VCPU] = (podCPULimit + 999) / 1000
-	podResource[KEY_MEMORY] = int64(hyperBaseMemory) + ((podMemLimit)/1000/1024)/1024
+	podResource[KEY_MEMORY] = ((podMemLimit) / 1000 / 1024) / 1024
 	specMap[KEY_RESOURCE] = podResource
 	glog.V(5).Infof("Hyper: pod limit vcpu=%v mem=%vMiB", podResource[KEY_VCPU], podResource[KEY_MEMORY])
 
 	// other params required
 	specMap[KEY_ID] = kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
 	specMap[KEY_LABELS] = map[string]string{"UID": string(pod.UID)}
-	specMap[KEY_TTY] = true
+	specMap[KEY_TTY] = false
 
 	// Cap hostname at 63 chars (specification is 64bytes which is 63 chars and the null terminating char).
 	const hostnameMaxLen = 63
@@ -731,6 +732,13 @@ func (r *runtime) RunPod(pod *api.Pod, restartCount int, pullSecrets []api.Secre
 			}
 		}
 
+		ref, err := kubecontainer.GenerateContainerRef(pod, &container)
+		if err != nil {
+			glog.Errorf("Couldn't make a ref to pod %q, container %v: '%v'", pod.Name, container.Name, err)
+		} else {
+			r.containerRefManager.SetRef(containerID, ref)
+		}
+
 		if container.Lifecycle != nil && container.Lifecycle.PostStart != nil {
 			handlerErr := r.runner.Run(containerID, pod, &container, container.Lifecycle.PostStart)
 			if handlerErr != nil {
@@ -808,7 +816,7 @@ func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 				glog.Errorf("Hyper: get pod startcount failed: %v", err)
 				return err
 			}
-			restartCount += 1
+			restartCount++
 
 			if err := r.KillPod(pod, runningPod); err != nil {
 				glog.Errorf("Hyper: kill pod %s failed, error: %s", runningPod.Name, err)
@@ -832,6 +840,8 @@ func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 
 	// preStop hook
 	for _, c := range runningPod.Containers {
+		r.containerRefManager.ClearRef(c.ID)
+
 		var container *api.Container
 		if pod != nil {
 			for i, containerSpec := range pod.Spec.Containers {
@@ -1088,15 +1098,33 @@ func (r *runtime) GetContainerLogs(pod *api.Pod, containerID kubecontainer.Conta
 	return r.hyperClient.ContainerLogs(opts)
 }
 
+// hyperExitError implemets /pkg/util/exec.ExitError interface.
+type hyperExitError struct{ *exec.ExitError }
+
+var _ utilexec.ExitError = &hyperExitError{}
+
+func (r *hyperExitError) ExitStatus() int {
+	if status, ok := r.Sys().(syscall.WaitStatus); ok {
+		return status.ExitStatus()
+	}
+	return 0
+}
+
 // Runs the command in the container of the specified pod
 func (r *runtime) RunInContainer(containerID kubecontainer.ContainerID, cmd []string) ([]byte, error) {
 	glog.V(4).Infof("Hyper: running %s in container %s.", cmd, containerID.ID)
 
-	args := append([]string{}, "exec", containerID.ID)
-	args = append(args, cmd...)
+	buffer := bytes.NewBuffer(nil)
+	err := r.ExecInContainer(containerID, cmd, nil, nopCloser{buffer}, nil, true)
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			err = &hyperExitError{exitErr}
+		}
 
-	result, err := r.runCommand(args...)
-	return []byte(strings.Join(result, "\n")), err
+		return nil, err
+	}
+
+	return buffer.ReadBytes('\n')
 }
 
 // Forward the specified port from the specified pod to the stream.
@@ -1111,15 +1139,27 @@ func (r *runtime) PortForward(pod *kubecontainer.Pod, port uint16, stream io.Rea
 func (r *runtime) ExecInContainer(containerID kubecontainer.ContainerID, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
 	glog.V(4).Infof("Hyper: execing %s in container %s.", cmd, containerID.ID)
 
-	opts := ExecInContainerOptions{
-		Container:    containerID.ID,
-		Commands:     cmd,
-		InputStream:  stdin,
-		OutputStream: stdout,
-		ErrorStream:  stderr,
+	args := append([]string{}, "exec", "-a", containerID.ID)
+	args = append(args, cmd...)
+	command := r.buildCommand(args...)
+
+	p, err := kubecontainer.StartPty(command)
+	if err != nil {
+		return err
+	}
+	defer p.Close()
+
+	// make sure to close the stdout stream
+	defer stdout.Close()
+
+	if stdin != nil {
+		go io.Copy(p, stdin)
 	}
 
-	return r.hyperClient.Exec(opts)
+	if stdout != nil {
+		go io.Copy(stdout, p)
+	}
+	return command.Wait()
 }
 
 func (r *runtime) AttachContainer(containerID kubecontainer.ContainerID, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {

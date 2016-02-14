@@ -166,7 +166,6 @@ func (x *TestType) CodecEncodeSelf(e *codec1978.Encoder) {
 			}
 			if yyr2 || yy2arr2 {
 				z.EncSendContainerState(codecSelfer_containerArrayElem1234)
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 				if yyq2[3] {
 					yym17 := z.EncBinary()
 					_ = yym17
@@ -174,11 +173,6 @@ func (x *TestType) CodecEncodeSelf(e *codec1978.Encoder) {
 					} else {
 						r.EncodeString(codecSelferC_UTF81234, string(x.APIVersion))
 					}
-=======
-				if yyq2[2] {
-					yy10 := &x.ObjectMeta
-					yy10.CodecEncodeSelf(e)
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 				} else {
 					r.EncodeString(codecSelferC_UTF81234, "")
 				}
@@ -187,17 +181,12 @@ func (x *TestType) CodecEncodeSelf(e *codec1978.Encoder) {
 					z.EncSendContainerState(codecSelfer_containerMapKey1234)
 					r.EncodeString(codecSelferC_UTF81234, string("apiVersion"))
 					z.EncSendContainerState(codecSelfer_containerMapValue1234)
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 					yym18 := z.EncBinary()
 					_ = yym18
 					if false {
 					} else {
 						r.EncodeString(codecSelferC_UTF81234, string(x.APIVersion))
 					}
-=======
-					yy11 := &x.ObjectMeta
-					yy11.CodecEncodeSelf(e)
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 				}
 			}
 			if yyr2 || yy2arr2 {
@@ -213,7 +202,6 @@ func (x *TestType) CodecDecodeSelf(d *codec1978.Decoder) {
 	var h codecSelfer1234
 	z, r := codec1978.GenHelperDecoder(d)
 	_, _, _ = h, z, r
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	yym1 := z.DecBinary()
 	_ = yym1
 	if false {
@@ -233,27 +221,6 @@ func (x *TestType) CodecDecodeSelf(d *codec1978.Decoder) {
 				z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
 			} else {
 				x.codecDecodeSelfFromArray(yyl2, d)
-=======
-	yym12 := z.DecBinary()
-	_ = yym12
-	if false {
-	} else if z.HasExtensions() && z.DecExt(x) {
-	} else {
-		yyct13 := r.ContainerType()
-		if yyct13 == codecSelferValueTypeMap1234 {
-			yyl13 := r.ReadMapStart()
-			if yyl13 == 0 {
-				z.DecSendContainerState(codecSelfer_containerMapEnd1234)
-			} else {
-				x.codecDecodeSelfFromMap(yyl13, d)
-			}
-		} else if yyct13 == codecSelferValueTypeArray1234 {
-			yyl13 := r.ReadArrayStart()
-			if yyl13 == 0 {
-				z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
-			} else {
-				x.codecDecodeSelfFromArray(yyl13, d)
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 			}
 		} else {
 			panic(codecSelferOnlyMapOrArrayEncodeToStructErr1234)
@@ -265,21 +232,12 @@ func (x *TestType) codecDecodeSelfFromMap(l int, d *codec1978.Decoder) {
 	var h codecSelfer1234
 	z, r := codec1978.GenHelperDecoder(d)
 	_, _, _ = h, z, r
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	var yys3Slc = z.DecScratchBuffer() // default slice to decode into
 	_ = yys3Slc
 	var yyhl3 bool = l >= 0
 	for yyj3 := 0; ; yyj3++ {
 		if yyhl3 {
 			if yyj3 >= l {
-=======
-	var yys14Slc = z.DecScratchBuffer() // default slice to decode into
-	_ = yys14Slc
-	var yyhl14 bool = l >= 0
-	for yyj14 := 0; ; yyj14++ {
-		if yyhl14 {
-			if yyj14 >= l {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 				break
 			}
 		} else {
@@ -288,7 +246,6 @@ func (x *TestType) codecDecodeSelfFromMap(l int, d *codec1978.Decoder) {
 			}
 		}
 		z.DecSendContainerState(codecSelfer_containerMapKey1234)
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 		yys3Slc = r.DecodeBytes(yys3Slc, true, true)
 		yys3 := string(yys3Slc)
 		z.DecSendContainerState(codecSelfer_containerMapValue1234)
@@ -307,12 +264,6 @@ func (x *TestType) codecDecodeSelfFromMap(l int, d *codec1978.Decoder) {
 				yyv5 := &x.Status
 				yyv5.CodecDecodeSelf(d)
 			}
-=======
-		yys14Slc = r.DecodeBytes(yys14Slc, true, true)
-		yys14 := string(yys14Slc)
-		z.DecSendContainerState(codecSelfer_containerMapValue1234)
-		switch yys14 {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 		case "kind":
 			if r.TryDecodeAsNil() {
 				x.Kind = ""
@@ -325,24 +276,10 @@ func (x *TestType) codecDecodeSelfFromMap(l int, d *codec1978.Decoder) {
 			} else {
 				x.APIVersion = string(r.DecodeString())
 			}
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 		default:
 			z.DecStructFieldNotFound(-1, yys3)
 		} // end switch yys3
 	} // end for yyj3
-=======
-		case "metadata":
-			if r.TryDecodeAsNil() {
-				x.ObjectMeta = pkg2_api.ObjectMeta{}
-			} else {
-				yyv17 := &x.ObjectMeta
-				yyv17.CodecDecodeSelf(d)
-			}
-		default:
-			z.DecStructFieldNotFound(-1, yys14)
-		} // end switch yys14
-	} // end for yyj14
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 	z.DecSendContainerState(codecSelfer_containerMapEnd1234)
 }
 
@@ -350,7 +287,6 @@ func (x *TestType) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 	var h codecSelfer1234
 	z, r := codec1978.GenHelperDecoder(d)
 	_, _, _ = h, z, r
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	var yyj8 int
 	var yyb8 bool
 	var yyhl8 bool = l >= 0
@@ -361,18 +297,6 @@ func (x *TestType) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		yyb8 = r.CheckBreak()
 	}
 	if yyb8 {
-=======
-	var yyj18 int
-	var yyb18 bool
-	var yyhl18 bool = l >= 0
-	yyj18++
-	if yyhl18 {
-		yyb18 = yyj18 > l
-	} else {
-		yyb18 = r.CheckBreak()
-	}
-	if yyb18 {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 		z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
 		return
 	}
@@ -383,7 +307,6 @@ func (x *TestType) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		yyv9 := &x.ObjectMeta
 		yyv9.CodecDecodeSelf(d)
 	}
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	yyj8++
 	if yyhl8 {
 		yyb8 = yyj8 > l
@@ -391,15 +314,6 @@ func (x *TestType) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		yyb8 = r.CheckBreak()
 	}
 	if yyb8 {
-=======
-	yyj18++
-	if yyhl18 {
-		yyb18 = yyj18 > l
-	} else {
-		yyb18 = r.CheckBreak()
-	}
-	if yyb18 {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 		z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
 		return
 	}
@@ -410,7 +324,6 @@ func (x *TestType) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		yyv10 := &x.Status
 		yyv10.CodecDecodeSelf(d)
 	}
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	yyj8++
 	if yyhl8 {
 		yyb8 = yyj8 > l
@@ -418,15 +331,6 @@ func (x *TestType) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		yyb8 = r.CheckBreak()
 	}
 	if yyb8 {
-=======
-	yyj18++
-	if yyhl18 {
-		yyb18 = yyj18 > l
-	} else {
-		yyb18 = r.CheckBreak()
-	}
-	if yyb18 {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 		z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
 		return
 	}
@@ -434,7 +338,6 @@ func (x *TestType) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 	if r.TryDecodeAsNil() {
 		x.Kind = ""
 	} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 		x.Kind = string(r.DecodeString())
 	}
 	yyj8++
@@ -465,23 +368,6 @@ func (x *TestType) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		}
 		z.DecSendContainerState(codecSelfer_containerArrayElem1234)
 		z.DecStructFieldNotFound(yyj8-1, "")
-=======
-		yyv21 := &x.ObjectMeta
-		yyv21.CodecDecodeSelf(d)
-	}
-	for {
-		yyj18++
-		if yyhl18 {
-			yyb18 = yyj18 > l
-		} else {
-			yyb18 = r.CheckBreak()
-		}
-		if yyb18 {
-			break
-		}
-		z.DecSendContainerState(codecSelfer_containerArrayElem1234)
-		z.DecStructFieldNotFound(yyj18-1, "")
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 	}
 	z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
 }
@@ -493,7 +379,6 @@ func (x *TestTypeList) CodecEncodeSelf(e *codec1978.Encoder) {
 	if x == nil {
 		r.EncodeNil()
 	} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 		yym1 := z.EncBinary()
 		_ = yym1
 		if false {
@@ -526,39 +411,6 @@ func (x *TestTypeList) CodecEncodeSelf(e *codec1978.Encoder) {
 					yy4 := &x.ListMeta
 					yym5 := z.EncBinary()
 					_ = yym5
-=======
-		yym22 := z.EncBinary()
-		_ = yym22
-		if false {
-		} else if z.HasExtensions() && z.EncExt(x) {
-		} else {
-			yysep23 := !z.EncBinary()
-			yy2arr23 := z.EncBasicHandle().StructToArray
-			var yyq23 [4]bool
-			_, _, _ = yysep23, yyq23, yy2arr23
-			const yyr23 bool = false
-			yyq23[0] = x.Kind != ""
-			yyq23[1] = x.APIVersion != ""
-			yyq23[2] = true
-			var yynn23 int
-			if yyr23 || yy2arr23 {
-				r.EncodeArrayStart(4)
-			} else {
-				yynn23 = 1
-				for _, b := range yyq23 {
-					if b {
-						yynn23++
-					}
-				}
-				r.EncodeMapStart(yynn23)
-				yynn23 = 0
-			}
-			if yyr23 || yy2arr23 {
-				z.EncSendContainerState(codecSelfer_containerArrayElem1234)
-				if yyq23[0] {
-					yym25 := z.EncBinary()
-					_ = yym25
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 					if false {
 					} else if z.HasExtensions() && z.EncExt(yy4) {
 					} else {
@@ -568,22 +420,13 @@ func (x *TestTypeList) CodecEncodeSelf(e *codec1978.Encoder) {
 					r.EncodeNil()
 				}
 			} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 				if yyq2[0] {
-=======
-				if yyq23[0] {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 					z.EncSendContainerState(codecSelfer_containerMapKey1234)
 					r.EncodeString(codecSelferC_UTF81234, string("metadata"))
 					z.EncSendContainerState(codecSelfer_containerMapValue1234)
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 					yy6 := &x.ListMeta
 					yym7 := z.EncBinary()
 					_ = yym7
-=======
-					yym26 := z.EncBinary()
-					_ = yym26
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 					if false {
 					} else if z.HasExtensions() && z.EncExt(yy6) {
 					} else {
@@ -591,7 +434,6 @@ func (x *TestTypeList) CodecEncodeSelf(e *codec1978.Encoder) {
 					}
 				}
 			}
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 			if yyr2 || yy2arr2 {
 				z.EncSendContainerState(codecSelfer_containerArrayElem1234)
 				if x.Items == nil {
@@ -599,20 +441,12 @@ func (x *TestTypeList) CodecEncodeSelf(e *codec1978.Encoder) {
 				} else {
 					yym9 := z.EncBinary()
 					_ = yym9
-=======
-			if yyr23 || yy2arr23 {
-				z.EncSendContainerState(codecSelfer_containerArrayElem1234)
-				if yyq23[1] {
-					yym28 := z.EncBinary()
-					_ = yym28
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 					if false {
 					} else {
 						h.encSliceTestType(([]TestType)(x.Items), e)
 					}
 				}
 			} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 				z.EncSendContainerState(codecSelfer_containerMapKey1234)
 				r.EncodeString(codecSelferC_UTF81234, string("items"))
 				z.EncSendContainerState(codecSelfer_containerMapValue1234)
@@ -621,21 +455,12 @@ func (x *TestTypeList) CodecEncodeSelf(e *codec1978.Encoder) {
 				} else {
 					yym10 := z.EncBinary()
 					_ = yym10
-=======
-				if yyq23[1] {
-					z.EncSendContainerState(codecSelfer_containerMapKey1234)
-					r.EncodeString(codecSelferC_UTF81234, string("apiVersion"))
-					z.EncSendContainerState(codecSelfer_containerMapValue1234)
-					yym29 := z.EncBinary()
-					_ = yym29
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 					if false {
 					} else {
 						h.encSliceTestType(([]TestType)(x.Items), e)
 					}
 				}
 			}
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 			if yyr2 || yy2arr2 {
 				z.EncSendContainerState(codecSelfer_containerArrayElem1234)
 				if yyq2[2] {
@@ -644,32 +469,15 @@ func (x *TestTypeList) CodecEncodeSelf(e *codec1978.Encoder) {
 					if false {
 					} else {
 						r.EncodeString(codecSelferC_UTF81234, string(x.Kind))
-=======
-			if yyr23 || yy2arr23 {
-				z.EncSendContainerState(codecSelfer_containerArrayElem1234)
-				if yyq23[2] {
-					yy31 := &x.ListMeta
-					yym32 := z.EncBinary()
-					_ = yym32
-					if false {
-					} else if z.HasExtensions() && z.EncExt(yy31) {
-					} else {
-						z.EncFallback(yy31)
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 					}
 				} else {
 					r.EncodeString(codecSelferC_UTF81234, "")
 				}
 			} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 				if yyq2[2] {
-=======
-				if yyq23[2] {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 					z.EncSendContainerState(codecSelfer_containerMapKey1234)
 					r.EncodeString(codecSelferC_UTF81234, string("kind"))
 					z.EncSendContainerState(codecSelfer_containerMapValue1234)
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 					yym13 := z.EncBinary()
 					_ = yym13
 					if false {
@@ -683,25 +491,6 @@ func (x *TestTypeList) CodecEncodeSelf(e *codec1978.Encoder) {
 				if yyq2[3] {
 					yym15 := z.EncBinary()
 					_ = yym15
-=======
-					yy33 := &x.ListMeta
-					yym34 := z.EncBinary()
-					_ = yym34
-					if false {
-					} else if z.HasExtensions() && z.EncExt(yy33) {
-					} else {
-						z.EncFallback(yy33)
-					}
-				}
-			}
-			if yyr23 || yy2arr23 {
-				z.EncSendContainerState(codecSelfer_containerArrayElem1234)
-				if x.Items == nil {
-					r.EncodeNil()
-				} else {
-					yym36 := z.EncBinary()
-					_ = yym36
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 					if false {
 					} else {
 						r.EncodeString(codecSelferC_UTF81234, string(x.APIVersion))
@@ -710,34 +499,19 @@ func (x *TestTypeList) CodecEncodeSelf(e *codec1978.Encoder) {
 					r.EncodeString(codecSelferC_UTF81234, "")
 				}
 			} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 				if yyq2[3] {
 					z.EncSendContainerState(codecSelfer_containerMapKey1234)
 					r.EncodeString(codecSelferC_UTF81234, string("apiVersion"))
 					z.EncSendContainerState(codecSelfer_containerMapValue1234)
 					yym16 := z.EncBinary()
 					_ = yym16
-=======
-				z.EncSendContainerState(codecSelfer_containerMapKey1234)
-				r.EncodeString(codecSelferC_UTF81234, string("items"))
-				z.EncSendContainerState(codecSelfer_containerMapValue1234)
-				if x.Items == nil {
-					r.EncodeNil()
-				} else {
-					yym37 := z.EncBinary()
-					_ = yym37
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 					if false {
 					} else {
 						r.EncodeString(codecSelferC_UTF81234, string(x.APIVersion))
 					}
 				}
 			}
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 			if yyr2 || yy2arr2 {
-=======
-			if yyr23 || yy2arr23 {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 				z.EncSendContainerState(codecSelfer_containerArrayEnd1234)
 			} else {
 				z.EncSendContainerState(codecSelfer_containerMapEnd1234)
@@ -750,7 +524,6 @@ func (x *TestTypeList) CodecDecodeSelf(d *codec1978.Decoder) {
 	var h codecSelfer1234
 	z, r := codec1978.GenHelperDecoder(d)
 	_, _, _ = h, z, r
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	yym1 := z.DecBinary()
 	_ = yym1
 	if false {
@@ -770,27 +543,6 @@ func (x *TestTypeList) CodecDecodeSelf(d *codec1978.Decoder) {
 				z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
 			} else {
 				x.codecDecodeSelfFromArray(yyl2, d)
-=======
-	yym38 := z.DecBinary()
-	_ = yym38
-	if false {
-	} else if z.HasExtensions() && z.DecExt(x) {
-	} else {
-		yyct39 := r.ContainerType()
-		if yyct39 == codecSelferValueTypeMap1234 {
-			yyl39 := r.ReadMapStart()
-			if yyl39 == 0 {
-				z.DecSendContainerState(codecSelfer_containerMapEnd1234)
-			} else {
-				x.codecDecodeSelfFromMap(yyl39, d)
-			}
-		} else if yyct39 == codecSelferValueTypeArray1234 {
-			yyl39 := r.ReadArrayStart()
-			if yyl39 == 0 {
-				z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
-			} else {
-				x.codecDecodeSelfFromArray(yyl39, d)
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 			}
 		} else {
 			panic(codecSelferOnlyMapOrArrayEncodeToStructErr1234)
@@ -802,21 +554,12 @@ func (x *TestTypeList) codecDecodeSelfFromMap(l int, d *codec1978.Decoder) {
 	var h codecSelfer1234
 	z, r := codec1978.GenHelperDecoder(d)
 	_, _, _ = h, z, r
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	var yys3Slc = z.DecScratchBuffer() // default slice to decode into
 	_ = yys3Slc
 	var yyhl3 bool = l >= 0
 	for yyj3 := 0; ; yyj3++ {
 		if yyhl3 {
 			if yyj3 >= l {
-=======
-	var yys40Slc = z.DecScratchBuffer() // default slice to decode into
-	_ = yys40Slc
-	var yyhl40 bool = l >= 0
-	for yyj40 := 0; ; yyj40++ {
-		if yyhl40 {
-			if yyj40 >= l {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 				break
 			}
 		} else {
@@ -825,34 +568,14 @@ func (x *TestTypeList) codecDecodeSelfFromMap(l int, d *codec1978.Decoder) {
 			}
 		}
 		z.DecSendContainerState(codecSelfer_containerMapKey1234)
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 		yys3Slc = r.DecodeBytes(yys3Slc, true, true)
 		yys3 := string(yys3Slc)
 		z.DecSendContainerState(codecSelfer_containerMapValue1234)
 		switch yys3 {
-=======
-		yys40Slc = r.DecodeBytes(yys40Slc, true, true)
-		yys40 := string(yys40Slc)
-		z.DecSendContainerState(codecSelfer_containerMapValue1234)
-		switch yys40 {
-		case "kind":
-			if r.TryDecodeAsNil() {
-				x.Kind = ""
-			} else {
-				x.Kind = string(r.DecodeString())
-			}
-		case "apiVersion":
-			if r.TryDecodeAsNil() {
-				x.APIVersion = ""
-			} else {
-				x.APIVersion = string(r.DecodeString())
-			}
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 		case "metadata":
 			if r.TryDecodeAsNil() {
 				x.ListMeta = pkg1_unversioned.ListMeta{}
 			} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 				yyv4 := &x.ListMeta
 				yym5 := z.DecBinary()
 				_ = yym5
@@ -860,36 +583,18 @@ func (x *TestTypeList) codecDecodeSelfFromMap(l int, d *codec1978.Decoder) {
 				} else if z.HasExtensions() && z.DecExt(yyv4) {
 				} else {
 					z.DecFallback(yyv4, false)
-=======
-				yyv43 := &x.ListMeta
-				yym44 := z.DecBinary()
-				_ = yym44
-				if false {
-				} else if z.HasExtensions() && z.DecExt(yyv43) {
-				} else {
-					z.DecFallback(yyv43, false)
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 				}
 			}
 		case "items":
 			if r.TryDecodeAsNil() {
 				x.Items = nil
 			} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 				yyv6 := &x.Items
 				yym7 := z.DecBinary()
 				_ = yym7
 				if false {
 				} else {
 					h.decSliceTestType((*[]TestType)(yyv6), d)
-=======
-				yyv45 := &x.Items
-				yym46 := z.DecBinary()
-				_ = yym46
-				if false {
-				} else {
-					h.decSliceTestType((*[]TestType)(yyv45), d)
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 				}
 			}
 		case "kind":
@@ -905,15 +610,9 @@ func (x *TestTypeList) codecDecodeSelfFromMap(l int, d *codec1978.Decoder) {
 				x.APIVersion = string(r.DecodeString())
 			}
 		default:
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 			z.DecStructFieldNotFound(-1, yys3)
 		} // end switch yys3
 	} // end for yyj3
-=======
-			z.DecStructFieldNotFound(-1, yys40)
-		} // end switch yys40
-	} // end for yyj40
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 	z.DecSendContainerState(codecSelfer_containerMapEnd1234)
 }
 
@@ -921,7 +620,6 @@ func (x *TestTypeList) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 	var h codecSelfer1234
 	z, r := codec1978.GenHelperDecoder(d)
 	_, _, _ = h, z, r
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	var yyj10 int
 	var yyb10 bool
 	var yyhl10 bool = l >= 0
@@ -932,18 +630,6 @@ func (x *TestTypeList) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		yyb10 = r.CheckBreak()
 	}
 	if yyb10 {
-=======
-	var yyj47 int
-	var yyb47 bool
-	var yyhl47 bool = l >= 0
-	yyj47++
-	if yyhl47 {
-		yyb47 = yyj47 > l
-	} else {
-		yyb47 = r.CheckBreak()
-	}
-	if yyb47 {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 		z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
 		return
 	}
@@ -960,7 +646,6 @@ func (x *TestTypeList) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 			z.DecFallback(yyv11, false)
 		}
 	}
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	yyj10++
 	if yyhl10 {
 		yyb10 = yyj10 > l
@@ -968,15 +653,6 @@ func (x *TestTypeList) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		yyb10 = r.CheckBreak()
 	}
 	if yyb10 {
-=======
-	yyj47++
-	if yyhl47 {
-		yyb47 = yyj47 > l
-	} else {
-		yyb47 = r.CheckBreak()
-	}
-	if yyb47 {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 		z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
 		return
 	}
@@ -992,7 +668,6 @@ func (x *TestTypeList) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 			h.decSliceTestType((*[]TestType)(yyv13), d)
 		}
 	}
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	yyj10++
 	if yyhl10 {
 		yyb10 = yyj10 > l
@@ -1000,15 +675,6 @@ func (x *TestTypeList) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		yyb10 = r.CheckBreak()
 	}
 	if yyb10 {
-=======
-	yyj47++
-	if yyhl47 {
-		yyb47 = yyj47 > l
-	} else {
-		yyb47 = r.CheckBreak()
-	}
-	if yyb47 {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 		z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
 		return
 	}
@@ -1016,7 +682,6 @@ func (x *TestTypeList) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 	if r.TryDecodeAsNil() {
 		x.Kind = ""
 	} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 		x.Kind = string(r.DecodeString())
 	}
 	yyj10++
@@ -1026,24 +691,6 @@ func (x *TestTypeList) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		yyb10 = r.CheckBreak()
 	}
 	if yyb10 {
-=======
-		yyv50 := &x.ListMeta
-		yym51 := z.DecBinary()
-		_ = yym51
-		if false {
-		} else if z.HasExtensions() && z.DecExt(yyv50) {
-		} else {
-			z.DecFallback(yyv50, false)
-		}
-	}
-	yyj47++
-	if yyhl47 {
-		yyb47 = yyj47 > l
-	} else {
-		yyb47 = r.CheckBreak()
-	}
-	if yyb47 {
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 		z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
 		return
 	}
@@ -1076,14 +723,8 @@ func (x *TestTypeStatus) CodecEncodeSelf(e *codec1978.Encoder) {
 	if x == nil {
 		r.EncodeNil()
 	} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 		yym1 := z.EncBinary()
 		_ = yym1
-=======
-		yyv52 := &x.Items
-		yym53 := z.DecBinary()
-		_ = yym53
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 		if false {
 		} else if z.HasExtensions() && z.EncExt(x) {
 		} else {
@@ -1158,11 +799,7 @@ func (x *TestTypeStatus) CodecDecodeSelf(d *codec1978.Decoder) {
 				x.codecDecodeSelfFromArray(yyl2, d)
 			}
 		} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 			panic(codecSelferOnlyMapOrArrayEncodeToStructErr1234)
-=======
-			h.decSliceTestType((*[]TestType)(yyv52), d)
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 		}
 	}
 }
@@ -1226,7 +863,6 @@ func (x *TestTypeStatus) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		x.Blah = string(r.DecodeString())
 	}
 	for {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 		yyj5++
 		if yyhl5 {
 			yyb5 = yyj5 > l
@@ -1238,19 +874,6 @@ func (x *TestTypeStatus) codecDecodeSelfFromArray(l int, d *codec1978.Decoder) {
 		}
 		z.DecSendContainerState(codecSelfer_containerArrayElem1234)
 		z.DecStructFieldNotFound(yyj5-1, "")
-=======
-		yyj47++
-		if yyhl47 {
-			yyb47 = yyj47 > l
-		} else {
-			yyb47 = r.CheckBreak()
-		}
-		if yyb47 {
-			break
-		}
-		z.DecSendContainerState(codecSelfer_containerArrayElem1234)
-		z.DecStructFieldNotFound(yyj47-1, "")
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 	}
 	z.DecSendContainerState(codecSelfer_containerArrayEnd1234)
 }
@@ -1260,17 +883,10 @@ func (x codecSelfer1234) encSliceTestType(v []TestType, e *codec1978.Encoder) {
 	z, r := codec1978.GenHelperEncoder(e)
 	_, _, _ = h, z, r
 	r.EncodeArrayStart(len(v))
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	for _, yyv1 := range v {
 		z.EncSendContainerState(codecSelfer_containerArrayElem1234)
 		yy2 := &yyv1
 		yy2.CodecEncodeSelf(e)
-=======
-	for _, yyv54 := range v {
-		z.EncSendContainerState(codecSelfer_containerArrayElem1234)
-		yy55 := &yyv54
-		yy55.CodecEncodeSelf(e)
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 	}
 	z.EncSendContainerState(codecSelfer_containerArrayEnd1234)
 }
@@ -1280,7 +896,6 @@ func (x codecSelfer1234) decSliceTestType(v *[]TestType, d *codec1978.Decoder) {
 	z, r := codec1978.GenHelperDecoder(d)
 	_, _, _ = h, z, r
 
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 	yyv1 := *v
 	yyh1, yyl1 := z.DecSliceHelperStart()
 	var yyc1 bool
@@ -1341,72 +956,12 @@ func (x codecSelfer1234) decSliceTestType(v *[]TestType, d *codec1978.Decoder) {
 				} else {
 					yyv3 := &yyv1[yyj1]
 					yyv3.CodecDecodeSelf(d)
-=======
-	yyv56 := *v
-	yyh56, yyl56 := z.DecSliceHelperStart()
-	var yyc56 bool
-	if yyl56 == 0 {
-		if yyv56 == nil {
-			yyv56 = []TestType{}
-			yyc56 = true
-		} else if len(yyv56) != 0 {
-			yyv56 = yyv56[:0]
-			yyc56 = true
-		}
-	} else if yyl56 > 0 {
-		var yyrr56, yyrl56 int
-		var yyrt56 bool
-		if yyl56 > cap(yyv56) {
-
-			yyrg56 := len(yyv56) > 0
-			yyv256 := yyv56
-			yyrl56, yyrt56 = z.DecInferLen(yyl56, z.DecBasicHandle().MaxInitLen, 192)
-			if yyrt56 {
-				if yyrl56 <= cap(yyv56) {
-					yyv56 = yyv56[:yyrl56]
-				} else {
-					yyv56 = make([]TestType, yyrl56)
-				}
-			} else {
-				yyv56 = make([]TestType, yyrl56)
-			}
-			yyc56 = true
-			yyrr56 = len(yyv56)
-			if yyrg56 {
-				copy(yyv56, yyv256)
-			}
-		} else if yyl56 != len(yyv56) {
-			yyv56 = yyv56[:yyl56]
-			yyc56 = true
-		}
-		yyj56 := 0
-		for ; yyj56 < yyrr56; yyj56++ {
-			yyh56.ElemContainerState(yyj56)
-			if r.TryDecodeAsNil() {
-				yyv56[yyj56] = TestType{}
-			} else {
-				yyv57 := &yyv56[yyj56]
-				yyv57.CodecDecodeSelf(d)
-			}
-
-		}
-		if yyrt56 {
-			for ; yyj56 < yyl56; yyj56++ {
-				yyv56 = append(yyv56, TestType{})
-				yyh56.ElemContainerState(yyj56)
-				if r.TryDecodeAsNil() {
-					yyv56[yyj56] = TestType{}
-				} else {
-					yyv58 := &yyv56[yyj56]
-					yyv58.CodecDecodeSelf(d)
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 				}
 
 			}
 		}
 
 	} else {
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 		yyj1 := 0
 		for ; !r.CheckBreak(); yyj1++ {
 
@@ -1421,22 +976,6 @@ func (x codecSelfer1234) decSliceTestType(v *[]TestType, d *codec1978.Decoder) {
 				} else {
 					yyv4 := &yyv1[yyj1]
 					yyv4.CodecDecodeSelf(d)
-=======
-		yyj56 := 0
-		for ; !r.CheckBreak(); yyj56++ {
-
-			if yyj56 >= len(yyv56) {
-				yyv56 = append(yyv56, TestType{}) // var yyz56 TestType
-				yyc56 = true
-			}
-			yyh56.ElemContainerState(yyj56)
-			if yyj56 < len(yyv56) {
-				if r.TryDecodeAsNil() {
-					yyv56[yyj56] = TestType{}
-				} else {
-					yyv59 := &yyv56[yyj56]
-					yyv59.CodecDecodeSelf(d)
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 				}
 
 			} else {
@@ -1444,7 +983,6 @@ func (x codecSelfer1234) decSliceTestType(v *[]TestType, d *codec1978.Decoder) {
 			}
 
 		}
-<<<<<<< 020db88f5f746b27291b432f38e835739b670975
 		if yyj1 < len(yyv1) {
 			yyv1 = yyv1[:yyj1]
 			yyc1 = true
@@ -1456,18 +994,5 @@ func (x codecSelfer1234) decSliceTestType(v *[]TestType, d *codec1978.Decoder) {
 	yyh1.End()
 	if yyc1 {
 		*v = yyv1
-=======
-		if yyj56 < len(yyv56) {
-			yyv56 = yyv56[:yyj56]
-			yyc56 = true
-		} else if yyj56 == 0 && yyv56 == nil {
-			yyv56 = []TestType{}
-			yyc56 = true
-		}
-	}
-	yyh56.End()
-	if yyc56 {
-		*v = yyv56
->>>>>>> Rebased with upstream and update cAdvisor with hyper pods
 	}
 }

@@ -92,14 +92,6 @@ type AttachToContainerOptions struct {
 	ErrorStream  io.Writer
 }
 
-type ExecInContainerOptions struct {
-	Container    string
-	InputStream  io.Reader
-	OutputStream io.Writer
-	ErrorStream  io.Writer
-	Commands     []string
-}
-
 type ContainerLogsOptions struct {
 	Container    string
 	OutputStream io.Writer
@@ -267,11 +259,11 @@ func (cli *HyperClient) stream(method, path string, in io.Reader, out io.Writer,
 
 	defer body.Close()
 
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(body)
 	if out != nil {
-		out.Write(buf.Bytes())
+		_, err := io.Copy(out, body)
+		return err
 	}
+
 	return nil
 
 }
@@ -620,28 +612,6 @@ func (client *HyperClient) Attach(opts AttachToContainerOptions) error {
 	})
 }
 
-func (client *HyperClient) Exec(opts ExecInContainerOptions) error {
-	if opts.Container == "" {
-		return fmt.Errorf("No Such Container %s", opts.Container)
-	}
-
-	command, err := json.Marshal(opts.Commands)
-	if err != nil {
-		return err
-	}
-
-	v := url.Values{}
-	v.Set(KEY_TYPE, TYPE_CONTAINER)
-	v.Set(KEY_VALUE, opts.Container)
-	v.Set(KEY_COMMAND, string(command))
-	path := "/exec?" + v.Encode()
-	return client.hijack("POST", path, hijackOptions{
-		in:     opts.InputStream,
-		stdout: opts.OutputStream,
-		stderr: opts.ErrorStream,
-	})
-}
-
 func (client *HyperClient) ContainerLogs(opts ContainerLogsOptions) error {
 	if opts.Container == "" {
 		return fmt.Errorf("No Such Container %s", opts.Container)
@@ -664,8 +634,12 @@ func (client *HyperClient) ContainerLogs(opts ContainerLogsOptions) error {
 		v.Set("since", fmt.Sprintf("%d", opts.Since))
 	}
 
+	headers := make(map[string][]string)
+	headers["User-Agent"] = []string{"kubelet"}
+	headers["Content-Type"] = []string{"text/plain"}
+
 	path := "/container/logs?" + v.Encode()
-	return client.stream("GET", path, nil, opts.OutputStream, nil)
+	return client.stream("GET", path, nil, opts.OutputStream, headers)
 }
 
 func (client *HyperClient) IsImagePresent(repo, tag string) (bool, error) {

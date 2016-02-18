@@ -1013,9 +1013,9 @@ func (r *runtime) PullImage(image kubecontainer.ImageSpec, pullSecrets []api.Sec
 	}
 
 	if exist, _ := r.hyperClient.IsImagePresent("haproxy", "1.4"); !exist {
-		err = r.hyperClient.PullImage("haproxy", credential)
+		err = r.hyperClient.PullImage("haproxy:1.4", credential)
 		if err != nil {
-			return fmt.Errorf("Hyper: Failed to pull haproxy image: %v", err)
+			return fmt.Errorf("Hyper: Failed to pull haproxy:1.4 image: %v", err)
 		}
 	}
 

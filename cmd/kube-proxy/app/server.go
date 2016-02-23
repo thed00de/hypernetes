@@ -200,7 +200,7 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 		userspace.CleanupLeftovers(iptInterface)
 	case proxyModeHaproxy:
 		glog.V(2).Info("Using pod-buildin-haproxy proxy.")
-		proxierBuildin, err := haproxy.NewProxier(config.ConfigSyncPeriod, client)
+		proxierBuildin, err := haproxy.NewProxier(config.ConfigSyncPeriod, client, config.DisableHyperInternalService)
 		if err != nil {
 			glog.Fatalf("Unable to create proxier: %v", err)
 		}

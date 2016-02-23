@@ -61,6 +61,7 @@ func NewProxyConfig() *ProxyServerConfig {
 // AddFlags adds flags for a specific ProxyServer to the specified FlagSet
 func (s *ProxyServerConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.Var(componentconfig.IPVar{&s.BindAddress}, "bind-address", "The IP address for the proxy server to serve on (set to 0.0.0.0 for all interfaces)")
+	fs.BoolVar(&s.DisableHyperInternalService, "disable-hyper-internal-service", s.DisableHyperInternalService, "Disable the internal haproxy service in Hyper pods")
 	fs.StringVar(&s.Master, "master", s.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
 	fs.IntVar(&s.HealthzPort, "healthz-port", s.HealthzPort, "The port to bind the health check server. Use 0 to disable.")
 	fs.Var(componentconfig.IPVar{&s.HealthzBindAddress}, "healthz-bind-address", "The IP address for the health check server to serve on, defaulting to 127.0.0.1 (set to 0.0.0.0 for all interfaces)")

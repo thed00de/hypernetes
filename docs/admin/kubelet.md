@@ -81,6 +81,7 @@ kubelet
       --container-runtime="docker": The container runtime to use. Possible values: 'docker', 'rkt'. Default: 'docker'.
       --containerized[=false]: Experimental support for running kubelet in a container.  Intended for testing. [default=false]
       --cpu-cfs-quota[=true]: Enable CPU CFS quota enforcement for containers that specify CPU limits
+      --disable-hyper-internal-service[=false]: Disable the internal haproxy service in Hyper pods
       --docker-endpoint="": If non-empty, use this for the docker endpoint to communicate with
       --docker-exec-handler="native": Handler to use when executing a command in a container. Valid values are 'native' and 'nsenter'. Defaults to 'native'.
       --enable-custom-metrics[=false]: Support for gathering custom metrics.

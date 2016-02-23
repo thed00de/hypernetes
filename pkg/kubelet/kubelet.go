@@ -218,6 +218,7 @@ func NewMainKubelet(
 	hairpinMode string,
 	babysitDaemons bool,
 	kubeOptions []Option,
+	disableHyperInternalService bool,
 ) (*Kubelet, error) {
 	if rootDirectory == "" {
 		return nil, fmt.Errorf("invalid root directory %q", rootDirectory)
@@ -341,6 +342,7 @@ func NewMainKubelet(
 		reservation:                  reservation,
 		enableCustomMetrics:          enableCustomMetrics,
 		babysitDaemons:               babysitDaemons,
+		disableHyperInternalService:  disableHyperInternalService,
 	}
 	// TODO: Factor out "StatsProvider" from Kubelet so we don't have a cyclic dependency
 	klet.resourceAnalyzer = stats.NewResourceAnalyzer(klet, volumeStatsAggPeriod)
@@ -444,6 +446,7 @@ func NewMainKubelet(
 			imageBackOff,
 			serializeImagePulls,
 			klet.httpClient,
+			klet.disableHyperInternalService,
 		)
 		if err != nil {
 			return nil, err
@@ -775,6 +778,9 @@ type Kubelet struct {
 
 	// handlers called during the tryUpdateNodeStatus cycle
 	setNodeStatusFuncs []func(*api.Node) error
+
+	// Disable the internal haproxy service in Hyper pods
+	disableHyperInternalService bool
 }
 
 // Validate given node IP belongs to the current host

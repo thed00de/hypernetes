@@ -74,6 +74,9 @@ type runtime struct {
 	imagePuller         kubecontainer.ImagePuller
 	version             kubecontainer.Version
 
+	// Disable the internal haproxy service in Hyper pods
+	disableHyperInternalService bool
+
 	// Runner of lifecycle events.
 	runner kubecontainer.HandlerRunner
 }
@@ -95,6 +98,7 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 	imageBackOff *util.Backoff,
 	serializeImagePulls bool,
 	httpClient kubetypes.HttpGetter,
+	disableHyperInternalService bool,
 ) (kubecontainer.Runtime, error) {
 	// check hyper has already installed
 	hyperBinAbsPath, err := exec.LookPath(hyperBinName)
@@ -104,16 +108,17 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 	}
 
 	hyper := &runtime{
-		hyperBinAbsPath:     hyperBinAbsPath,
-		dockerKeyring:       credentialprovider.NewDockerKeyring(),
-		containerRefManager: containerRefManager,
-		generator:           generator,
-		livenessManager:     livenessManager,
-		recorder:            recorder,
-		networkPlugin:       networkPlugin,
-		volumeGetter:        volumeGetter,
-		hyperClient:         NewHyperClient(),
-		kubeClient:          kubeClient,
+		hyperBinAbsPath:             hyperBinAbsPath,
+		dockerKeyring:               credentialprovider.NewDockerKeyring(),
+		containerRefManager:         containerRefManager,
+		generator:                   generator,
+		livenessManager:             livenessManager,
+		recorder:                    recorder,
+		networkPlugin:               networkPlugin,
+		volumeGetter:                volumeGetter,
+		hyperClient:                 NewHyperClient(),
+		kubeClient:                  kubeClient,
+		disableHyperInternalService: disableHyperInternalService,
 	}
 
 	if serializeImagePulls {
@@ -454,17 +459,19 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 
 	glog.V(4).Infof("Hyper volumes: %v", volumes)
 
-	services := r.buildHyperPodServices(pod)
-	if services == nil {
-		// services can't be null for kubernetes, so fake one if it is null
-		services = []HyperService{
-			{
-				ServiceIP:   "127.0.0.2",
-				ServicePort: 65534,
-			},
+	if !r.disableHyperInternalService {
+		services := r.buildHyperPodServices(pod)
+		if services == nil {
+			// services can't be null for kubernetes, so fake one if it is null
+			services = []HyperService{
+				{
+					ServiceIP:   "127.0.0.2",
+					ServicePort: 65534,
+				},
+			}
 		}
+		specMap["services"] = services
 	}
-	specMap["services"] = services
 
 	// build hyper containers spec
 	var containers []map[string]interface{}

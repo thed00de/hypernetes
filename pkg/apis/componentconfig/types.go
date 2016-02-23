@@ -24,6 +24,8 @@ type KubeProxyConfiguration struct {
 	// bindAddress is the IP address for the proxy server to serve on (set to 0.0.0.0
 	// for all interfaces)
 	BindAddress string `json:"bindAddress"`
+	// disableHyperInternalService disables haproxy proxy in Hyper Pod
+	DisableHyperInternalService bool `json:"DisableHyperInternalService"`
 	// healthzBindAddress is the IP address for the health check server to serve on,
 	// defaulting to 127.0.0.1 (set to 0.0.0.0 for all interfaces)
 	HealthzBindAddress string `json:"healthzBindAddress"`
@@ -102,6 +104,8 @@ type KubeletConfiguration struct {
 	Config string `json:"config"`
 	// cinderConfig is the config file for openstack cinder
 	CinderConfig string `json:""CinderConfig`
+	// disableHyperInternalService disables haproxy in Hyper pod
+	DisableHyperInternalService bool `json:"DisableHyperInternalService"`
 	// syncFrequency is the max period between synchronizing running
 	// containers and config
 	SyncFrequency unversioned.Duration `json:"syncFrequency"`

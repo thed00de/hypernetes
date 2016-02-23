@@ -68,8 +68,9 @@ type Proxier struct {
 	haveReceivedEndpointsUpdate bool // true once we've seen an OnEndpointsUpdate event
 
 	// These are effectively const and do not need the mutex to be held.
-	syncPeriod    time.Duration
-	masqueradeAll bool
+	syncPeriod                  time.Duration
+	masqueradeAll               bool
+	disableHyperInternalService bool
 }
 
 type localPort struct {
@@ -91,7 +92,7 @@ type closeable interface {
 var _ proxy.ProxyProvider = &Proxier{}
 
 // NewProxier returns a new Proxier given an pod-buildin-haproxy Interface instance.
-func NewProxier(syncPeriod time.Duration, kubeClient *kubeclient.Client) (*Proxier, error) {
+func NewProxier(syncPeriod time.Duration, kubeClient *kubeclient.Client, disableHyperInternalService bool) (*Proxier, error) {
 	client := hyper.NewHyperClient()
 	_, err := client.Version()
 	if err != nil {
@@ -100,11 +101,12 @@ func NewProxier(syncPeriod time.Duration, kubeClient *kubeclient.Client) (*Proxi
 	}
 
 	return &Proxier{
-		serviceMap:  make(map[proxy.ServicePortName]*serviceInfo),
-		portsMap:    make(map[localPort]closeable),
-		syncPeriod:  syncPeriod,
-		hyperClient: client,
-		kubeClient:  kubeClient,
+		serviceMap:                  make(map[proxy.ServicePortName]*serviceInfo),
+		portsMap:                    make(map[localPort]closeable),
+		syncPeriod:                  syncPeriod,
+		hyperClient:                 client,
+		kubeClient:                  kubeClient,
+		disableHyperInternalService: disableHyperInternalService,
 	}, nil
 }
 
@@ -352,6 +354,10 @@ func flattenValidEndpoints(endpoints []hostPortPair) []string {
 // This is where all of haproxy-setting calls happen.
 // assumes proxier.mu is held
 func (proxier *Proxier) syncProxyRules() {
+	if proxier.disableHyperInternalService {
+		return
+	}
+
 	// don't sync rules till we've received services and endpoints
 	if !proxier.haveReceivedEndpointsUpdate || !proxier.haveReceivedServiceUpdate {
 		glog.V(2).Info("Not syncing proxy rules until Services and Endpoints have been received from master")

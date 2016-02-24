@@ -55,6 +55,7 @@ type KubeletServer struct {
 	ConfigureCBR0                  bool
 	ContainerRuntime               string
 	CPUCFSQuota                    bool
+	DisableHyperInternalService    bool
 	DockerDaemonContainer          string
 	DockerEndpoint                 string
 	DockerExecHandlerName          string
@@ -202,6 +203,7 @@ func (s *KubeletServer) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&s.HTTPCheckFrequency, "http-check-frequency", s.HTTPCheckFrequency, "Duration between checking http for new data")
 	fs.StringVar(&s.ManifestURL, "manifest-url", s.ManifestURL, "URL for accessing the container manifest")
 	fs.StringVar(&s.ManifestURLHeader, "manifest-url-header", s.ManifestURLHeader, "HTTP header to use when accessing the manifest URL, with the key separated from the value with a ':', as in 'key:value'")
+	fs.BoolVar(&s.DisableHyperInternalService, "disable-hyper-internal-service", s.DisableHyperInternalService, "Disable the internal haproxy service in Hyper pods")
 	fs.BoolVar(&s.EnableServer, "enable-server", s.EnableServer, "Enable the Kubelet's server")
 	fs.IPVar(&s.Address, "address", s.Address, "The IP address for the Kubelet to serve on (set to 0.0.0.0 for all interfaces)")
 	fs.UintVar(&s.Port, "port", s.Port, "The port for the Kubelet to serve on.")

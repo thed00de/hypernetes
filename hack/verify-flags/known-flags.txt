@@ -75,6 +75,7 @@ disable-filter
 docker-email
 docker-endpoint
 docker-exec-handler
+disable-hyper-internal-service
 docker-password
 docker-server
 docker-username

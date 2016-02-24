@@ -198,6 +198,7 @@ func NewMainKubelet(
 	outOfDiskTransitionFrequency time.Duration,
 	flannelExperimentalOverlay bool,
 	nodeIP net.IP,
+	disableHyperInternalService bool,
 ) (*Kubelet, error) {
 	if rootDirectory == "" {
 		return nil, fmt.Errorf("invalid root directory %q", rootDirectory)
@@ -317,6 +318,7 @@ func NewMainKubelet(
 		nodeIP:                         nodeIP,
 		clock:                          util.RealClock{},
 		outOfDiskTransitionFrequency: outOfDiskTransitionFrequency,
+		disableHyperInternalService:  disableHyperInternalService,
 	}
 	if klet.flannelExperimentalOverlay {
 		glog.Infof("Flannel is in charge of podCIDR and overlay networking.")
@@ -403,6 +405,7 @@ func NewMainKubelet(
 			imageBackOff,
 			serializeImagePulls,
 			klet.httpClient,
+			klet.disableHyperInternalService,
 		)
 		if err != nil {
 			return nil, err
@@ -686,6 +689,9 @@ type Kubelet struct {
 	// not-out-of-disk. This prevents a pod that causes out-of-disk condition from repeatedly
 	// getting rescheduled onto the node.
 	outOfDiskTransitionFrequency time.Duration
+
+	// Disable the internal haproxy service in Hyper pods
+	disableHyperInternalService bool
 }
 
 // Validate given node IP belongs to the current host

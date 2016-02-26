@@ -447,6 +447,8 @@ func NewMainKubelet(
 			serializeImagePulls,
 			klet.httpClient,
 			klet.disableHyperInternalService,
+			containerLogsDir,
+			osInterface,
 		)
 		if err != nil {
 			return nil, err

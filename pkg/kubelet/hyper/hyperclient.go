@@ -74,9 +74,13 @@ const (
 	KEY_VOLUME_SOURCE  = "source"
 	KEY_VOLUMES        = "volumes"
 	KEY_WORKDIR        = "workdir"
-	TYPE_CONTAINER     = "container"
-	TYPE_POD           = "pod"
-	VOLUME_TYPE_VFS    = "vfs"
+
+	KEY_API_POD_UID = "k8s.hyper.sh/uid"
+
+	TYPE_CONTAINER = "container"
+	TYPE_POD       = "pod"
+
+	VOLUME_TYPE_VFS = "vfs"
 )
 
 type HyperClient struct {

@@ -56,6 +56,7 @@ const (
 	hyperDefaultContainerCPU    = 1
 	hyperDefaultContainerMem    = 128
 	hyperPodSpecDir             = "/var/lib/kubelet/hyper"
+	hyperLogsDir                = "/var/run/hyper/Pods"
 	minimumGracePeriodInSeconds = 2
 )
 
@@ -63,6 +64,7 @@ const (
 type runtime struct {
 	hyperBinAbsPath     string
 	dockerKeyring       credentialprovider.DockerKeyring
+	containerLogsDir    string
 	containerRefManager *kubecontainer.RefManager
 	generator           kubecontainer.RunContainerOptionsGenerator
 	recorder            record.EventRecorder
@@ -72,6 +74,7 @@ type runtime struct {
 	hyperClient         *HyperClient
 	kubeClient          client.Interface
 	imagePuller         kubecontainer.ImagePuller
+	os                  kubecontainer.OSInterface
 	version             kubecontainer.Version
 
 	// Disable the internal haproxy service in Hyper pods
@@ -99,6 +102,8 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 	serializeImagePulls bool,
 	httpClient kubetypes.HttpGetter,
 	disableHyperInternalService bool,
+	containerLogsDir string,
+	os kubecontainer.OSInterface,
 ) (kubecontainer.Runtime, error) {
 	// check hyper has already installed
 	hyperBinAbsPath, err := exec.LookPath(hyperBinName)
@@ -110,9 +115,11 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 	hyper := &runtime{
 		hyperBinAbsPath:             hyperBinAbsPath,
 		dockerKeyring:               credentialprovider.NewDockerKeyring(),
+		containerLogsDir:            containerLogsDir,
 		containerRefManager:         containerRefManager,
 		generator:                   generator,
 		livenessManager:             livenessManager,
+		os:                          os,
 		recorder:                    recorder,
 		networkPlugin:               networkPlugin,
 		volumeGetter:                volumeGetter,
@@ -731,11 +738,23 @@ func (r *runtime) RunPod(pod *api.Pod, restartCount int, pullSecrets []api.Secre
 			}
 		}
 
+		// Update container references
 		ref, err := kubecontainer.GenerateContainerRef(pod, &container)
 		if err != nil {
 			glog.Errorf("Couldn't make a ref to pod %q, container %v: '%v'", pod.Name, container.Name, err)
 		} else {
 			r.containerRefManager.SetRef(containerID, ref)
+		}
+
+		// Create a symbolic link to the Hyper container log file using a name
+		// which captures the full pod name, the container name and the
+		// container ID. Cluster level logging will capture these symbolic
+		// filenames which can be used for search terms in Elasticsearch or for
+		// labels for Cloud Logging.
+		containerLogFile := path.Join(hyperLogsDir, podID, fmt.Sprintf("%s-json.log", containerID.ID))
+		symlinkFile := LogSymlink(r.containerLogsDir, podFullName, container.Name, containerID.ID)
+		if err = r.os.Symlink(containerLogFile, symlinkFile); err != nil {
+			glog.Errorf("Failed to create symbolic link to the log file of pod %q container %q: %v", podFullName, container.Name, err)
 		}
 
 		if container.Lifecycle != nil && container.Lifecycle.PostStart != nil {
@@ -901,6 +920,20 @@ func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 	for _, podInfo := range podInfos {
 		if podInfo.PodName == podName {
 			podID = podInfo.PodID
+
+			// Remove log links
+			for _, c := range podInfo.PodInfo.Status.Status {
+				_, _, _, containerName, _, _, err := r.parseHyperContainerFullName(c.Name)
+				if err != nil {
+					continue
+				}
+				symlinkFile := LogSymlink(r.containerLogsDir, podName, containerName, c.ContainerID)
+				err = os.Remove(symlinkFile)
+				if err != nil && !os.IsNotExist(err) {
+					glog.Warningf("Failed to remove container log symlink %q: %v", symlinkFile, err)
+				}
+			}
+
 			break
 		}
 	}
@@ -1267,6 +1300,20 @@ func (r *runtime) GarbageCollect(gcPolicy kubecontainer.ContainerGCPolicy) error
 		}
 
 		if lastTime.Before(time.Now().Add(-gcPolicy.MinAge)) {
+			// Remove log links
+			for _, c := range pod.PodInfo.Status.Status {
+				_, _, _, containerName, _, _, err := r.parseHyperContainerFullName(c.Name)
+				if err != nil {
+					continue
+				}
+				symlinkFile := LogSymlink(r.containerLogsDir, pod.PodName, containerName, c.ContainerID)
+				err = os.Remove(symlinkFile)
+				if err != nil && !os.IsNotExist(err) {
+					glog.Warningf("Failed to remove container log symlink %q: %v", symlinkFile, err)
+				}
+			}
+
+			// Remove the pod
 			cmds := append([]string{}, "rm", pod.PodID)
 			_, err = r.runCommand(cmds...)
 			if err != nil {
@@ -1289,4 +1336,9 @@ func (r *runtime) GetPodStatusAndAPIPodStatus(pod *api.Pod) (*kubecontainer.PodS
 	}
 	apiPodStatus, err := r.ConvertPodStatusToAPIPodStatus(pod, podStatus)
 	return podStatus, apiPodStatus, err
+}
+
+// LogSymlink generates symlink file path for specified container
+func LogSymlink(containerLogsDir, podFullName, containerName, containerID string) string {
+	return path.Join(containerLogsDir, fmt.Sprintf("%s_%s-%s.log", podFullName, containerName, containerID))
 }

@@ -321,7 +321,7 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 			continue
 		}
 
-		podID := podInfo.PodInfo.Spec.Labels["UID"]
+		podID := podInfo.PodInfo.Spec.Labels[KEY_API_POD_UID]
 		podName, podNamespace, err := kubecontainer.ParsePodFullName(podInfo.PodName)
 		if err != nil {
 			glog.V(5).Infof("Hyper: pod %s is not managed by kubelet", podInfo.PodName)
@@ -599,9 +599,15 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 	specMap[KEY_RESOURCE] = podResource
 	glog.V(5).Infof("Hyper: pod limit vcpu=%v mem=%vMiB", podResource[KEY_VCPU], podResource[KEY_MEMORY])
 
+	// Setup labels
+	podLabels := map[string]string{KEY_API_POD_UID: string(pod.UID)}
+	for k, v := range pod.Labels {
+		podLabels[k] = v
+	}
+	specMap[KEY_LABELS] = podLabels
+
 	// other params required
 	specMap[KEY_ID] = kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
-	specMap[KEY_LABELS] = map[string]string{"UID": string(pod.UID)}
 	specMap[KEY_TTY] = false
 
 	// Cap hostname at 63 chars (specification is 64bytes which is 63 chars and the null terminating char).
@@ -655,7 +661,7 @@ func (r *runtime) getPodSpec(podFullName string) (string, error) {
 	return string(spec), nil
 }
 
-func (r *runtime) GetPodStartCount(podID string) (int, error) {
+func (r *runtime) GetPodRestartCount(podID string) (int, error) {
 	containers, err := r.hyperClient.ListContainers()
 	if err != nil {
 		return 0, err
@@ -829,7 +835,7 @@ func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 		podID, err := r.hyperClient.GetPodIDByName(podFullName)
 		if err == nil && len(podID) > 0 {
 			// Update pod restart count
-			restartCount, err = r.GetPodStartCount(podID)
+			restartCount, err = r.GetPodRestartCount(podID)
 			if err != nil {
 				glog.Errorf("Hyper: get pod startcount failed: %v", err)
 				return err

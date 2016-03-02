@@ -452,7 +452,7 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 			v["option"] = map[string]interface{}{
 				"user":     metadata["auth_username"],
 				"keyring":  metadata["keyring"],
-				"mointors": monitors,
+				"monitors": monitors,
 			}
 		} else {
 			glog.V(4).Infof("Hyper: volume %s %s", name, volume.Builder.GetPath())

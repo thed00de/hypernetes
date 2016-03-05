@@ -707,7 +707,7 @@ func (r *runtime) RunPod(pod *api.Pod, restartCount int, pullSecrets []api.Secre
 	}
 
 	// Setup pod's network by network plugin
-	err = r.networkPlugin.SetUpPod(pod.Namespace, podFullName, "", "hyper")
+	err = r.networkPlugin.SetUpPod(pod.Namespace, pod.Name, "", "hyper")
 	if err != nil {
 		glog.Errorf("Hyper: networkPlugin.SetUpPod %s failed, error: %v", pod.Name, err)
 		return err
@@ -921,7 +921,6 @@ func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 	}
 
 	var podID string
-	namespace := runningPod.Namespace
 	podName := kubecontainer.BuildPodFullName(runningPod.Name, runningPod.Namespace)
 	glog.V(4).Infof("Hyper: killing pod %q.", podName)
 
@@ -960,7 +959,7 @@ func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 	}
 
 	// Teardown pod's network
-	err = r.networkPlugin.TearDownPod(namespace, podName, "", "hyper")
+	err = r.networkPlugin.TearDownPod(runningPod.Namespace, runningPod.Name, "", "hyper")
 	if err != nil {
 		glog.Errorf("Hyper: networkPlugin.TearDownPod failed, error: %v", err)
 		return err

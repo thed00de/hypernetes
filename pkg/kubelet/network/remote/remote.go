@@ -20,7 +20,7 @@ import (
 	"net"
 
 	"github.com/golang/glog"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
+	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/networkprovider"
@@ -32,7 +32,7 @@ const (
 
 type RemoteNetworkPlugin struct {
 	host     network.Host
-	client   client.Interface
+	client   clientset.Interface
 	provider networkprovider.Interface
 }
 
@@ -50,7 +50,7 @@ func (plugin *RemoteNetworkPlugin) Init(host network.Host) error {
 
 func (plugin *RemoteNetworkPlugin) getNetworkOfNamespace(nsName string) (*networkprovider.Network, error) {
 	// get namespace info
-	namespace, err := plugin.client.Namespaces().Get(nsName)
+	namespace, err := plugin.client.Core().Namespaces().Get(nsName)
 	if err != nil {
 		glog.Errorf("Couldn't get info of namespace %s: %v", nsName, err)
 		return nil, err
@@ -61,7 +61,7 @@ func (plugin *RemoteNetworkPlugin) getNetworkOfNamespace(nsName string) (*networ
 	}
 
 	// get network of namespace
-	network, err := plugin.client.Networks().Get(namespace.Spec.Network)
+	network, err := plugin.client.Core().Networks().Get(namespace.Spec.Network)
 	if err != nil {
 		glog.Errorf("Couldn't get network for namespace %s: %v", namespace.Name, err)
 		return nil, err
@@ -158,4 +158,7 @@ func (plugin *RemoteNetworkPlugin) Status(namespace string, name string, podInfr
 	}
 
 	return &status, nil
+}
+
+func (plugin *RemoteNetworkPlugin) Event(name string, details map[string]interface{}) {
 }

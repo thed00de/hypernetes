@@ -6198,6 +6198,10 @@
      "readOnly": {
       "type": "boolean",
       "description": "Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. More info: http://releases.k8s.io/release-1.2/examples/mysql-cinder-pd/README.md"
+     },
+     "withOpenStackCP": {
+      "type": "boolean",
+      "description": "Optional: Specify if using cinder volume together with OpenStack CloudProvider"
      }
     }
    },
@@ -7088,10 +7092,6 @@
      "status": {
       "$ref": "v1beta1.DeploymentStatus",
       "description": "Most recently observed status of the Deployment."
-      },
-     "withOpenStackCP": {
-      "type": "boolean",
-      "description": "Optional: Specify if using cinder volume together with OpenStack CloudProvider"
      }
     }
    },

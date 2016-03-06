@@ -81,6 +81,10 @@ type configMapVolume struct {
 
 var _ volume.Volume = &configMapVolume{}
 
+func (sv *configMapVolume) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 func (sv *configMapVolume) GetPath() string {
 	return sv.plugin.host.GetPodVolumeDir(sv.podUID, strings.EscapeQualifiedNameForDisk(configMapPluginName), sv.volName)
 }
@@ -112,6 +116,10 @@ var wrappedVolumeSpec = volume.Spec{
 
 func (b *configMapVolumeBuilder) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
+}
+
+func (b *configMapVolumeBuilder) GetMetaData() map[string]interface{} {
+	return nil
 }
 
 func (b *configMapVolumeBuilder) SetUpAt(dir string, fsGroup *int64) error {
@@ -211,6 +219,10 @@ var _ volume.Cleaner = &configMapVolumeCleaner{}
 
 func (c *configMapVolumeCleaner) TearDown() error {
 	return c.TearDownAt(c.GetPath())
+}
+
+func (b *configMapVolumeCleaner) GetMetaData() map[string]interface{} {
+	return nil
 }
 
 func (c *configMapVolumeCleaner) TearDownAt(dir string) error {

@@ -24,6 +24,8 @@ type KubeProxyConfiguration struct {
 	// bindAddress is the IP address for the proxy server to serve on (set to 0.0.0.0
 	// for all interfaces)
 	BindAddress string `json:"bindAddress"`
+	// disableHyperInternalService disables haproxy proxy in Hyper Pod
+	DisableHyperInternalService bool `json:"DisableHyperInternalService"`
 	// healthzBindAddress is the IP address for the health check server to serve on,
 	// defaulting to 127.0.0.1 (set to 0.0.0.0 for all interfaces)
 	HealthzBindAddress string `json:"healthzBindAddress"`

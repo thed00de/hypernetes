@@ -32,8 +32,8 @@ package runtime
 //
 // +protobuf=true
 type TypeMeta struct {
-	APIVersion string `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
-	Kind       string `json:"kind,omitempty" yaml:"kind,omitempty"`
+	APIVersion string `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty" protobuf:"bytes,1,opt,name=apiVersion"`
+	Kind       string `json:"kind,omitempty" yaml:"kind,omitempty" protobuf:"bytes,2,opt,name=kind"`
 }
 
 // RawExtension is used to hold extensions in external versions.
@@ -81,7 +81,7 @@ type TypeMeta struct {
 // +protobuf=true
 type RawExtension struct {
 	// RawJSON is the underlying serialization of this object.
-	RawJSON []byte
+	RawJSON []byte `protobuf:"bytes,1,opt,name=rawJSON"`
 	// Object can hold a representation of this extension - useful for working with versioned
 	// structs.
 	Object Object `json:"-"`
@@ -95,11 +95,11 @@ type RawExtension struct {
 //
 // +protobuf=true
 type Unknown struct {
-	TypeMeta `json:",inline"`
+	TypeMeta `json:",inline" protobuf:"bytes,1,opt,name=typeMeta"`
 	// RawJSON will hold the complete JSON of the object which couldn't be matched
 	// with a registered type. Most likely, nothing should be done with this
 	// except for passing it through the system.
-	RawJSON []byte
+	RawJSON []byte `protobuf:"bytes,2,opt,name=rawJSON"`
 }
 
 // Unstructured allows objects that do not have Golang structs registered to be manipulated

@@ -134,10 +134,6 @@ func (b flockerBuilder) GetMetaData() map[string]interface{} {
 	return nil
 }
 
-func (b flockerBuilder) SetUp() error {
-	return b.SetUpAt(b.flocker.datasetName)
-}
-
 // newFlockerClient uses environment variables and pod attributes to return a
 // flocker client capable of talking with the Flocker control service.
 func (b flockerBuilder) newFlockerClient() (*flockerclient.Client, error) {

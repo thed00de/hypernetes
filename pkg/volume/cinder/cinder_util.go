@@ -26,7 +26,6 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/util/exec"
-	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/node"
 	"k8s.io/kubernetes/pkg/volume"
 )

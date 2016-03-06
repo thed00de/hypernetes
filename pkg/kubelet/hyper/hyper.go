@@ -35,8 +35,8 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
+	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/client/record"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/credentialprovider"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
@@ -46,6 +46,7 @@ import (
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
+	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
 )
 
 const (
@@ -66,13 +67,13 @@ type runtime struct {
 	dockerKeyring       credentialprovider.DockerKeyring
 	containerLogsDir    string
 	containerRefManager *kubecontainer.RefManager
-	generator           kubecontainer.RunContainerOptionsGenerator
+	runtimeHelper       kubecontainer.RuntimeHelper
 	recorder            record.EventRecorder
 	livenessManager     proberesults.Manager
 	networkPlugin       network.NetworkPlugin
 	volumeGetter        volumeGetter
 	hyperClient         *HyperClient
-	kubeClient          client.Interface
+	kubeClient          clientset.Interface
 	imagePuller         kubecontainer.ImagePuller
 	os                  kubecontainer.OSInterface
 	version             kubecontainer.Version
@@ -91,13 +92,13 @@ type volumeGetter interface {
 }
 
 // New creates the hyper container runtime which implements the container runtime interface.
-func New(generator kubecontainer.RunContainerOptionsGenerator,
+func New(runtimeHelper kubecontainer.RuntimeHelper,
 	recorder record.EventRecorder,
 	networkPlugin network.NetworkPlugin,
 	containerRefManager *kubecontainer.RefManager,
 	livenessManager proberesults.Manager,
 	volumeGetter volumeGetter,
-	kubeClient client.Interface,
+	kubeClient clientset.Interface,
 	imageBackOff *util.Backoff,
 	serializeImagePulls bool,
 	httpClient kubetypes.HttpGetter,
@@ -117,7 +118,7 @@ func New(generator kubecontainer.RunContainerOptionsGenerator,
 		dockerKeyring:               credentialprovider.NewDockerKeyring(),
 		containerLogsDir:            containerLogsDir,
 		containerRefManager:         containerRefManager,
-		generator:                   generator,
+		runtimeHelper:               runtimeHelper,
 		livenessManager:             livenessManager,
 		os:                          os,
 		recorder:                    recorder,
@@ -384,7 +385,7 @@ func (r *runtime) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 }
 
 func (r *runtime) buildHyperPodServices(pod *api.Pod) []HyperService {
-	items, err := r.kubeClient.Services(pod.Namespace).List(api.ListOptions{})
+	items, err := r.kubeClient.Core().Services(pod.Namespace).List(api.ListOptions{})
 	if err != nil {
 		glog.Warningf("Get services failed: %v", err)
 		return nil
@@ -395,7 +396,7 @@ func (r *runtime) buildHyperPodServices(pod *api.Pod) []HyperService {
 		hyperService := HyperService{
 			ServiceIP: svc.Spec.ClusterIP,
 		}
-		endpoints, _ := r.kubeClient.Endpoints(pod.Namespace).Get(svc.Name)
+		endpoints, _ := r.kubeClient.Core().Endpoints(pod.Namespace).Get(svc.Name)
 		for _, svcPort := range svc.Spec.Ports {
 			hyperService.ServicePort = svcPort.Port
 			for _, ep := range endpoints.Subsets {
@@ -500,7 +501,7 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 			c[KEY_WORKDIR] = container.WorkingDir
 		}
 
-		opts, err := r.generator.GenerateRunContainerOptions(pod, &container)
+		opts, err := r.runtimeHelper.GenerateRunContainerOptions(pod, &container, "")
 		if err != nil {
 			return nil, err
 		}
@@ -787,7 +788,14 @@ func (r *runtime) RunPod(pod *api.Pod, restartCount int, pullSecrets []api.Secre
 }
 
 // Syncs the running pod into the desired pod.
-func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStatus *kubecontainer.PodStatus, pullSecrets []api.Secret, backOff *util.Backoff) error {
+func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStatus *kubecontainer.PodStatus, pullSecrets []api.Secret, backOff *util.Backoff) (result kubecontainer.PodSyncResult) {
+	var err error
+	defer func() {
+		if err != nil {
+			result.Fail(err)
+		}
+	}()
+
 	// TODO: (random-liu) Stop using running pod in SyncPod()
 	// TODO: (random-liu) Rename podStatus to apiPodStatus, rename internalPodStatus to podStatus, and use new pod status as much as possible,
 	// we may stop using apiPodStatus someday.
@@ -806,7 +814,7 @@ func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 
 		c := runningPod.FindContainerByName(container.Name)
 		if c == nil {
-			if kubecontainer.ShouldContainerBeRestartedOldVersion(&container, pod, &podStatus) {
+			if kubecontainer.ShouldContainerBeRestarted(&container, pod, internalPodStatus) {
 				glog.V(3).Infof("Container %+v is dead, but RestartPolicy says that we should restart it.", container)
 				restartPod = true
 				break
@@ -846,22 +854,22 @@ func (r *runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 			restartCount, err = r.GetPodRestartCount(podID)
 			if err != nil {
 				glog.Errorf("Hyper: get pod startcount failed: %v", err)
-				return err
+				return
 			}
 			restartCount++
 
-			if err := r.KillPod(pod, runningPod); err != nil {
+			if err = r.KillPod(pod, runningPod); err != nil {
 				glog.Errorf("Hyper: kill pod %s failed, error: %s", runningPod.Name, err)
-				return err
+				return
 			}
 		}
 
 		if err := r.RunPod(pod, restartCount, pullSecrets); err != nil {
 			glog.Errorf("Hyper: run pod %s failed, error: %s", pod.Name, err)
-			return err
+			return
 		}
 	}
-	return nil
+	return
 }
 
 // KillPod kills all the containers of a pod.
@@ -900,7 +908,7 @@ func (r *runtime) KillPod(pod *api.Pod, runningPod kubecontainer.Pod) error {
 			done := make(chan struct{})
 			go func() {
 				defer close(done)
-				defer util.HandleCrash()
+				defer utilruntime.HandleCrash()
 				if err := r.runner.Run(c.ID, pod, container, container.Lifecycle.PreStop); err != nil {
 					glog.Errorf("preStop hook for container %q failed: %v", container.Name, err)
 				}
@@ -1340,15 +1348,8 @@ func (r *runtime) GarbageCollect(gcPolicy kubecontainer.ContainerGCPolicy) error
 	return nil
 }
 
-// TODO(yifan): Delete this function when the logic is moved to kubelet.
-func (r *runtime) GetPodStatusAndAPIPodStatus(pod *api.Pod) (*kubecontainer.PodStatus, *api.PodStatus, error) {
-	// Get the pod status.
-	podStatus, err := r.GetPodStatus(pod.UID, pod.Name, pod.Namespace)
-	if err != nil {
-		return nil, nil, err
-	}
-	apiPodStatus, err := r.ConvertPodStatusToAPIPodStatus(pod, podStatus)
-	return podStatus, apiPodStatus, err
+func (r *runtime) APIVersion() (kubecontainer.Version, error) {
+	return r.version, nil
 }
 
 // LogSymlink generates symlink file path for specified container

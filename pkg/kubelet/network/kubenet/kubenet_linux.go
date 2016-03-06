@@ -177,7 +177,7 @@ func (plugin *kubenetNetworkPlugin) Name() string {
 	return KubenetPluginName
 }
 
-func (plugin *kubenetNetworkPlugin) SetUpPod(namespace string, name string, id kubecontainer.DockerID) error {
+func (plugin *kubenetNetworkPlugin) SetUpPod(namespace string, name string, id kubecontainer.DockerID, containerRuntime string) error {
 	// Can't set up pods if we don't have a PodCIDR yet
 	if plugin.netConfig == nil {
 		return fmt.Errorf("Kubenet needs a PodCIDR to set up pods")
@@ -221,7 +221,7 @@ func (plugin *kubenetNetworkPlugin) SetUpPod(namespace string, name string, id k
 	return nil
 }
 
-func (plugin *kubenetNetworkPlugin) TearDownPod(namespace string, name string, id kubecontainer.DockerID) error {
+func (plugin *kubenetNetworkPlugin) TearDownPod(namespace string, name string, id kubecontainer.DockerID, containerRuntime string) error {
 	if plugin.netConfig == nil {
 		return fmt.Errorf("Kubenet needs a PodCIDR to tear down pods")
 	}
@@ -261,7 +261,7 @@ func (plugin *kubenetNetworkPlugin) TearDownPod(namespace string, name string, i
 
 // TODO: Use the addToNetwork function to obtain the IP of the Pod. That will assume idempotent ADD call to the plugin.
 // Also fix the runtime's call to Status function to be done only in the case that the IP is lost, no need to do periodic calls
-func (plugin *kubenetNetworkPlugin) Status(namespace string, name string, id kubecontainer.DockerID) (*network.PodNetworkStatus, error) {
+func (plugin *kubenetNetworkPlugin) Status(namespace string, name string, id kubecontainer.DockerID, containerRuntime string) (*network.PodNetworkStatus, error) {
 	cidr, ok := plugin.podCIDRs[id]
 	if !ok {
 		return nil, fmt.Errorf("No IP address found for pod %v", id)

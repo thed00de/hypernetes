@@ -121,9 +121,9 @@ kubelet
       --minimum-image-ttl-duration=2m0s: Minimum age for a unused image before it is garbage collected.  Examples: '300ms', '10s' or '2h45m'. Default: '2m'
       --network-plugin="": <Warning: Alpha feature> The name of the network plugin to be invoked for various events in kubelet/pod lifecycle
       --network-plugin-dir="/usr/libexec/kubernetes/kubelet-plugins/net/exec/": <Warning: Alpha feature> The full path of the directory in which to search for network plugins
+      --network-provider="": The name of network provider. Enable network provider will disable network-plugin option
       --node-ip="": IP address of the node. If set, kubelet will use this IP address for the node
       --node-labels=: <Warning: Alpha feature> Labels to add when registering the node in the cluster.  Labels must be key=value pairs separated by ','.
-      --network-provider="": The name of network provider. Enable network provider will disable network-plugin option
       --node-status-update-frequency=10s: Specifies how often kubelet posts node status to master. Note: be cautious when changing the constant, it must work with nodeMonitorGracePeriod in nodecontroller. Default: 10s
       --non-masquerade-cidr="10.0.0.0/8": Traffic to IPs outside this range will use IP masquerade.
       --oom-score-adj=-999: The oom-score-adj value for kubelet process. Values must be within the range [-1000, 1000]

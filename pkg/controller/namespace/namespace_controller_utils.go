@@ -340,7 +340,7 @@ func syncNamespace(
 ) error {
 	if namespace.DeletionTimestamp == nil {
 		if namespace.Spec.Network != "" {
-			net, err := kubeClient.Networks().Get(namespace.Spec.Network)
+			net, err := kubeClient.Core().Networks().Get(namespace.Spec.Network)
 			if err != nil || net == nil {
 				glog.Warningf("Network %s cann't be found", namespace.Spec.Network)
 				newNamespace := api.Namespace{}
@@ -348,7 +348,7 @@ func syncNamespace(
 				newNamespace.Spec = namespace.Spec
 				newNamespace.Status = namespace.Status
 				newNamespace.Status.Phase = api.NamespaceFailed
-				_, err := kubeClient.Namespaces().Status(&newNamespace)
+				_, err := kubeClient.Core().Namespaces().UpdateStatus(&newNamespace)
 				if err != nil {
 					return err
 				}

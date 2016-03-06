@@ -198,7 +198,7 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 	var endpointsHandler proxyconfig.EndpointsConfigHandler
 
 	proxyMode := getProxyMode(string(config.Mode), client.Nodes(), hostname, iptInterface, iptables.LinuxKernelCompatTester{})
-	switch config.ProxyMode {
+	switch proxyMode {
 	case proxyModeIptables:
 		glog.V(0).Info("Using iptables Proxier.")
 		if config.IPTablesMasqueradeBit == nil {
@@ -249,7 +249,7 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 		glog.V(0).Info("Tearing down pure-iptables proxy rules.")
 		iptables.CleanupLeftovers(iptInterface)
 	default:
-		glog.Fatalf("Proxy type %s is not supported", config.ProxyMode)
+		glog.Fatalf("Proxy type %s is not supported", proxyMode)
 	}
 	iptInterface.AddReloadFunc(proxier.Sync)
 
@@ -264,7 +264,7 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 	endpointsConfig.RegisterHandler(endpointsHandler)
 
 	// Enable userspace proxier to process services in namespaces without network
-	if config.ProxyMode == proxyModeHaproxy {
+	if proxyMode == proxyModeHaproxy {
 		loadBalancer := userspace.NewLoadBalancerRR(client, true)
 		endpointsConfig.RegisterHandler(loadBalancer)
 

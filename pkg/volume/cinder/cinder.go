@@ -28,6 +28,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/resource"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/openstack"
 	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/kubernetes/pkg/util"
 	"k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/keymutex"
 	"k8s.io/kubernetes/pkg/util/mount"
@@ -109,7 +110,7 @@ func (plugin *cinderPlugin) newBuilderInternal(spec *volume.Spec, podUID types.U
 		readOnly:           readOnly,
 		withOpenStackCP:    cinder.WithOpenStackCP,
 		isNoMountSupported: isNoMountSupported,
-		blockDeviceMounter: &cinderSafeFormatAndMount{mounter, exec.New()}}, nil
+		blockDeviceMounter: &mount.SafeFormatAndMount{mounter, exec.New()}}, nil
 }
 
 func (plugin *cinderPlugin) NewCleaner(volName string, podUID types.UID) (volume.Cleaner, error) {

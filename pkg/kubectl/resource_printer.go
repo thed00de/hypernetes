@@ -408,7 +408,7 @@ var eventColumns = []string{"FIRSTSEEN", "LASTSEEN", "COUNT", "NAME", "KIND", "S
 var limitRangeColumns = []string{"NAME", "AGE"}
 var resourceQuotaColumns = []string{"NAME", "AGE"}
 var namespaceColumns = []string{"NAME", "NETWORK", "STATUS", "AGE"}
-var networkColumns = []string{"NAME", "SUBNETS", "PROVIDERNETWORKID", "LABELS", "STATUS"}
+var networkColumns = []string{"NAME", "SUBNETS", "PROVIDERNETWORKID", "STATUS"}
 var secretColumns = []string{"NAME", "TYPE", "DATA", "AGE"}
 var serviceAccountColumns = []string{"NAME", "SECRETS", "AGE"}
 var persistentVolumeColumns = []string{"NAME", "CAPACITY", "ACCESSMODES", "STATUS", "CLAIM", "REASON", "AGE"}
@@ -1087,7 +1087,7 @@ func printNamespace(item *api.Namespace, w io.Writer, options PrintOptions) erro
 		return fmt.Errorf("namespace is not namespaced")
 	}
 
-	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s", item.Name, item.Spec.Network, item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {
+	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s", item.Name, item.Spec.Network, item.Status.Phase, translateTimestamp(item.CreationTimestamp)); err != nil {
 		return err
 	}
 	if _, err := fmt.Fprint(w, appendLabels(item.Labels, options.ColumnLabels)); err != nil {
@@ -1106,19 +1106,19 @@ func printNamespaceList(list *api.NamespaceList, w io.Writer, options PrintOptio
 	return nil
 }
 
-func printNetwork(item *api.Network, w io.Writer, options printOptions) error {
+func printNetwork(item *api.Network, w io.Writer, options PrintOptions) error {
 	subnets := []string{}
 	for _, subnet := range item.Spec.Subnets {
 		subnets = append(subnets, subnet.CIDR)
 	}
-	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s", item.Name, strings.Join(subnets, ";"), item.Spec.ProviderNetworkID, labels.FormatLabels(item.Labels), item.Status.Phase); err != nil {
+	if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s", item.Name, strings.Join(subnets, ";"), item.Spec.ProviderNetworkID, item.Status.Phase); err != nil {
 		return err
 	}
-	_, err := fmt.Fprint(w, appendLabels(item.Labels, options.columnLabels))
+	_, err := fmt.Fprint(w, appendAllLabels(options.ShowLabels, item.Labels))
 	return err
 }
 
-func printNetworkList(list *api.NetworkList, w io.Writer, options printOptions) error {
+func printNetworkList(list *api.NetworkList, w io.Writer, options PrintOptions) error {
 	for _, item := range list.Items {
 		if err := printNetwork(&item, w, options); err != nil {
 			return err

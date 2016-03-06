@@ -146,6 +146,10 @@ func (b *azureFileBuilder) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
 }
 
+func (b *azureFileBuilder) GetMetaData() map[string]interface{} {
+	return nil
+}
+
 func (b *azureFileBuilder) SetUpAt(dir string, fsGroup *int64) error {
 	notMnt, err := b.mounter.IsLikelyNotMountPoint(dir)
 	glog.V(4).Infof("AzureFile mount set up: %s %v %v", dir, !notMnt, err)
@@ -199,6 +203,10 @@ var _ volume.Cleaner = &azureFileCleaner{}
 
 type azureFileCleaner struct {
 	*azureFile
+}
+
+func (b *azureFileCleaner) GetMetaData() map[string]interface{} {
+	return nil
 }
 
 func (c *azureFileCleaner) TearDown() error {

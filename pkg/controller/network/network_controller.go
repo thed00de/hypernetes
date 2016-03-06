@@ -27,7 +27,8 @@ import (
 	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/networkprovider"
 	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/util"
+	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
+	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/util/workqueue"
 	"k8s.io/kubernetes/pkg/watch"
 
@@ -311,17 +312,17 @@ func (e *NetworkController) Run(stopCh <-chan struct{}) error {
 		return fmt.Errorf("NetController should not be run without a networkprovider.")
 	}
 
-	defer util.HandleCrash()
+	defer utilruntime.HandleCrash()
 	go e.serviceController.Run(stopCh)
 	go e.networkController.Run(stopCh)
 	go e.endpointController.Run(stopCh)
 
 	for i := 0; i < workerGoroutines; i++ {
-		go util.Until(e.worker, time.Second, stopCh)
+		go wait.Until(e.worker, time.Second, stopCh)
 	}
 
 	go func() {
-		defer util.HandleCrash()
+		defer utilruntime.HandleCrash()
 		time.Sleep(5 * time.Minute) // give time for our cache to fill
 		e.startUp()
 	}()

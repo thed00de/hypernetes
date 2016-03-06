@@ -3083,13 +3083,6 @@ Populated by the system when a graceful deletion is requested. Read-only. More i
 <td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">withOpenStackCP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Optional: Specify if using cinder volume together with OpenStack CloudProvider</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
-</tr>
 </tbody>
 </table>
 
@@ -4882,6 +4875,13 @@ Both these may change in the future. Incoming requests are matched against the h
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">readOnly</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. More info: <a href="http://releases.k8s.io/release-1.2/examples/mysql-cinder-pd/README.md">http://releases.k8s.io/release-1.2/examples/mysql-cinder-pd/README.md</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">withOpenStackCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Optional: Specify if using cinder volume together with OpenStack CloudProvider</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>

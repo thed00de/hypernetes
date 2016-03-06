@@ -27,7 +27,7 @@ import (
 // that matches Time. Do not use in Go structs.
 type ProtoTime struct {
 	// Represents the time of an event.
-	Timestamp Timestamp `json:"timestamp"`
+	Timestamp Timestamp `json:"timestamp" protobuf:"bytes,1,opt,name=timestamp"`
 }
 
 // Timestamp is a protobuf Timestamp compatible representation of time.Time
@@ -35,12 +35,12 @@ type Timestamp struct {
 	// Represents seconds of UTC time since Unix epoch
 	// 1970-01-01T00:00:00Z. Must be from from 0001-01-01T00:00:00Z to
 	// 9999-12-31T23:59:59Z inclusive.
-	Seconds int64 `json:"seconds"`
+	Seconds int64 `json:"seconds" protobuf:"varint,1,opt,name=seconds"`
 	// Non-negative fractions of a second at nanosecond resolution. Negative
 	// second values with fractions must still have non-negative nanos values
 	// that count forward in time. Must be from 0 to 999,999,999
 	// inclusive.
-	Nanos int32 `json:"nanos"`
+	Nanos int32 `json:"nanos" protobuf:"varint,2,opt,name=nanos"`
 }
 
 // ProtoTime returns the Time as a new ProtoTime value.

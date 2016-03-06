@@ -379,6 +379,9 @@ var fieldMappings = versionToResourceToFieldMapping{
 			eventInvolvedResourceVersion: eventInvolvedResourceVersion,
 			eventInvolvedFieldPath:       eventInvolvedFieldPath,
 		},
+		"networks": clientFieldNameToAPIVersionFieldName{
+			objectNameField: objectNameField,
+		},
 	},
 }
 

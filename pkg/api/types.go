@@ -1933,6 +1933,8 @@ type NetworkSpec struct {
 	TenantID string `json:"tenantID"`
 }
 
+// +genclient=true,nonNamespaced=true
+
 // Network describes a network
 type Network struct {
 	unversioned.TypeMeta `json:",inline"`

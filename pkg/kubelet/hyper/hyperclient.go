@@ -39,7 +39,6 @@ const (
 	HYPER_PROTO       = "unix"
 	HYPER_ADDR        = "/var/run/hyper.sock"
 	HYPER_SCHEME      = "http"
-	HYPER_MINVERSION  = "0.5.0"
 	DEFAULT_IMAGE_TAG = "latest"
 
 	KEY_COMMAND        = "command"
@@ -543,7 +542,7 @@ func (c *HyperClient) hijack(method, path string, hijackOptions hijackOptions) e
 	if hijackOptions.stderr == nil {
 		hijackOptions.stderr = ioutil.Discard
 	}
-	req, err := http.NewRequest(method, fmt.Sprintf("/v%s%s", HYPER_MINVERSION, path), params)
+	req, err := http.NewRequest(method, fmt.Sprintf("/v%s%s", hyperMinimumVersion, path), params)
 	if err != nil {
 		return err
 	}

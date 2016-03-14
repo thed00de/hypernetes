@@ -50,6 +50,8 @@ import (
 )
 
 const (
+	hyperMinimumVersion = "0.5.0"
+
 	hyperBinName                = "hyper"
 	typeHyper                   = "hyper"
 	hyperContainerNamePrefix    = "kube"
@@ -185,11 +187,25 @@ func (r *runtime) Type() string {
 	return "hyper"
 }
 
-func (r *runtime) Name() string {
-	return "hyper"
-}
-
 func (r *runtime) Status() error {
+	version, err := r.hyperClient.Version()
+	if err != nil {
+		return fmt.Errorf("cannot get hyper version: %v", err)
+	}
+
+	hyperVersion, err := parseVersion(version)
+	if err != nil {
+		return fmt.Errorf("cannot get hyper version: %v", err)
+	}
+
+	// Verify the hyper version.
+	result, err := hyperVersion.Compare(hyperMinimumVersion)
+	if err != nil {
+		return fmt.Errorf("failed to compare current hyper version %v with minimum support version %q - %v", version, hyperMinimumVersion, err)
+	}
+	if result < 0 {
+		return fmt.Errorf("Hyper container runtime version is older than %s", hyperMinimumVersion)
+	}
 	return nil
 }
 

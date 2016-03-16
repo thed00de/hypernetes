@@ -18,6 +18,7 @@ package hyper
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,6 +32,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/pkg/parsers"
+	"github.com/docker/docker/pkg/term"
 	"github.com/golang/glog"
 	"time"
 )
@@ -94,6 +96,7 @@ type AttachToContainerOptions struct {
 	InputStream  io.Reader
 	OutputStream io.Writer
 	ErrorStream  io.Writer
+	TTY          bool
 }
 
 type ContainerLogsOptions struct {
@@ -107,11 +110,21 @@ type ContainerLogsOptions struct {
 	TailLines  int64
 }
 
+type ExecInContainerOptions struct {
+	Container    string
+	InputStream  io.Reader
+	OutputStream io.Writer
+	ErrorStream  io.Writer
+	Commands     []string
+	TTY          bool
+}
+
 type hijackOptions struct {
 	in     io.Reader
 	stdout io.Writer
 	stderr io.Writer
 	data   interface{}
+	tty    bool
 }
 
 func NewHyperClient() *HyperClient {
@@ -527,6 +540,40 @@ func (client *HyperClient) CreatePod(podArgs string) (map[string]interface{}, er
 	return result, nil
 }
 
+func (c *HyperClient) GetExitCode(container, tag string) error {
+	v := url.Values{}
+	v.Set("container", container)
+	v.Set("tag", tag)
+	code := -1
+
+	body, _, err := c.call("GET", "/exitcode?"+v.Encode(), "", nil)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(body, &code)
+	if err != nil {
+		return err
+	}
+
+	if code != 0 {
+		return fmt.Errorf("Exit code %d", code)
+	}
+
+	return nil
+}
+
+func (c *HyperClient) GetTag() string {
+	dictionary := "0123456789abcdefghijklmnopqrstuvwxyz"
+
+	var bytes = make([]byte, 8)
+	rand.Read(bytes)
+	for k, v := range bytes {
+		bytes[k] = dictionary[v%byte(len(dictionary))]
+	}
+	return string(bytes)
+}
+
 func (c *HyperClient) hijack(method, path string, hijackOptions hijackOptions) error {
 	var params io.Reader
 	if hijackOptions.data != nil {
@@ -537,12 +584,18 @@ func (c *HyperClient) hijack(method, path string, hijackOptions hijackOptions) e
 		params = bytes.NewBuffer(buf)
 	}
 
-	if hijackOptions.stdout == nil {
-		hijackOptions.stdout = ioutil.Discard
+	if hijackOptions.tty {
+		in, isTerm := term.GetFdInfo(hijackOptions.in)
+		if isTerm {
+			state, err := term.SetRawTerminal(in)
+			if err != nil {
+				return err
+			}
+
+			defer term.RestoreTerminal(in, state)
+		}
 	}
-	if hijackOptions.stderr == nil {
-		hijackOptions.stderr = ioutil.Discard
-	}
+
 	req, err := http.NewRequest(method, fmt.Sprintf("/v%s%s", HYPER_MINVERSION, path), params)
 	if err != nil {
 		return err
@@ -571,9 +624,22 @@ func (c *HyperClient) hijack(method, path string, hijackOptions hijackOptions) e
 	errChanIn := make(chan error, 1)
 	exit := make(chan bool)
 
+	if hijackOptions.stdout == nil && hijackOptions.stderr == nil {
+		close(errChanOut)
+	}
+	if hijackOptions.stdout == nil {
+		hijackOptions.stdout = ioutil.Discard
+	}
+	if hijackOptions.stderr == nil {
+		hijackOptions.stderr = ioutil.Discard
+	}
+
 	go func() {
-		defer close(exit)
-		defer close(errChanOut)
+		defer func() {
+			close(errChanOut)
+			close(exit)
+		}()
+
 		_, err := io.Copy(hijackOptions.stdout, br)
 		errChanOut <- err
 	}()
@@ -584,11 +650,11 @@ func (c *HyperClient) hijack(method, path string, hijackOptions hijackOptions) e
 		if hijackOptions.in != nil {
 			_, err := io.Copy(rwc, hijackOptions.in)
 			errChanIn <- err
-		}
 
-		rwc.(interface {
-			CloseWrite() error
-		}).CloseWrite()
+			rwc.(interface {
+				CloseWrite() error
+			}).CloseWrite()
+		}
 	}()
 
 	<-exit
@@ -598,6 +664,8 @@ func (c *HyperClient) hijack(method, path string, hijackOptions hijackOptions) e
 	case err = <-errChanOut:
 		return err
 	}
+
+	return nil
 }
 
 func (client *HyperClient) Attach(opts AttachToContainerOptions) error {
@@ -605,15 +673,54 @@ func (client *HyperClient) Attach(opts AttachToContainerOptions) error {
 		return fmt.Errorf("No Such Container %s", opts.Container)
 	}
 
+	tag := client.GetTag()
 	v := url.Values{}
 	v.Set(KEY_TYPE, TYPE_CONTAINER)
 	v.Set(KEY_VALUE, opts.Container)
+	v.Set("tag", tag)
 	path := "/attach?" + v.Encode()
-	return client.hijack("POST", path, hijackOptions{
+	err := client.hijack("POST", path, hijackOptions{
 		in:     opts.InputStream,
 		stdout: opts.OutputStream,
 		stderr: opts.ErrorStream,
+		tty:    opts.TTY,
 	})
+
+	if err != nil {
+		return err
+	}
+
+	return client.GetExitCode(opts.Container, tag)
+}
+
+func (client *HyperClient) Exec(opts ExecInContainerOptions) error {
+	if opts.Container == "" {
+		return fmt.Errorf("No Such Container %s", opts.Container)
+	}
+
+	command, err := json.Marshal(opts.Commands)
+	if err != nil {
+		return err
+	}
+
+	v := url.Values{}
+	tag := client.GetTag()
+	v.Set(KEY_TYPE, TYPE_CONTAINER)
+	v.Set(KEY_VALUE, opts.Container)
+	v.Set("tag", tag)
+	v.Set("command", string(command))
+	path := "/exec?" + v.Encode()
+	err = client.hijack("POST", path, hijackOptions{
+		in:     opts.InputStream,
+		stdout: opts.OutputStream,
+		stderr: opts.ErrorStream,
+		tty:    opts.TTY,
+	})
+	if err != nil {
+		return err
+	}
+
+	return client.GetExitCode(opts.Container, tag)
 }
 
 func (client *HyperClient) ContainerLogs(opts ContainerLogsOptions) error {

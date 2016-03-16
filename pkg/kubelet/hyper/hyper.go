@@ -633,7 +633,6 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 
 	// other params required
 	specMap[KEY_ID] = kubecontainer.BuildPodFullName(pod.Name, pod.Namespace)
-	specMap[KEY_TTY] = false
 
 	// Cap hostname at 63 chars (specification is 64bytes which is 63 chars and the null terminating char).
 	const hostnameMaxLen = 63
@@ -1184,7 +1183,7 @@ func (r *runtime) RunInContainer(containerID kubecontainer.ContainerID, cmd []st
 	glog.V(4).Infof("Hyper: running %s in container %s.", cmd, containerID.ID)
 
 	buffer := bytes.NewBuffer(nil)
-	err := r.ExecInContainer(containerID, cmd, nil, nopCloser{buffer}, nil, true)
+	err := r.ExecInContainer(containerID, cmd, nil, nopCloser{buffer}, nil, false)
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			err = &hyperExitError{exitErr}
@@ -1208,27 +1207,16 @@ func (r *runtime) PortForward(pod *kubecontainer.Pod, port uint16, stream io.Rea
 func (r *runtime) ExecInContainer(containerID kubecontainer.ContainerID, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
 	glog.V(4).Infof("Hyper: execing %s in container %s.", cmd, containerID.ID)
 
-	args := append([]string{}, "exec", "-a", containerID.ID)
-	args = append(args, cmd...)
-	command := r.buildCommand(args...)
-
-	p, err := kubecontainer.StartPty(command)
-	if err != nil {
-		return err
-	}
-	defer p.Close()
-
-	// make sure to close the stdout stream
-	defer stdout.Close()
-
-	if stdin != nil {
-		go io.Copy(p, stdin)
+	opts := ExecInContainerOptions{
+		Container:    containerID.ID,
+		InputStream:  stdin,
+		OutputStream: stdout,
+		ErrorStream:  stderr,
+		Commands:     cmd,
+		TTY:          tty,
 	}
 
-	if stdout != nil {
-		go io.Copy(stdout, p)
-	}
-	return command.Wait()
+	return r.hyperClient.Exec(opts)
 }
 
 func (r *runtime) AttachContainer(containerID kubecontainer.ContainerID, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
@@ -1239,6 +1227,7 @@ func (r *runtime) AttachContainer(containerID kubecontainer.ContainerID, stdin i
 		InputStream:  stdin,
 		OutputStream: stdout,
 		ErrorStream:  stderr,
+		TTY:          tty,
 	}
 
 	return r.hyperClient.Attach(opts)

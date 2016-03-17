@@ -79,7 +79,7 @@ limitations under the License.
 		RollbackConfig
 		RollingUpdateDeployment
 		RunAsUserStrategyOptions
-		SELinuxContextStrategyOptions
+		SELinuxStrategyOptions
 		Scale
 		ScaleSpec
 		ScaleStatus
@@ -315,9 +315,9 @@ func (m *RunAsUserStrategyOptions) Reset()         { *m = RunAsUserStrategyOptio
 func (m *RunAsUserStrategyOptions) String() string { return proto.CompactTextString(m) }
 func (*RunAsUserStrategyOptions) ProtoMessage()    {}
 
-func (m *SELinuxContextStrategyOptions) Reset()         { *m = SELinuxContextStrategyOptions{} }
-func (m *SELinuxContextStrategyOptions) String() string { return proto.CompactTextString(m) }
-func (*SELinuxContextStrategyOptions) ProtoMessage()    {}
+func (m *SELinuxStrategyOptions) Reset()         { *m = SELinuxStrategyOptions{} }
+func (m *SELinuxStrategyOptions) String() string { return proto.CompactTextString(m) }
+func (*SELinuxStrategyOptions) ProtoMessage()    {}
 
 func (m *Scale) Reset()         { *m = Scale{} }
 func (m *Scale) String() string { return proto.CompactTextString(m) }
@@ -404,7 +404,7 @@ func init() {
 	proto.RegisterType((*RollbackConfig)(nil), "k8s.io.kubernetes.pkg.apis.extensions.v1beta1.RollbackConfig")
 	proto.RegisterType((*RollingUpdateDeployment)(nil), "k8s.io.kubernetes.pkg.apis.extensions.v1beta1.RollingUpdateDeployment")
 	proto.RegisterType((*RunAsUserStrategyOptions)(nil), "k8s.io.kubernetes.pkg.apis.extensions.v1beta1.RunAsUserStrategyOptions")
-	proto.RegisterType((*SELinuxContextStrategyOptions)(nil), "k8s.io.kubernetes.pkg.apis.extensions.v1beta1.SELinuxContextStrategyOptions")
+	proto.RegisterType((*SELinuxStrategyOptions)(nil), "k8s.io.kubernetes.pkg.apis.extensions.v1beta1.SELinuxStrategyOptions")
 	proto.RegisterType((*Scale)(nil), "k8s.io.kubernetes.pkg.apis.extensions.v1beta1.Scale")
 	proto.RegisterType((*ScaleSpec)(nil), "k8s.io.kubernetes.pkg.apis.extensions.v1beta1.ScaleSpec")
 	proto.RegisterType((*ScaleStatus)(nil), "k8s.io.kubernetes.pkg.apis.extensions.v1beta1.ScaleStatus")
@@ -2118,7 +2118,15 @@ func (m *PodSecurityPolicySpec) MarshalTo(data []byte) (int, error) {
 		data[i] = 0
 	}
 	i++
-	data[i] = 0x38
+	data[i] = 0x4a
+	i++
+	i = encodeVarintGenerated(data, i, uint64(m.RunAsUser.Size()))
+	n49, err := m.RunAsUser.MarshalTo(data[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n49
+	data[i] = 0x50
 	i++
 	if m.HostIPC {
 		data[i] = 1
@@ -2126,18 +2134,10 @@ func (m *PodSecurityPolicySpec) MarshalTo(data []byte) (int, error) {
 		data[i] = 0
 	}
 	i++
-	data[i] = 0x42
+	data[i] = 0x5a
 	i++
-	i = encodeVarintGenerated(data, i, uint64(m.SELinuxContext.Size()))
-	n49, err := m.SELinuxContext.MarshalTo(data[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n49
-	data[i] = 0x4a
-	i++
-	i = encodeVarintGenerated(data, i, uint64(m.RunAsUser.Size()))
-	n50, err := m.RunAsUser.MarshalTo(data[i:])
+	i = encodeVarintGenerated(data, i, uint64(m.SELinux.Size()))
+	n50, err := m.SELinux.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
@@ -2255,16 +2255,14 @@ func (m *ReplicaSetSpec) MarshalTo(data []byte) (int, error) {
 		}
 		i += n55
 	}
-	if m.Template != nil {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintGenerated(data, i, uint64(m.Template.Size()))
-		n56, err := m.Template.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n56
+	data[i] = 0x1a
+	i++
+	i = encodeVarintGenerated(data, i, uint64(m.Template.Size()))
+	n56, err := m.Template.MarshalTo(data[i:])
+	if err != nil {
+		return 0, err
 	}
+	i += n56
 	return i, nil
 }
 
@@ -2289,6 +2287,9 @@ func (m *ReplicaSetStatus) MarshalTo(data []byte) (int, error) {
 	data[i] = 0x10
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ObservedGeneration))
+	data[i] = 0x18
+	i++
+	i = encodeVarintGenerated(data, i, uint64(m.FullyLabeledReplicas))
 	return i, nil
 }
 
@@ -2384,10 +2385,6 @@ func (m *RunAsUserStrategyOptions) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	data[i] = 0xa
-	i++
-	i = encodeVarintGenerated(data, i, uint64(len(m.Type)))
-	i += copy(data[i:], m.Type)
 	if len(m.Ranges) > 0 {
 		for _, msg := range m.Ranges {
 			data[i] = 0x12
@@ -2400,10 +2397,14 @@ func (m *RunAsUserStrategyOptions) MarshalTo(data []byte) (int, error) {
 			i += n
 		}
 	}
+	data[i] = 0x1a
+	i++
+	i = encodeVarintGenerated(data, i, uint64(len(m.Rule)))
+	i += copy(data[i:], m.Rule)
 	return i, nil
 }
 
-func (m *SELinuxContextStrategyOptions) Marshal() (data []byte, err error) {
+func (m *SELinuxStrategyOptions) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -2413,15 +2414,11 @@ func (m *SELinuxContextStrategyOptions) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *SELinuxContextStrategyOptions) MarshalTo(data []byte) (int, error) {
+func (m *SELinuxStrategyOptions) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
-	data[i] = 0xa
-	i++
-	i = encodeVarintGenerated(data, i, uint64(len(m.Type)))
-	i += copy(data[i:], m.Type)
 	if m.SELinuxOptions != nil {
 		data[i] = 0x12
 		i++
@@ -2432,6 +2429,10 @@ func (m *SELinuxContextStrategyOptions) MarshalTo(data []byte) (int, error) {
 		}
 		i += n59
 	}
+	data[i] = 0x1a
+	i++
+	i = encodeVarintGenerated(data, i, uint64(len(m.Rule)))
+	i += copy(data[i:], m.Rule)
 	return i, nil
 }
 
@@ -2533,6 +2534,10 @@ func (m *ScaleStatus) MarshalTo(data []byte) (int, error) {
 			i += copy(data[i:], v)
 		}
 	}
+	data[i] = 0x1a
+	i++
+	i = encodeVarintGenerated(data, i, uint64(len(m.TargetSelector)))
+	i += copy(data[i:], m.TargetSelector)
 	return i, nil
 }
 
@@ -3345,10 +3350,10 @@ func (m *PodSecurityPolicySpec) Size() (n int) {
 		}
 	}
 	n += 2
-	n += 2
-	l = m.SELinuxContext.Size()
-	n += 1 + l + sovGenerated(uint64(l))
 	l = m.RunAsUser.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
+	l = m.SELinux.Size()
 	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
@@ -3389,10 +3394,8 @@ func (m *ReplicaSetSpec) Size() (n int) {
 		l = m.Selector.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Template != nil {
-		l = m.Template.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.Template.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -3401,6 +3404,7 @@ func (m *ReplicaSetStatus) Size() (n int) {
 	_ = l
 	n += 1 + sovGenerated(uint64(m.Replicas))
 	n += 1 + sovGenerated(uint64(m.ObservedGeneration))
+	n += 1 + sovGenerated(uint64(m.FullyLabeledReplicas))
 	return n
 }
 
@@ -3434,26 +3438,26 @@ func (m *RollingUpdateDeployment) Size() (n int) {
 func (m *RunAsUserStrategyOptions) Size() (n int) {
 	var l int
 	_ = l
-	l = len(m.Type)
-	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Ranges) > 0 {
 		for _, e := range m.Ranges {
 			l = e.Size()
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
+	l = len(m.Rule)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
-func (m *SELinuxContextStrategyOptions) Size() (n int) {
+func (m *SELinuxStrategyOptions) Size() (n int) {
 	var l int
 	_ = l
-	l = len(m.Type)
-	n += 1 + l + sovGenerated(uint64(l))
 	if m.SELinuxOptions != nil {
 		l = m.SELinuxOptions.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	l = len(m.Rule)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -3488,6 +3492,8 @@ func (m *ScaleStatus) Size() (n int) {
 			n += mapEntrySize + 1 + sovGenerated(uint64(mapEntrySize))
 		}
 	}
+	l = len(m.TargetSelector)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -9270,56 +9276,6 @@ func (m *PodSecurityPolicySpec) Unmarshal(data []byte) error {
 				}
 			}
 			m.HostPID = bool(v != 0)
-		case 7:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field HostIPC", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.HostIPC = bool(v != 0)
-		case 8:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SELinuxContext", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.SELinuxContext.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RunAsUser", wireType)
@@ -9347,6 +9303,56 @@ func (m *PodSecurityPolicySpec) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.RunAsUser.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HostIPC", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.HostIPC = bool(v != 0)
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SELinux", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.SELinux.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -9730,9 +9736,6 @@ func (m *ReplicaSetSpec) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Template == nil {
-				m.Template = &k8s_io_kubernetes_pkg_api_v1.PodTemplateSpec{}
-			}
 			if err := m.Template.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -9821,6 +9824,25 @@ func (m *ReplicaSetStatus) Unmarshal(data []byte) error {
 				b := data[iNdEx]
 				iNdEx++
 				m.ObservedGeneration |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FullyLabeledReplicas", wireType)
+			}
+			m.FullyLabeledReplicas = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.FullyLabeledReplicas |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -10110,35 +10132,6 @@ func (m *RunAsUserStrategyOptions) Unmarshal(data []byte) error {
 			return fmt.Errorf("proto: RunAsUserStrategyOptions: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Type = RunAsUserStrategy(data[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Ranges", wireType)
@@ -10170,59 +10163,9 @@ func (m *RunAsUserStrategyOptions) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGenerated(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *SELinuxContextStrategyOptions) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGenerated
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: SELinuxContextStrategyOptions: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: SELinuxContextStrategyOptions: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
+		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Rule", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -10247,8 +10190,58 @@ func (m *SELinuxContextStrategyOptions) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Type = SELinuxContextStrategy(data[iNdEx:postIndex])
+			m.Rule = RunAsUserStrategy(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SELinuxStrategyOptions) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SELinuxStrategyOptions: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SELinuxStrategyOptions: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SELinuxOptions", wireType)
@@ -10281,6 +10274,35 @@ func (m *SELinuxContextStrategyOptions) Unmarshal(data []byte) error {
 			if err := m.SELinuxOptions.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Rule", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Rule = SELinuxStrategy(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -10670,6 +10692,35 @@ func (m *ScaleStatus) Unmarshal(data []byte) error {
 				m.Selector = make(map[string]string)
 			}
 			m.Selector[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TargetSelector", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TargetSelector = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

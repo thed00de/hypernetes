@@ -193,6 +193,11 @@ func addDefaultingFuncs(scheme *runtime.Scheme) {
 				obj.Phase = NamespaceActive
 			}
 		},
+		func(obj *NetworkStatus) {
+			if obj.Phase == "" {
+				obj.Phase = NetworkInitializing
+			}
+		},
 		func(obj *Node) {
 			if obj.Spec.ExternalID == "" {
 				obj.Spec.ExternalID = obj.Name

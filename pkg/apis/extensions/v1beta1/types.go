@@ -35,7 +35,7 @@ type ScaleStatus struct {
 	Replicas int32 `json:"replicas" protobuf:"varint,1,opt,name=replicas"`
 
 	// label query over pods that should match the replicas count. More info: http://releases.k8s.io/release-1.2/docs/user-guide/labels.md#label-selectors
-	Selector map[string]string `json:"selector,omitempty"`
+	Selector map[string]string `json:"selector,omitempty" protobuf:"bytes,2,rep,name=selector"`
 
 	// label selector for pods that should match the replicas count. This is a serializated
 	// version of both map-based and more expressive set-based selectors. This is done to
@@ -43,7 +43,7 @@ type ScaleStatus struct {
 	// query-param syntax. If the target type only supports map-based selectors, both this
 	// field and map-based selector field are populated.
 	// More info: http://releases.k8s.io/release-1.2/docs/user-guide/labels.md#label-selectors
-	TargetSelector string `json:"targetSelector,omitempty"`
+	TargetSelector string `json:"targetSelector,omitempty" protobuf:"bytes,3,opt,name=targetSelector"`
 }
 
 // +genclient=true,noMethods=true
@@ -898,7 +898,7 @@ type ReplicaSetSpec struct {
 	// Template is the object that describes the pod that will be created if
 	// insufficient replicas are detected.
 	// More info: http://releases.k8s.io/release-1.2/docs/user-guide/replication-controller.md#pod-template
-	Template v1.PodTemplateSpec `json:"template,omitempty"`
+	Template v1.PodTemplateSpec `json:"template,omitempty" protobuf:"bytes,3,opt,name=template"`
 }
 
 // ReplicaSetStatus represents the current status of a ReplicaSet.
@@ -908,7 +908,7 @@ type ReplicaSetStatus struct {
 	Replicas int32 `json:"replicas" protobuf:"varint,1,opt,name=replicas"`
 
 	// The number of pods that have labels matching the labels of the pod template of the replicaset.
-	FullyLabeledReplicas int32 `json:"fullyLabeledReplicas,omitempty"`
+	FullyLabeledReplicas int32 `json:"fullyLabeledReplicas,omitempty" protobuf:"varint,3,opt,name=fullyLabeledReplicas"`
 
 	// ObservedGeneration reflects the generation of the most recently observed ReplicaSet.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,2,opt,name=observedGeneration"`
@@ -942,9 +942,9 @@ type PodSecurityPolicySpec struct {
 	// hostPID determines if the policy allows the use of HostPID in the pod spec.
 	HostPID bool `json:"hostPID,omitempty" protobuf:"varint,6,opt,name=hostPID"`
 	// hostIPC determines if the policy allows the use of HostIPC in the pod spec.
-	HostIPC bool `json:"hostIPC,omitempty"`
+	HostIPC bool `json:"hostIPC,omitempty" protobuf:"varint,10,opt,name=hostIPC"`
 	// seLinux is the strategy that will dictate the allowable labels that may be set.
-	SELinux SELinuxStrategyOptions `json:"seLinux,omitempty"`
+	SELinux SELinuxStrategyOptions `json:"seLinux,omitempty" protobuf:"bytes,11,opt,name=seLinux"`
 	// runAsUser is the strategy that will dictate the allowable RunAsUser values that may be set.
 	RunAsUser RunAsUserStrategyOptions `json:"runAsUser,omitempty" protobuf:"bytes,9,opt,name=runAsUser"`
 }
@@ -982,7 +982,7 @@ type HostPortRange struct {
 // SELinux  Strategy Options defines the strategy type and any options used to create the strategy.
 type SELinuxStrategyOptions struct {
 	// type is the strategy that will dictate the allowable labels that may be set.
-	Rule SELinuxStrategy `json:"rule"`
+	Rule SELinuxStrategy `json:"rule" protobuf:"bytes,3,opt,name=rule,casttype=SELinuxStrategy"`
 	// seLinuxOptions required to run as; required for MustRunAs
 	// More info: http://releases.k8s.io/release-1.2/docs/design/security_context.md#security-context
 	SELinuxOptions *v1.SELinuxOptions `json:"seLinuxOptions,omitempty" protobuf:"bytes,2,opt,name=seLinuxOptions"`
@@ -1002,7 +1002,7 @@ const (
 // Run A sUser Strategy Options defines the strategy type and any options used to create the strategy.
 type RunAsUserStrategyOptions struct {
 	// Rule is the strategy that will dictate the allowable RunAsUser values that may be set.
-	Rule RunAsUserStrategy `json:"rule"`
+	Rule RunAsUserStrategy `json:"rule" protobuf:"bytes,3,opt,name=rule,casttype=RunAsUserStrategy"`
 	// Ranges are the allowed ranges of uids that may be used.
 	Ranges []IDRange `json:"ranges,omitempty" protobuf:"bytes,2,rep,name=ranges"`
 }

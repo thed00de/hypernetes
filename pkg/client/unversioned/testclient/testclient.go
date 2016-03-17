@@ -285,10 +285,6 @@ func (c *Fake) Networks() client.NetworkInterface {
 	return &FakeNetworks{Fake: c}
 }
 
-func (c *Fake) Extensions() client.ExtensionsInterface {
-	return &FakeExperimental{c}
-}
-
 func (c *Fake) Batch() client.BatchInterface {
 	return &FakeBatch{c}
 }

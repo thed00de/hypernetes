@@ -36,7 +36,6 @@ install:
   - ./hack/verify-generated-docs.sh
   - ./hack/verify-generated-swagger-docs.sh
   - ./hack/verify-swagger-spec.sh
-  - ./hack/verify-linkcheck.sh
 
 script:
   - cd $HOME/gopath/src/k8s.io/kubernetes

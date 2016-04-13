@@ -526,6 +526,36 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 		}
 		c[KEY_PORTS] = ports
 
+		//TODO(harry) setup termination volumes
+		// NOTE: PodContainerDir is from TerminationMessagePath, TerminationMessagePath  is default to /dev/termination-log
+		if opts.PodContainerDir != "" && container.TerminationMessagePath != "" {
+			// In docker runtime, the container log path contains the container ID.
+			// However, for hyper runtime, we cannot get the container ID before the
+			// the container is launched, so here we generate a random uuid to enable
+			// us to map a container's termination message path to an unique log file
+			// on the disk.
+			randomUID := util.NewUUID()
+			containerLogPath := path.Join(opts.PodContainerDir, string(randomUID))
+			fs, err := os.Create(containerLogPath)
+			if err != nil {
+				return nil, err
+			}
+
+			if err := fs.Close(); err != nil {
+				return nil, err
+			}
+			mnt := &kubecontainer.Mount{
+				// Use a random name for the termination message mount, so that
+				// when a container restarts, it will not overwrite the old termination
+				// message.
+				Name:          fmt.Sprintf("termination-message-%s", randomUID),
+				ContainerPath: container.TerminationMessagePath,
+				HostPath:      containerLogPath,
+				ReadOnly:      false,
+			}
+			opts.Mounts = append(opts.Mounts, *mnt)
+		}
+
 		// volumes
 		if len(opts.Mounts) > 0 {
 			var containerVolumes []map[string]interface{}
@@ -536,14 +566,29 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 				v[KEY_READONLY] = volume.ReadOnly
 				containerVolumes = append(containerVolumes, v)
 
-				// Setup global hosts volume
-				if volume.Name == "k8s-managed-etc-hosts" && k8sHostNeeded {
-					k8sHostNeeded = false
-					volumes = append(volumes, map[string]interface{}{
-						KEY_NAME:          volume.Name,
-						KEY_VOLUME_DRIVE:  VOLUME_TYPE_VFS,
-						KEY_VOLUME_SOURCE: volume.HostPath,
-					})
+				if k8sHostNeeded {
+					// Setup global hosts volume
+					if volume.Name == "k8s-managed-etc-hosts" {
+						k8sHostNeeded = false
+						volumes = append(volumes, map[string]interface{}{
+							KEY_NAME:          volume.Name,
+							KEY_VOLUME_DRIVE:  VOLUME_TYPE_VFS,
+							KEY_VOLUME_SOURCE: volume.HostPath,
+						})
+					}
+
+					// Setup global termination msg volume
+					if strings.HasPrefix(volume.Name, "termination-message") {
+						k8sHostNeeded = false
+
+						// TODO(harry) craete a volume
+						// Usage: -v uuid:/dev/termination-log
+						volumes = append(volumes, map[string]interface{}{
+							KEY_NAME:          volume.Name,
+							KEY_VOLUME_DRIVE:  VOLUME_TYPE_VFS,
+							KEY_VOLUME_SOURCE: volume.HostPath,
+						})
+					}
 				}
 			}
 			c[KEY_VOLUMES] = containerVolumes

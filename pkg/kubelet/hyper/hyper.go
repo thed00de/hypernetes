@@ -193,7 +193,7 @@ func parseTimeString(str string) (time.Time, error) {
 	return t, nil
 }
 
-func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID, startTime string) *kubecontainer.ContainerStatus {
+func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID, startTime string, podLabels map[string]string) *kubecontainer.ContainerStatus {
 	status := &kubecontainer.ContainerStatus{}
 
 	_, _, _, containerName, restartCount, _, err := r.parseHyperContainerFullName(container.Name)
@@ -246,10 +246,17 @@ func (r *runtime) getContainerStatus(container ContainerStatus, image, imageID, 
 			status.FinishedAt = terminatedFinishedAt
 		}
 
+		var message string
+		path := podLabels[containerName]
+		if data, err := ioutil.ReadFile(path); err != nil {
+			message = fmt.Sprintf("Error on reading termination-log %s: %v", path, err)
+		} else {
+			message = string(data)
+		}
+
+		status.Message = message
 		status.State = kubecontainer.ContainerStateExited
 		status.Reason = container.Terminated.Reason
-
-		status.Message = container.Terminated.Message
 		status.ExitCode = container.Terminated.ExitCode
 	default:
 		if startTime == "" {
@@ -470,6 +477,7 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 	var containers []map[string]interface{}
 	var k8sHostNeeded = true
 	dnsServers := make(map[string]string)
+	terminationMsgLabels := make(map[string]string)
 	for _, container := range pod.Spec.Containers {
 		c := make(map[string]interface{})
 		c[KEY_NAME] = r.buildHyperContainerFullName(
@@ -527,6 +535,38 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 		}
 		c[KEY_PORTS] = ports
 
+		// NOTE: PodContainerDir is from TerminationMessagePath, TerminationMessagePath  is default to /dev/termination-log
+		if opts.PodContainerDir != "" && container.TerminationMessagePath != "" {
+			// In docker runtime, the container log path contains the container ID.
+			// However, for hyper runtime, we cannot get the container ID before the
+			// the container is launched, so here we generate a random uuid to enable
+			// us to map a container's termination message path to an unique log file
+			// on the disk.
+			randomUID := util.NewUUID()
+			containerLogPath := path.Join(opts.PodContainerDir, string(randomUID))
+			fs, err := os.Create(containerLogPath)
+			if err != nil {
+				return nil, err
+			}
+
+			if err := fs.Close(); err != nil {
+				return nil, err
+			}
+			mnt := &kubecontainer.Mount{
+				// Use a random name for the termination message mount, so that
+				// when a container restarts, it will not overwrite the old termination
+				// message.
+				Name:          fmt.Sprintf("termination-message-%s", randomUID),
+				ContainerPath: container.TerminationMessagePath,
+				HostPath:      containerLogPath,
+				ReadOnly:      false,
+			}
+			opts.Mounts = append(opts.Mounts, *mnt)
+
+			// set termination msg labels with host path
+			terminationMsgLabels[container.Name] = mnt.HostPath
+		}
+
 		// volumes
 		if len(opts.Mounts) > 0 {
 			var containerVolumes []map[string]interface{}
@@ -537,14 +577,27 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 				v[KEY_READONLY] = volume.ReadOnly
 				containerVolumes = append(containerVolumes, v)
 
-				// Setup global hosts volume
-				if volume.Name == "k8s-managed-etc-hosts" && k8sHostNeeded {
-					k8sHostNeeded = false
-					volumes = append(volumes, map[string]interface{}{
-						KEY_NAME:          volume.Name,
-						KEY_VOLUME_DRIVE:  VOLUME_TYPE_VFS,
-						KEY_VOLUME_SOURCE: volume.HostPath,
-					})
+				if k8sHostNeeded {
+					// Setup global hosts volume
+					if volume.Name == "k8s-managed-etc-hosts" {
+						k8sHostNeeded = false
+						volumes = append(volumes, map[string]interface{}{
+							KEY_NAME:          volume.Name,
+							KEY_VOLUME_DRIVE:  VOLUME_TYPE_VFS,
+							KEY_VOLUME_SOURCE: volume.HostPath,
+						})
+					}
+
+					// Setup global termination msg volume
+					if strings.HasPrefix(volume.Name, "termination-message") {
+						k8sHostNeeded = false
+
+						volumes = append(volumes, map[string]interface{}{
+							KEY_NAME:          volume.Name,
+							KEY_VOLUME_DRIVE:  VOLUME_TYPE_VFS,
+							KEY_VOLUME_SOURCE: volume.HostPath,
+						})
+					}
 				}
 			}
 			c[KEY_VOLUMES] = containerVolumes
@@ -606,6 +659,11 @@ func (r *runtime) buildHyperPod(pod *api.Pod, restartCount int, pullSecrets []ap
 	// append heapster needed labels
 	// NOTE(harryz): this only works for one pod one container model for now.
 	for k, v := range labels {
+		podLabels[k] = v
+	}
+
+	// append termination message label
+	for k, v := range terminationMsgLabels {
 		podLabels[k] = v
 	}
 
@@ -1060,10 +1118,11 @@ func (r *runtime) GetPodStatus(uid types.UID, name, namespace string) (*kubecont
 		for _, containerInfo := range podInfo.PodInfo.Status.Status {
 			for _, container := range podInfo.PodInfo.Spec.Containers {
 				if container.ContainerID == containerInfo.ContainerID {
+					c := r.getContainerStatus(containerInfo, container.Image, container.ImageID,
+						podInfo.PodInfo.Status.StartTime, podInfo.PodInfo.Spec.Labels)
 					status.ContainerStatuses = append(
 						status.ContainerStatuses,
-						r.getContainerStatus(containerInfo, container.Image, container.ImageID,
-							podInfo.PodInfo.Status.StartTime))
+						c)
 				}
 			}
 		}

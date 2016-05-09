@@ -30,7 +30,7 @@ Hypernetes also integrates with a number of OpenStack projects:
 ## Contact Us
 
 * Twitter: [@hyper_sh](https://twitter.com/hyper_sh)
-* Blog: [https://hyper.sh/blog.html](https://hyper.sh/blog.html)
+* Blog: [https://blog.hyper.sh](https://blog.hyper.sh)
 * Slack: [#hyper](https://slack.hyper.sh/) (The IRC has been migrated to slack.)
 
 [![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/README.md?pixel)]()

@@ -152,13 +152,13 @@ type HyperContainer struct {
 }
 
 type HyperServiceBackend struct {
-	HostIP   string `json:"hostip"`
-	HostPort int    `json:"hostport"`
+	HostIP   string `json:"hostIP"`
+	HostPort int    `json:"hostPort"`
 }
 
 type HyperService struct {
-	ServiceIP   string                `json:"serviceip"`
-	ServicePort int                   `json:"serviceport"`
+	ServiceIP   string                `json:"serviceIP"`
+	ServicePort int                   `json:"servicePort"`
 	Protocol    string                `json:"protocol"`
 	Hosts       []HyperServiceBackend `json:"hosts"`
 }

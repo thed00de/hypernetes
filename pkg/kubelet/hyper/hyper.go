@@ -51,7 +51,7 @@ import (
 )
 
 const (
-	hyperMinimumVersion = "0.5.0"
+	hyperMinimumVersion = "0.6.0"
 
 	typeHyper                   = "hyper"
 	hyperContainerNamePrefix    = "kube"

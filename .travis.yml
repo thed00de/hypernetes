@@ -9,7 +9,7 @@ language: go
 
 matrix:
   include:
-    - go: 1.4
+    - go: 1.6
 
 install:
   - mkdir -p $HOME/gopath/src/k8s.io
@@ -24,8 +24,8 @@ install:
   - go get github.com/mattn/goveralls
   - go get github.com/jstemmer/go-junit-report
   - ./hack/install-etcd.sh
-  - ./hack/build-go.sh
-  - godep go install ./...
+  - travis_wait 30 ./hack/build-go.sh
+  - travis_wait 30 godep go install ./...
   - ./hack/verify-gofmt.sh
   - ./hack/verify-boilerplate.sh
   - ./hack/verify-description.sh
